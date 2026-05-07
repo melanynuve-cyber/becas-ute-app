@@ -1,0 +1,66 @@
+import { get } from 'svelte/store'
+import { token, logout } from '../stores/auth.js'
+
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+
+async function request(method, path, body = null, isMultipart = false) {
+  const headers = {}
+  const jwt = get(token)
+
+  if (jwt) headers['Authorization'] = `Bearer ${jwt}`
+  if (!isMultipart && body) headers['Content-Type'] = 'application/json'
+
+  const config = {
+    method,
+    headers,
+    body: isMultipart ? body : body ? JSON.stringify(body) : null
+  }
+
+  const res = await fetch(`${BASE_URL}${path}`, config)
+
+  if (res.status === 401) {
+    logout()
+    window.location.href = '/login'
+    return
+  }
+
+  const data = await res.json().catch(() => ({}))
+
+  if (!res.ok) {
+    const msg = data?.detail || 'Error en el servidor'
+    throw new Error(Array.isArray(msg) ? msg.map(e => e.msg).join(', ') : msg)
+  }
+
+  return data
+}
+
+// ── Auth ─────────────────────────────────────────────
+export const api = {
+  auth: {
+    register: (body) => request('POST', '/auth/register', body),
+    login:    (body) => request('POST', '/auth/login', body),
+    verificar:(body) => request('POST', '/auth/verificar', body),
+    reenviar: (body) => request('POST', '/auth/reenviar', body),
+    me:       ()     => request('GET',  '/auth/me')
+  },
+
+  // ── Alumno ─────────────────────────────────────────
+  alumno: {
+    me: () => request('GET', '/alumnos/me')
+  },
+
+  // ── Solicitudes (estudiante) ────────────────────────
+  solicitudes: {
+    crear:  (formData) => request('POST', '/solicitudes/', formData, true),
+    mias:   ()         => request('GET',  '/solicitudes/mias'),
+    detalle:(id)       => request('GET',  `/solicitudes/${id}`)
+  },
+
+  // ── Admin ───────────────────────────────────────────
+  admin: {
+    lista:        (estado) => request('GET', `/admin/solicitudes${estado ? `?estado=${estado}` : ''}`),
+    detalle:      (id)     => request('GET', `/admin/solicitudes/${id}`),
+    cambiarEstado:(id, estado) => request('PATCH', `/admin/solicitudes/${id}/estado`, { estado }),
+    documentoUrl: (id, tipo) => `${BASE_URL}/admin/solicitudes/${id}/documento/${tipo}`
+  }
+}
