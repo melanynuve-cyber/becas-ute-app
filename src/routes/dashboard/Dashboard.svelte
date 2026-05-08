@@ -221,11 +221,6 @@
     grid-template-columns: 1fr 1fr;
     gap: 0;
   }
-  .field-card.two-col > div {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-  }
   .field-label { font-size: 11px; color: var(--text-secondary); font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; }
   .field-value  { font-size: 14px; font-weight: 600; color: var(--text-primary); }
 

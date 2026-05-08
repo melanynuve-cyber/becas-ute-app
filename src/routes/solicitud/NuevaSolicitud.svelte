@@ -210,11 +210,4 @@
     display: flex; align-items: center; justify-content: center;
     font-size: 32px; font-weight: 700;
   }
-  .folio-card {
-    background: var(--bg-page); border-radius: var(--radius-card);
-    padding: 20px 32px; display: flex; flex-direction: column;
-    align-items: center; gap: 6px; width: 100%;
-  }
-  .folio-num { font-size: 28px; font-weight: 700; color: var(--orange); letter-spacing: 2px; }
-  @media (max-width: 640px) { .form-card { padding: 20px 16px; } }
 </style>

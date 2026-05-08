@@ -1,10 +1,11 @@
 <script>
   import { navigate, link } from 'svelte-routing'
-  import { logout, user } from '../stores/auth.js'
+  import { logout } from '../stores/auth.js'
 
   export let onAlumnoClick = () => {}
 
   let sidebarOpen = false
+  let dark = false
 
   function handleLogout() {
     logout()
@@ -12,9 +13,13 @@
   }
 
   function closeSidebar() { sidebarOpen = false }
+
+  function toggleDark() {
+    dark = !dark
+    document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light')
+  }
 </script>
 
-<!-- Header superior -->
 <header class="navbar">
   <button class="hamburger" on:click={() => sidebarOpen = true} aria-label="Menú">
     <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -25,20 +30,31 @@
   <div class="brand">
     <img src="/UTEG-01.png" alt="Universidad Tecnológica Gral. Mariano Escobedo" class="logo-ute" />
   </div>
-  <!-- Espacio derecho (decorativo) -->
-  <div class="right-slot"></div>
+
+  <button class="theme-btn" on:click={toggleDark} aria-label="Cambiar tema">
+    {#if dark}
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="4"/>
+        <path stroke-linecap="round" d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+      </svg>
+    {:else}
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+      </svg>
+    {/if}
+  </button>
 </header>
 
-<!-- Overlay oscuro -->
 {#if sidebarOpen}
-  <div class="overlay" on:click={closeSidebar} role="button" tabindex="0" on:keydown={(e) => e.key==='Escape' && closeSidebar()} aria-label="Cerrar menú"></div>
+  <div class="overlay" on:click={closeSidebar} role="button" tabindex="0"
+    on:keydown={(e) => e.key === 'Escape' && closeSidebar()} aria-label="Cerrar menú">
+  </div>
 {/if}
 
-<!-- Sidebar drawer -->
 <aside class="sidebar" class:open={sidebarOpen}>
   <div class="sidebar-header">
-  <img src="/UTEG-01.png" alt="Universidad Tecnológica Gral. Mariano Escobedo" class="logo-ute" />
-</div>
+    <img src="/UTEG-01.png" alt="Universidad Tecnológica Gral. Mariano Escobedo" class="logo-ute" />
+  </div>
 
   <nav class="sidebar-nav">
     <button class="nav-item" on:click={() => { onAlumnoClick(); closeSidebar() }}>
@@ -107,13 +123,24 @@
 
   .brand {
     display: flex;
-    flex-direction: column;
     align-items: center;
+    justify-content: center;
   }
 
-  .right-slot { width: 32px; }
+  .theme-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 8px;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+  }
+  .theme-btn:hover { background: var(--bg-page); }
 
-  /* Overlay */
   .overlay {
     position: fixed;
     inset: 0;
@@ -122,7 +149,6 @@
     backdrop-filter: blur(2px);
   }
 
-  /* Sidebar */
   .sidebar {
     position: fixed;
     top: 0; left: 0; bottom: 0;
@@ -138,11 +164,10 @@
   .sidebar.open { transform: translateX(0); }
 
   .sidebar-header {
-    padding: 24px 20px 16px;
+    padding: 16px 20px;
     border-bottom: 1px solid var(--border);
     display: flex;
-    flex-direction: column;
-    gap: 2px;
+    align-items: center;
   }
 
   .sidebar-nav {
@@ -180,10 +205,7 @@
     cursor: not-allowed;
   }
 
-  .nav-icon {
-    display: flex;
-    flex-shrink: 0;
-  }
+  .nav-icon { display: flex; flex-shrink: 0; }
 
   .sidebar-footer {
     padding: 16px 8px 24px;
@@ -212,9 +234,8 @@
   }
 
   .logo-ute {
-    height: 60px;
+    height: 44px;
     width: auto;
     object-fit: contain;
   }
-
 </style>

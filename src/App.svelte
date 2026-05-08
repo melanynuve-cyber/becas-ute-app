@@ -64,6 +64,24 @@
     --font:          'DM Sans', system-ui, sans-serif;
   }
 
+  :global([data-theme="dark"]) {
+  --bg-page:    #111827;
+  --bg-card:    #1F2937;
+  --border:     #374151;
+  --border-input: #4B5563;
+  --text-primary:   #F9FAFB;
+  --text-secondary: #9CA3AF;
+  --text-disabled:  #6B7280;
+  --orange-light:   #431407;
+  --shadow-card: 0 1px 8px rgba(0,0,0,0.4);
+}
+:global([data-theme="dark"] .input-plain),
+:global([data-theme="dark"] .input-wrap input) {
+  background: #374151;
+  color: var(--text-primary);
+  border-color: #4B5563;
+}
+
   :global(body) {
     font-family: var(--font);
     background: var(--bg-page);
