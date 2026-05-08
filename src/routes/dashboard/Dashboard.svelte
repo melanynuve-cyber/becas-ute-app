@@ -5,7 +5,9 @@
   import { isAuthenticated, isAdmin, user } from '../../lib/stores/auth.js'
   import { api } from '../../lib/services/api.js'
   import Navbar from '../../lib/components/Navbar.svelte'
+  import PerfilModal from '../../lib/components/PerfilModal.svelte'
 
+  let showPerfil = false
   let alumno = null
   let solicitudes = []
   let loading = true
@@ -49,6 +51,7 @@
 </script>
 
 <Navbar onAlumnoClick={() => showPerfil = true} />
+<PerfilModal bind:show={showPerfil} {alumno} />
 
 <main class="main">
   {#if loading}
