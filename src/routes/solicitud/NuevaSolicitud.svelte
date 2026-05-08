@@ -78,7 +78,7 @@
     if (!d.celular) return 'Ingresa el celular'
     if (!d.rfc)     return 'Ingresa el RFC'
     if (!d.curp)    return 'Ingresa el CURP'
-    if (form.beca_solicitada.tipos_beca.length === 0) return 'Selecciona al menos un tipo de beca'
+    if (!form.beca_solicitada.tipo_beca) return 'Selecciona un tipo de beca'
     if (!archivos.kardex)                  return 'Adjunta el Kárdex'
     if (!archivos.recibo_ingresos)         return 'Adjunta el Recibo de Ingresos'
     if (!archivos.recibo_servicio_publico) return 'Adjunta el Recibo de Servicio Público'

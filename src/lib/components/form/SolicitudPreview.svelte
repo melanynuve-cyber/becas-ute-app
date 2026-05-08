@@ -72,9 +72,7 @@
       <div class="preview-field">
         <span class="preview-label">Tipos de beca</span>
         <span>
-          {form.beca_solicitada.tipos_beca.length > 0
-            ? form.beca_solicitada.tipos_beca.map(k => tiposBeca.find(b => b.key === k)?.label).join(', ')
-            : 'Ninguna seleccionada'}
+          {tiposBeca.find(b => b.key === form.beca_solicitada.tipo_beca)?.label || 'Ninguna seleccionada'}
         </span>
       </div>
     </div>
