@@ -5,9 +5,7 @@
   import { isAuthenticated, isAdmin, user } from '../../lib/stores/auth.js'
   import { api } from '../../lib/services/api.js'
   import Navbar from '../../lib/components/Navbar.svelte'
-  import PerfilModal from '../../lib/components/PerfilModal.svelte'
 
-  let showPerfil = false
   let alumno = null
   let solicitudes = []
   let loading = true
@@ -51,7 +49,6 @@
 </script>
 
 <Navbar onAlumnoClick={() => showPerfil = true} />
-<PerfilModal bind:show={showPerfil} {alumno} />
 
 <main class="main">
   {#if loading}
@@ -94,52 +91,6 @@
     </div>
   {/if}
 </main>
-
-<!-- Modal Perfil del Alumno -->
-{#if showPerfil && alumno}
-  <div class="modal-overlay" on:click={() => showPerfil = false} role="button" tabindex="0" on:keydown={(e) => e.key==='Escape' && (showPerfil=false)}>
-    <div class="modal-card" on:click|stopPropagation role="dialog" aria-modal="true" tabindex="-1">
-      <div class="modal-header">
-        <div class="avatar">
-          <svg width="28" height="28" fill="none" stroke="white" stroke-width="1.8" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/>
-          </svg>
-        </div>
-        <div>
-          <div class="modal-title">Perfil del Alumno</div>
-          <div class="modal-subtitle">Información académica</div>
-        </div>
-      </div>
-
-      <div class="modal-fields">
-        <div class="field-card">
-          <span class="field-label">Nombre</span>
-          <span class="field-value">{alumno.nombre}</span>
-        </div>
-        <div class="field-card">
-          <span class="field-label">Carrera</span>
-          <span class="field-value">{alumno.carrera}</span>
-        </div>
-        <div class="field-card two-col">
-          <div>
-            <span class="field-label">Matrícula</span>
-            <span class="field-value">{alumno.matricula}</span>
-          </div>
-          <div>
-            <span class="field-label">Cuatrimestre</span>
-            <span class="field-value">{alumno.cuatrimestre_actual}° Cuatrimestre</span>
-          </div>
-        </div>
-      </div>
-
-      <button class="modal-close" on:click={() => showPerfil = false}>
-        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-        </svg>
-      </button>
-    </div>
-  </div>
-{/if}
 
 <style>
   .main {

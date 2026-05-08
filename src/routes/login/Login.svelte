@@ -43,8 +43,7 @@
 <div class="page">
   <div class="card" in:fade>
     <div class="header">
-      <span class="uni-name">Universidad Tecnológica</span>
-      <span class="uni-sub">General Mariano Escobedo</span>
+      <img src="/UTEG-01.png" alt="Universidad Tecnológica Gral. Mariano Escobedo" class="logo-ute" />
     </div>
 
     <h1 class="title">Iniciar Sesión</h1>
@@ -142,17 +141,11 @@
     align-items: center;
     gap: 2px;
   }
-  .uni-name {
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--text-primary);
-    text-align: center;
-  }
-  .uni-sub {
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--orange);
-    text-align: center;
+  
+  .logo-ute {
+    height: 150px;
+    width: auto;
+    object-fit: contain;
   }
 
   .title {

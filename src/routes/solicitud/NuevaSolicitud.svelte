@@ -37,7 +37,7 @@
       grupo: '', domicilio_calle: '', domicilio_numero: '', colonia: '', municipio: '',
       correo_electronico: '', estado_civil: '', edad: '', celular: '', rfc: '', curp: '',
     },
-    beca_solicitada: { tipo_solicitud: 'Nueva', tipos_beca: [] },
+    beca_solicitada: { tipo_solicitud: 'Nueva', tipo_beca: '' },
     informacion_general: { promedio_preparatoria: '', porcentaje_beca_anterior: '', promedio_cuatrimestre_anterior: '', otra_beca: '' },
     ingreso_mensual: { monto_ingreso: '', numero_dependientes: '' },
     egreso_mensual: { gastos_alimentacion: '', gastos_educacion: '', gastos_renta_hipoteca: '', gastos_servicios: '', gastos_varios: '' },
@@ -158,7 +158,7 @@
       {/if}
 
       <StepDatosPersonales bind:datos={form.datos_personales} {fechaFormato} />
-      <StepBecaSolicitada  bind:beca={form.beca_solicitada} />
+      <StepBecaSolicitada bind:form />
       <StepInfoGeneral     bind:info={form.informacion_general} tipoSolicitud={form.beca_solicitada.tipo_solicitud} />
       <StepIngreso         bind:ingreso={form.ingreso_mensual} />
       <StepEgreso          bind:egreso={form.egreso_mensual} />

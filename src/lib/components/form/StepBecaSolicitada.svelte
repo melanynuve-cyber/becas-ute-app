@@ -1,5 +1,5 @@
 <script>
-  export let beca
+  export let form
 
   const tiposBeca = [
     { key: 'academica',     label: 'A. Académica' },
@@ -9,16 +9,6 @@
     { key: 'transporte',    label: 'E. Transporte' },
     { key: 'empleado_hijo', label: 'F. Empleado y/o hijo de empleado' },
   ]
-
-  function toggleBeca(key) {
-    const index = beca.tipos_beca.indexOf(key)
-    if (index === -1) {
-      beca.tipos_beca = [...beca.tipos_beca, key]
-    } else {
-      beca.tipos_beca.splice(index, 1)
-      beca.tipos_beca = [...beca.tipos_beca]
-    }
-  }
 </script>
 
 <section>
@@ -31,15 +21,13 @@
 
   <div class="tipo-solicitud-row">
     <label class="check-label-big">
-      <input type="checkbox"
-        checked={beca.tipo_solicitud === 'Nueva'}
-        on:change={() => beca.tipo_solicitud = 'Nueva'} />
+      <input type="radio" name="tipo_solicitud" value="Nueva"
+        bind:group={form.beca_solicitada.tipo_solicitud} />
       Nueva Solicitud
     </label>
     <label class="check-label-big">
-      <input type="checkbox"
-        checked={beca.tipo_solicitud === 'Renovacion'}
-        on:change={() => beca.tipo_solicitud = 'Renovacion'} />
+      <input type="radio" name="tipo_solicitud" value="Renovacion"
+        bind:group={form.beca_solicitada.tipo_solicitud} />
       Renovación
     </label>
   </div>
@@ -47,9 +35,8 @@
   <div class="becas-grid">
     {#each tiposBeca as b}
       <label class="check-label-big">
-        <input type="checkbox"
-          checked={beca.tipos_beca.includes(b.key)}
-          on:change={() => toggleBeca(b.key)} />
+        <input type="radio" name="tipo_beca" value={b.key}
+          bind:group={form.beca_solicitada.tipo_beca} />
         {b.label}
       </label>
     {/each}

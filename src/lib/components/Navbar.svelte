@@ -23,10 +23,8 @@
   </button>
 
   <div class="brand">
-    <span class="brand-name">Universidad Tecnológica</span>
-    <span class="brand-sub">General Mariano Escobedo</span>
+    <img src="/UTEG-01.png" alt="Universidad Tecnológica Gral. Mariano Escobedo" class="logo-ute" />
   </div>
-
   <!-- Espacio derecho (decorativo) -->
   <div class="right-slot"></div>
 </header>
@@ -39,9 +37,8 @@
 <!-- Sidebar drawer -->
 <aside class="sidebar" class:open={sidebarOpen}>
   <div class="sidebar-header">
-    <span class="brand-name">Universidad Tecnológica</span>
-    <span class="brand-sub">General Mariano Escobedo</span>
-  </div>
+  <img src="/UTEG-01.png" alt="Universidad Tecnológica Gral. Mariano Escobedo" class="logo-ute" />
+</div>
 
   <nav class="sidebar-nav">
     <button class="nav-item" on:click={() => { onAlumnoClick(); closeSidebar() }}>
@@ -113,8 +110,6 @@
     flex-direction: column;
     align-items: center;
   }
-  .brand-name { font-size: 14px; font-weight: 700; color: var(--text-primary); }
-  .brand-sub  { font-size: 11px; font-weight: 500; color: var(--orange); }
 
   .right-slot { width: 32px; }
 
@@ -215,4 +210,11 @@
     background: #FEF2F2;
     color: var(--error);
   }
+
+  .logo-ute {
+    height: 60px;
+    width: auto;
+    object-fit: contain;
+  }
+
 </style>
