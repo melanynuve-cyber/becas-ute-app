@@ -3,10 +3,10 @@
   export let erroresArchivos = {}
 
   const docs = [
-    { key: 'kardex',                label: 'A. Kárdex (PDF)' },
-    { key: 'recibo_ingresos',       label: 'B. Recibo de Ingresos (PDF)' },
-    { key: 'recibo_servicio_publico', label: 'C. Recibo de Servicio Público (PDF)' },
-    { key: 'recibo_inscripcion',    label: 'D. Comprobante de Inscripción (PDF)' },
+    { key: 'kardex',                  label: 'A. Kárdex (PDF)',                    requerido: true },
+    { key: 'recibo_ingresos',         label: 'B. Recibo de Ingresos (PDF)',         requerido: true },
+    { key: 'recibo_servicio_publico', label: 'C. Recibo de Servicio Público (PDF)', requerido: true },
+    { key: 'recibo_inscripcion',      label: 'D. Comprobante de Inscripción (PDF)', requerido: false },
   ]
 
   function onArchivo(e, key) {
@@ -31,12 +31,15 @@
     <h2 class="section-title">Documentos Adjuntos</h2>
   </div>
   <div class="divider-orange"></div>
-  <p class="section-hint">Todos los documentos son obligatorios. Solo se aceptan archivos PDF.</p>
+  <p class="section-hint">Los documentos A, B y C son obligatorios. D puede adjuntarse después. Solo se aceptan archivos PDF.</p>
 
   <div class="docs-grid">
     {#each docs as doc}
       <div class="doc-item">
-        <span class="doc-label">{doc.label} <span class="req">*</span></span>
+        <span class="doc-label">
+          {doc.label}
+          {#if doc.requerido}<span class="req">*</span>{:else}<span class="opcional">(opcional)</span>{/if}
+        </span>
 
         {#if archivos[doc.key]}
           <div class="doc-selected">
@@ -76,6 +79,7 @@
   .divider-orange { height: 2px; background: var(--orange); border-radius: 2px; opacity: 0.3; }
   .section-hint { font-size: 13px; color: var(--text-secondary); }
   .req { color: var(--orange); }
+  .opcional { font-size: 11px; color: var(--text-secondary); font-weight: 400; margin-left: 4px; }
   .docs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .doc-item { display: flex; flex-direction: column; gap: 6px; }
   .doc-label { font-size: 13px; font-weight: 600; color: var(--text-primary); }

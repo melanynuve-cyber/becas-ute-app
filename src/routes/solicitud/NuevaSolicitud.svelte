@@ -82,7 +82,6 @@
     if (!archivos.kardex)                  return 'Adjunta el Kárdex'
     if (!archivos.recibo_ingresos)         return 'Adjunta el Recibo de Ingresos'
     if (!archivos.recibo_servicio_publico) return 'Adjunta el Recibo de Servicio Público'
-    if (!archivos.recibo_inscripcion)      return 'Adjunta el Comprobante de Inscripción'
     if (!form.ingreso_mensual.monto_ingreso)       return 'Ingresa el monto de ingreso'
     if (form.ingreso_mensual.numero_dependientes === '' || form.ingreso_mensual.numero_dependientes === null || form.ingreso_mensual.numero_dependientes === undefined) return 'Ingresa el número de dependientes'
     if (!form.egreso_mensual.gastos_alimentacion)  return 'Ingresa los gastos de alimentación'
@@ -129,7 +128,9 @@
       fd.append('kardex', archivos.kardex)
       fd.append('recibo_ingresos', archivos.recibo_ingresos)
       fd.append('recibo_servicio_publico', archivos.recibo_servicio_publico)
-      fd.append('recibo_inscripcion', archivos.recibo_inscripcion)
+      if (archivos.recibo_inscripcion) {
+        fd.append('recibo_inscripcion', archivos.recibo_inscripcion)
+      }
       const res = await api.solicitudes.crear(fd)
       solicitudId = res.solicitud_id
       paso = 'confirmacion'

@@ -63,6 +63,30 @@
   $: ing = p.ingreso_mensual || {}
   $: egr = p.egreso_mensual || {}
   $: docs = solicitud?.documentos || {}
+  $: inscripcionPendiente = docs.recibo_inscripcion === 'pendiente' && !exitoInscripcion
+
+  let subiendoInscripcion = false
+  let errorInscripcion = ''
+  let exitoInscripcion = false
+
+  async function onArchivoInscripcion(e) {
+    const file = e.target.files[0]
+    if (!file) return
+    if (!file.name.toLowerCase().endsWith('.pdf')) { errorInscripcion = 'Solo se aceptan archivos PDF'; return }
+    errorInscripcion = ''
+    subiendoInscripcion = true
+    try {
+      const fd = new FormData()
+      fd.append('recibo_inscripcion', file)
+      await api.solicitudes.subirInscripcion(id, fd)
+      solicitud = { ...solicitud, documentos: { ...docs, recibo_inscripcion: file.name } }
+      exitoInscripcion = true
+    } catch (e) {
+      errorInscripcion = e.message || 'Error al subir el archivo'
+    } finally {
+      subiendoInscripcion = false
+    }
+  }
 </script>
 
 <Navbar onAlumnoClick={() => showPerfil = true} />
@@ -178,12 +202,28 @@
           <h3 class="preview-section-title">Documentos Adjuntos</h3>
           <div class="docs-grid">
             {#each Object.entries(nombresDocumentos) as [key, nombre]}
-              <div class="doc-item">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="2">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                  <polyline points="14 2 14 8 20 8"/>
-                </svg>
-                <span class="doc-nombre">{nombre}</span>
+              <div class="doc-item" class:doc-pendiente={key === 'recibo_inscripcion' && inscripcionPendiente}>
+                <div class="doc-header">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                  </svg>
+                  <span class="doc-nombre">{nombre}</span>
+                  {#if key === 'recibo_inscripcion' && inscripcionPendiente}
+                    <span class="badge-pendiente-doc">Pendiente</span>
+                  {:else}
+                    <span class="badge-ok-doc">✓</span>
+                  {/if}
+                </div>
+                {#if key === 'recibo_inscripcion' && inscripcionPendiente}
+                  <p class="doc-hint">Adjunta tu comprobante cuando esté disponible.</p>
+                  {#if errorInscripcion}<span class="error-inline">{errorInscripcion}</span>{/if}
+                  <label class="doc-upload-btn" class:disabled={subiendoInscripcion}>
+                    {subiendoInscripcion ? 'Subiendo...' : 'Adjuntar PDF'}
+                    <input type="file" accept=".pdf" style="display:none"
+                      disabled={subiendoInscripcion} on:change={onArchivoInscripcion} />
+                  </label>
+                {/if}
               </div>
             {/each}
           </div>
@@ -246,13 +286,32 @@
 
   .docs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .doc-item {
-    display: flex; align-items: center; gap: 10px;
+    display: flex; flex-direction: column; gap: 8px;
     padding: 10px 14px;
     border: 1.5px solid var(--border);
     border-radius: var(--radius-input);
     background: var(--bg-page);
   }
-  .doc-nombre { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+  .doc-pendiente { border-color: var(--orange-mid); background: var(--orange-light); }
+  .doc-header { display: flex; align-items: center; gap: 10px; }
+  .doc-nombre { font-size: 13px; font-weight: 600; color: var(--text-primary); flex: 1; }
+  .badge-pendiente-doc {
+    font-size: 11px; font-weight: 600;
+    background: #FEF3C7; color: #D97706;
+    padding: 2px 8px; border-radius: 999px; white-space: nowrap;
+  }
+  .badge-ok-doc { font-size: 12px; font-weight: 700; color: var(--success); }
+  .doc-hint { font-size: 12px; color: var(--text-secondary); margin: 0; }
+  .error-inline { font-size: 12px; color: var(--error); }
+  .doc-upload-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 14px; background: var(--orange); color: white;
+    border-radius: var(--radius-btn); font-family: var(--font);
+    font-size: 13px; font-weight: 600; cursor: pointer; border: none;
+    align-self: flex-start; transition: background 0.15s;
+  }
+  .doc-upload-btn:hover:not(.disabled) { background: var(--orange-hover); }
+  .doc-upload-btn.disabled { opacity: 0.6; cursor: not-allowed; }
 
   @media (max-width: 640px) {
     .form-card { padding: 20px 16px; }

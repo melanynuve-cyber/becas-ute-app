@@ -51,9 +51,10 @@ export const api = {
 
   // ── Solicitudes (estudiante) ────────────────────────
   solicitudes: {
-    crear:  (formData) => request('POST', '/solicitudes/', formData, true),
-    mias:   ()         => request('GET',  '/solicitudes/mias'),
-    detalle:(id)       => request('GET',  `/solicitudes/${id}`)
+    crear:            (formData) => request('POST', '/solicitudes/', formData, true),
+    mias:             ()         => request('GET',  '/solicitudes/mias'),
+    detalle:          (id)       => request('GET',  `/solicitudes/${id}`),
+    subirInscripcion: (id, fd)   => request('PATCH', `/solicitudes/${id}/documento/recibo_inscripcion`, fd, true),
   },
 
   // ── Admin ───────────────────────────────────────────
