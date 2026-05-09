@@ -21,8 +21,8 @@
     </div>
     <div class="field">
       <label for="cuatrimestre_cursar">Cuatrimestre a cursar <span class="req">*</span></label>
-      <input id="cuatrimestre_cursar" class="input-plain" type="number" min="1" max="12"
-        placeholder="1-12" bind:value={datos.cuatrimestre_a_cursar} />
+      <input id="cuatrimestre_cursar" class="input-plain" type="number" min="0" max="12"
+        placeholder="0-12" bind:value={datos.cuatrimestre_a_cursar} />
     </div>
   </div>
 

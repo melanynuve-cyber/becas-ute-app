@@ -69,7 +69,7 @@
   function validar() {
     const d = form.datos_personales
     if (!d.nombres || !d.apellido_paterno || !d.apellido_materno) return 'Completa nombre y apellidos'
-    if (!d.cuatrimestre_a_cursar) return 'Ingresa el cuatrimestre a cursar'
+    if (d.cuatrimestre_a_cursar === '' || d.cuatrimestre_a_cursar === null || d.cuatrimestre_a_cursar === undefined) return 'Ingresa el cuatrimestre a cursar'
     if (!d.turno)   return 'Selecciona el turno'
     if (!d.grupo)   return 'Ingresa el grupo'
     if (!d.domicilio_calle || !d.domicilio_numero) return 'Ingresa el domicilio completo'
@@ -84,7 +84,7 @@
     if (!archivos.recibo_servicio_publico) return 'Adjunta el Recibo de Servicio Público'
     if (!archivos.recibo_inscripcion)      return 'Adjunta el Comprobante de Inscripción'
     if (!form.ingreso_mensual.monto_ingreso)       return 'Ingresa el monto de ingreso'
-    if (!form.ingreso_mensual.numero_dependientes) return 'Ingresa el número de dependientes'
+    if (form.ingreso_mensual.numero_dependientes === '' || form.ingreso_mensual.numero_dependientes === null || form.ingreso_mensual.numero_dependientes === undefined) return 'Ingresa el número de dependientes'
     if (!form.egreso_mensual.gastos_alimentacion)  return 'Ingresa los gastos de alimentación'
     if (!form.egreso_mensual.gastos_educacion)     return 'Ingresa los gastos de educación'
     if (!form.egreso_mensual.gastos_renta_hipoteca) return 'Ingresa los gastos de renta'
