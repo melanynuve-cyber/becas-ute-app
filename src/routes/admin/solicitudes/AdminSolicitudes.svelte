@@ -112,7 +112,12 @@
                 <td class="td-matricula">{s.matricula}</td>
                 <td>{s.cuatrimestre}</td>
                 <td>{s.tipo}</td>
-                <td><span class={badgeClass(s.estado)}>{estadoLabel(s.estado)}</span></td>
+                <td>
+                  <span class={badgeClass(s.estado)}>{estadoLabel(s.estado)}</span>
+                  {#if s.documentos?.recibo_inscripcion === 'pendiente'}
+                    <span class="badge" style="background:#FEF3C7;color:#92400E;margin-left:6px">Doc. pendiente</span>
+                  {/if}
+                </td>
                 <td>{formatFecha(s.created_at)}</td>
                 <td>
                   <button class="btn-ver" on:click={() => navigate(`/admin/solicitudes/${s.id}`)}>

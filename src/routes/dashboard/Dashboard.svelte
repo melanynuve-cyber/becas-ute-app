@@ -14,7 +14,7 @@
 
   onMount(async () => {
     if (!get(isAuthenticated)) { navigate('/login', { replace: true }); return }
-    if (get(isAdmin))          { navigate('/admin/solicitudes', { replace: true }); return }
+    if (get(isAdmin)) { navigate('/admin/solicitudes', { replace: true }); return }
 
     try {
       const [alumnoData, solData] = await Promise.all([

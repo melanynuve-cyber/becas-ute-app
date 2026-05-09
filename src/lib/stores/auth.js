@@ -22,7 +22,9 @@ user.subscribe(val => {
 export const isAuthenticated = derived(token, $token => !!$token)
 
 // Derived: ¿es admin?
-export const isAdmin = derived(user, $user => !!$user?.roles?.admin)
+export const isAdmin = derived(user, $user => 
+  !!($user?.roles?.agente_becas || $user?.roles?.root)
+)
 
 // Acción de logout
 export function logout() {

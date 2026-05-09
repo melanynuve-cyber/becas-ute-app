@@ -194,14 +194,25 @@
         <h2 class="section-title">Documentos Adjuntos</h2>
         <div class="docs-grid">
           {#each Object.entries(nombresDoc) as [key, nombre]}
-            <button class="doc-btn" on:click={() => abrirDoc(key)}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="2">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                <polyline points="14 2 14 8 20 8"/>
-              </svg>
-              <span>{nombre}</span>
-              <span class="doc-ver">Ver PDF →</span>
-            </button>
+            {#if solicitud.documentos?.[key] === 'pendiente'}
+              <div class="doc-btn doc-pendiente">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-disabled)" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                </svg>
+                <span>{nombre}</span>
+                <span class="doc-badge-pendiente">Pendiente</span>
+              </div>
+            {:else}
+              <button class="doc-btn" on:click={() => abrirDoc(key)}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                </svg>
+                <span>{nombre}</span>
+                <span class="doc-ver">Ver PDF →</span>
+              </button>
+            {/if}
           {/each}
         </div>
       </div>
@@ -229,7 +240,6 @@
 
   .card { background: var(--bg-card); border-radius: var(--radius-card); box-shadow: var(--shadow-card); padding: 24px 28px; display: flex; flex-direction: column; gap: 16px; }
 
-  .estado-card { }
   .estado-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
   .estado-change { display: flex; flex-direction: column; gap: 8px; }
   .estado-actions { display: flex; gap: 10px; align-items: center; }
@@ -262,5 +272,19 @@
     .grid-2 { grid-template-columns: 1fr; }
     .docs-grid { grid-template-columns: 1fr; }
     .estado-row { flex-direction: column; }
+  }
+  .doc-pendiente {
+  cursor: default;
+  opacity: 0.7;
+  border-style: dashed;
+  }
+  .doc-badge-pendiente {
+    margin-left: auto;
+    font-size: 11px;
+    font-weight: 600;
+    color: #92400E;
+    background: #FEF3C7;
+    padding: 2px 8px;
+    border-radius: 20px;
   }
 </style>
