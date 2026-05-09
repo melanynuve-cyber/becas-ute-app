@@ -49,7 +49,7 @@ export const api = {
     me: () => request('GET', '/alumnos/me')
   },
 
-  // ── Solicitudes (estudiante) ────────────────────────
+  // ── Solicitudes ─────────────────────────────────────
   solicitudes: {
     crear:            (formData) => request('POST', '/solicitudes/', formData, true),
     mias:             ()         => request('GET',  '/solicitudes/mias'),
@@ -59,9 +59,20 @@ export const api = {
 
   // ── Admin ───────────────────────────────────────────
   admin: {
-    lista:        (estado) => request('GET', `/admin/solicitudes${estado ? `?estado=${estado}` : ''}`),
-    detalle:      (id)     => request('GET', `/admin/solicitudes/${id}`),
+    lista:        (estado)     => request('GET', `/admin/solicitudes${estado ? `?estado=${estado}` : ''}`),
+    detalle:      (id)         => request('GET', `/admin/solicitudes/${id}`),
     cambiarEstado:(id, estado) => request('PATCH', `/admin/solicitudes/${id}/estado`, { estado }),
-    documentoUrl: (id, tipo) => `${BASE_URL}/admin/solicitudes/${id}/documento/${tipo}`
+    documentoUrl: (id, tipo)   => `${BASE_URL}/admin/solicitudes/${id}/documento/${tipo}`
+  },
+
+  // ── Dual ────────────────────────────────────────────
+  dual: {
+    subirReporte:   (fd)          => request('POST',  '/dual/alumno/', fd, true),
+    misReportes:    (cuatrimestre) => request('GET',   `/dual/alumno/mis-reportes${cuatrimestre ? `?cuatrimestre=${cuatrimestre}` : ''}`),
+    listarReportes: (params)      => request('GET',   `/dual/agente/reportes${params ? `?${params}` : ''}`),
+    revisarReporte: (id, data)    => request('PATCH', `/dual/agente/reportes/${id}`, data),
+    listarAlumnos:  (params)      => request('GET',   `/dual/tutor/alumnos${params ? `?${params}` : ''}`),
+    expediente:     (matricula)   => request('GET',   `/dual/tutor/alumnos/${matricula}/reportes`),
+    exportarCSV:    (matricula)   => `${BASE_URL}/dual/tutor/alumnos/${matricula}/exportar-csv`,
   }
 }

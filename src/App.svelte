@@ -11,6 +11,8 @@
   import DetalleSolicitud from './routes/solicitud/DetalleSolicitud.svelte'
   import AdminSolicitudes from './routes/admin/solicitudes/AdminSolicitudes.svelte'
   import AdminDetalle from './routes/admin/solicitudes/AdminDetalle.svelte'
+  import ReportesDual from './routes/dual/ReportesDual.svelte'
+  import AgenteDual from './routes/dual/AgenteDual.svelte'
 
  onMount(() => {
     if (window.location.pathname === '/') {
@@ -29,7 +31,9 @@
   <Route path="/dashboard"       component={Dashboard} />
   <Route path="/solicitud/nueva" component={NuevaSolicitud} />
   <Route path="/solicitud/:id"   component={DetalleSolicitud} />
-
+  <Route path="dual/reportes"   component={ReportesDual} />
+  <Route path="dual/agente" component={AgenteDual} />
+  
   <!-- Admin -->
   <Route path="/admin/solicitudes"     component={AdminSolicitudes} />
   <Route path="/admin/solicitudes/:id" component={AdminDetalle} />
