@@ -26,14 +26,16 @@
     loading = true
     try {
       const res = await api.auth.login({ email, password })
-      login(res.access_token, res.usuario)
-      navigate(res.usuario?.roles?.admin ? '/admin/solicitudes' : '/dashboard', { replace: true })
+      const payload = JSON.parse(atob(res.access_token.split('.')[1]))
+      const userData = { roles: payload.roles, matricula: payload.matricula, email: payload.sub }
+      login(res.access_token, userData)
+      navigate(payload.roles?.admin ? '/admin/solicitudes' : '/dashboard', { replace: true })
     } catch (e) {
       error = e.message
     } finally {
       loading = false
     }
-  }
+}
 
   function handleKeydown(e) {
     if (e.key === 'Enter') handleSubmit()
