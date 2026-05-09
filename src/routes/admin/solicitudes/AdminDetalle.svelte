@@ -71,9 +71,22 @@
     return `badge ${map[estado?.toLowerCase()] || ''}`
   }
 
-  function abrirDoc(tipo) {
-    const url = api.admin.documentoUrl(id, tipo)
-    window.open(url, '_blank')
+  async function abrirDoc(tipo) {
+    try {
+      const { get: getStore } = await import('svelte/store')
+      const { token } = await import('../../../lib/stores/auth.js')
+      const jwt = getStore(token)
+      const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+      const res = await fetch(`${BASE_URL}/admin/solicitudes/${id}/documento/${tipo}`, {
+        headers: { Authorization: `Bearer ${jwt}` }
+      })
+      if (!res.ok) throw new Error('No se pudo cargar el documento')
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      window.open(url, '_blank')
+    } catch (e) {
+      error = e.message
+    }
   }
 
   $: p = solicitud?.payload || {}
