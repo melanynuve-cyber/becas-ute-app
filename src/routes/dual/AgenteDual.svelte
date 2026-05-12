@@ -26,19 +26,90 @@
   let sidebarOpen = false;
 
   // ── ESTADOS DE EMPRESAS ──
-  let empresas = [];
-  let alumnos = [];
-  let loadingEmpresas = false;
+  let empresas = []
+  let loadingEmpresas = false
+  let nuevaEmpresa = ''
+  let empresaSeleccionada = ''
+  let matriculaBusqueda = ''
+  let alumnoPreview = null
+  let loadingPreview = false
+  let errorAsignacion = ''
+  let exitoAsignacion = ''
+  let guardandoAsignacion = false
 
-  let nuevaEmpresa = "";
-  let empresaSeleccionada = "";
-  let matriculaSeleccionada = "";
-  let cuatrimestreAsignacion = "";
-  let errorAsignacion = "";
-  let exitoAsignacion = "";
-  let guardandoAsignacion = false;
+  async function cargarEmpresas() {
+    loadingEmpresas = true
+    try {
+      empresas = await api.dual.listarEmpresas()
+    } catch(e) {
+      console.error(e)
+    } finally {
+      loadingEmpresas = false
+    }
+  }
 
-  onMount(() => cargarReportes());
+  async function buscarAlumno() {
+    if (!matriculaBusqueda.trim()) return
+    loadingPreview = true
+    alumnoPreview = null
+    errorAsignacion = ''
+    try {
+      alumnoPreview = await api.dual.buscarAlumno(matriculaBusqueda.trim())
+      empresaSeleccionada = alumnoPreview.empresa_id || ''
+    } catch(e) {
+      errorAsignacion = 'Alumno no encontrado'
+    } finally {
+      loadingPreview = false
+    }
+  }
+
+  async function crearEmpresa() {
+    if (!nuevaEmpresa.trim()) return
+    try {
+      const emp = await api.dual.crearEmpresa({ nombre: nuevaEmpresa.trim() })
+      empresas = [...empresas, emp]
+      empresaSeleccionada = emp.id
+      nuevaEmpresa = ''
+    } catch(e) {
+      errorAsignacion = e.message
+    }
+  }
+
+  async function guardarAsignacion() {
+    errorAsignacion = ''
+    exitoAsignacion = ''
+    if (!alumnoPreview) { errorAsignacion = 'Busca un alumno primero'; return }
+    if (!empresaSeleccionada) { errorAsignacion = 'Selecciona una empresa'; return }
+    guardandoAsignacion = true
+    try {
+      await api.dual.actualizarAlumnoDual(alumnoPreview.matricula, {
+        alumno_dual: true,
+        empresa_id: parseInt(empresaSeleccionada)
+      })
+      exitoAsignacion = 'Alumno dual actualizado correctamente'
+      alumnoPreview = { ...alumnoPreview, es_alumno_dual: 'true', empresa_id: parseInt(empresaSeleccionada), empresa: empresas.find(e => e.id == empresaSeleccionada)?.nombre }
+    } catch(e) {
+      errorAsignacion = e.message
+    } finally {
+      guardandoAsignacion = false
+    }
+  }
+
+  async function quitarDual() {
+    if (!alumnoPreview) return
+    guardandoAsignacion = true
+    errorAsignacion = ''
+    exitoAsignacion = ''
+    try {
+      await api.dual.actualizarAlumnoDual(alumnoPreview.matricula, { alumno_dual: false })
+      exitoAsignacion = 'Rol dual removido correctamente'
+      alumnoPreview = { ...alumnoPreview, es_alumno_dual: 'false', activo: false }
+    } catch(e) {
+      errorAsignacion = e.message
+    } finally {
+      guardandoAsignacion = false
+    }
+  }
 
   // ── FUNCIONES DE BANDEJA ──
   async function cargarReportes() {
@@ -103,52 +174,6 @@
   }
 
   // ── FUNCIONES DE EMPRESAS ──
-  async function cargarEmpresas() {
-    loadingEmpresas = true;
-    try {
-      empresas = await api.dual.listarEmpresas();
-      alumnos = await api.dual.listarAlumnosDual();
-    } catch(e) {
-      console.error(e);
-    } finally {
-      loadingEmpresas = false;
-    }
-  }
-
-  async function crearEmpresa() {
-    if (!nuevaEmpresa.trim()) return;
-    try {
-      const emp = await api.dual.crearEmpresa({ nombre: nuevaEmpresa.trim() });
-      empresas = [...empresas, emp];
-      empresaSeleccionada = emp.id;
-      nuevaEmpresa = "";
-    } catch(e) {
-      errorAsignacion = e.message;
-    }
-  }
-
-  async function asignarEmpresa() {
-    errorAsignacion = "";
-    exitoAsignacion = "";
-    if (!matriculaSeleccionada || !empresaSeleccionada || !cuatrimestreAsignacion) {
-      errorAsignacion = "Completa todos los campos";
-      return;
-    }
-    guardandoAsignacion = true;
-    try {
-      await api.dual.asignarEmpresa({
-        matricula: matriculaSeleccionada,
-        cuatrimestre: cuatrimestreAsignacion,
-        empresa_id: parseInt(empresaSeleccionada)
-      });
-      exitoAsignacion = "Empresa asignada correctamente";
-    } catch(e) {
-      errorAsignacion = e.message;
-    } finally {
-      guardandoAsignacion = false;
-    }
-  }
-
   function handleLogout() {
     logout();
     navigate("/login", { replace: true });
@@ -404,37 +429,50 @@
 
 <!-- ══════════════════════ EMPRESAS ═════════════════════════════════ -->
 {:else if vista === 'empresas'}
-  <div class="page-wrap">
-    <div class="page-header">
-      <h1 class="page-title">Empresas y asignaciones</h1>
-      <p class="page-sub">Asigna alumnos duales a sus empresas</p>
-    </div>
+<div class="page-wrap">
+  <div class="page-header">
+    <h1 class="page-title">Gestión de alumnos duales</h1>
+    <p class="page-sub">Asigna empresas y roles a alumnos duales</p>
+  </div>
 
-    {#if loadingEmpresas}
-      <div class="state-msg">Cargando...</div>
-    {:else}
-      <div class="empresas-layout">
+  {#if loadingEmpresas}
+    <div class="state-msg">Cargando...</div>
+  {:else}
+    <div class="empresas-layout">
 
-        <!-- Asignar alumno -->
-        <div class="card-seccion">
-          <h2 class="seccion-title">Asignar alumno a empresa</h2>
-          
-          {#if errorAsignacion}<div class="error-msg">{errorAsignacion}</div>{/if}
-          {#if exitoAsignacion}<div class="exito-msg">{exitoAsignacion}</div>{/if}
+      <div class="card-seccion">
+        <h2 class="seccion-title">Buscar alumno</h2>
 
-          <div class="field">
-            <label>Alumno</label>
-            <select class="input-plain" bind:value={matriculaSeleccionada}>
-              <option value="">Selecciona un alumno</option>
-              {#each alumnos as a}
-                <option value={a.matricula}>{a.nombre} — {a.matricula}</option>
-              {/each}
-            </select>
-          </div>
+        {#if errorAsignacion}<div class="error-msg">{errorAsignacion}</div>{/if}
+        {#if exitoAsignacion}<div class="exito-msg">{exitoAsignacion}</div>{/if}
 
-          <div class="field">
-            <label>Cuatrimestre</label>
-            <input class="input-plain" placeholder="Ej: Mayo-Agosto 2026" bind:value={cuatrimestreAsignacion} />
+        <div class="nueva-empresa-row">
+          <input class="input-plain" placeholder="Matrícula del alumno"
+            bind:value={matriculaBusqueda}
+            on:keydown={(e) => e.key === 'Enter' && buscarAlumno()} />
+          <button class="btn-outline" style="white-space:nowrap"
+            on:click={buscarAlumno} disabled={loadingPreview}>
+            {loadingPreview ? '...' : 'Buscar'}
+          </button>
+        </div>
+
+        {#if alumnoPreview}
+          <div class="ficha-alumno" style="margin:0">
+            <p class="ficha-titulo">Datos del alumno</p>
+            <div class="ficha-grid">
+              <span class="ficha-key">Nombre</span>
+              <span class="ficha-val">{alumnoPreview.nombre}</span>
+              <span class="ficha-key">Carrera</span>
+              <span class="ficha-val">{alumnoPreview.carrera}</span>
+              <span class="ficha-key">Grupo</span>
+              <span class="ficha-val">{alumnoPreview.grupo}</span>
+              <span class="ficha-key">Cuatrimestre</span>
+              <span class="ficha-val">{alumnoPreview.cuatrimestre_actual}</span>
+              <span class="ficha-key">Es dual</span>
+              <span class="ficha-val">{alumnoPreview.es_alumno_dual === 'true' ? '✅ Sí' : '❌ No'}</span>
+              <span class="ficha-key">Empresa</span>
+              <span class="ficha-val">{alumnoPreview.empresa || 'Sin asignar'}</span>
+            </div>
           </div>
 
           <div class="field">
@@ -447,38 +485,49 @@
             </select>
           </div>
 
-          <!-- Agregar empresa nueva -->
           <div class="nueva-empresa-row">
-            <input class="input-plain" placeholder="O escribe una empresa nueva..." bind:value={nuevaEmpresa} on:keydown={(e) => e.key === 'Enter' && crearEmpresa()} />
-            <button class="btn-outline" style="white-space:nowrap" on:click={crearEmpresa} disabled={!nuevaEmpresa.trim()}>
+            <input class="input-plain" placeholder="O escribe una empresa nueva..."
+              bind:value={nuevaEmpresa}
+              on:keydown={(e) => e.key === 'Enter' && crearEmpresa()} />
+            <button class="btn-outline" style="white-space:nowrap"
+              on:click={crearEmpresa} disabled={!nuevaEmpresa.trim()}>
               + Agregar
             </button>
           </div>
 
-          <button class="btn-primary" style="margin-top:8px" on:click={asignarEmpresa} disabled={guardandoAsignacion}>
-            {guardandoAsignacion ? 'Guardando...' : 'Asignar empresa'}
-          </button>
-        </div>
-
-        <!-- Lista de empresas -->
-        <div class="card-seccion">
-          <h2 class="seccion-title">Empresas registradas</h2>
-          {#if empresas.length === 0}
-            <p class="empty-msg">No hay empresas registradas aún.</p>
-          {:else}
-            <ul class="empresa-list">
-              {#each empresas as e}
-                <li class="empresa-item">
-                  <span class="empresa-nombre">{e.nombre}</span>
-                </li>
-              {/each}
-            </ul>
-          {/if}
-        </div>
-
+          <div style="display:flex;gap:8px;margin-top:4px">
+            <button class="btn-primary" style="flex:1"
+              on:click={guardarAsignacion} disabled={guardandoAsignacion || !empresaSeleccionada}>
+              {guardandoAsignacion ? 'Guardando...' : alumnoPreview.es_alumno_dual === 'true' ? 'Actualizar empresa' : 'Activar como dual'}
+            </button>
+            {#if alumnoPreview.es_alumno_dual === 'true'}
+              <button class="btn-outline" style="flex:1;color:#B91C1C;border-color:#FECACA"
+                on:click={quitarDual} disabled={guardandoAsignacion}>
+                Quitar dual
+              </button>
+            {/if}
+          </div>
+        {/if}
       </div>
-    {/if}
-  </div>
+
+      <div class="card-seccion">
+        <h2 class="seccion-title">Empresas registradas</h2>
+        {#if empresas.length === 0}
+          <p class="empty-msg">No hay empresas registradas aún.</p>
+        {:else}
+          <ul class="empresa-list">
+            {#each empresas as e}
+              <li class="empresa-item">
+                <span class="empresa-nombre">{e.nombre}</span>
+              </li>
+            {/each}
+          </ul>
+        {/if}
+      </div>
+
+    </div>
+  {/if}
+</div>
 {/if}
 
 </div>

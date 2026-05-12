@@ -74,5 +74,10 @@ export const api = {
     listarAlumnos:  (params)      => request('GET',   `/dual/tutor/alumnos${params ? `?${params}` : ''}`),
     expediente:     (matricula)   => request('GET',   `/dual/tutor/alumnos/${matricula}/reportes`),
     exportarCSV:    (matricula)   => `${BASE_URL}/dual/tutor/alumnos/${matricula}/exportar-csv`,
+    buscarAlumno: (matricula) => request('GET', `/dual/agente/alumnos/${matricula}`),
+    actualizarAlumnoDual: (matricula, body) => request('PATCH', `/dual/agente/alumnos/${matricula}`, body),
+    listarEmpresas: ()     => request('GET',  '/dual/agente/empresas'),
+    crearEmpresa:   (body) => request('POST', '/dual/agente/empresas', body),
+    asignarEmpresa: (body) => request('POST', '/dual/agente/asignaciones', body),
   }
 }
