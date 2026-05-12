@@ -4,6 +4,7 @@
   import { api } from "../../lib/services/api.js";
   import { logout } from "../../lib/stores/auth.js";
 
+  // ── ESTADOS DE BANDEJA Y REVISIÓN ──
   let reportes = [];
   let loading = true;
   let error = "";
@@ -13,7 +14,8 @@
   let cuatrimestres = [];
 
   let seleccionado = null;
-  let vista = "bandeja";
+  // Unificamos vistaActual y vista en una sola variable para evitar conflictos
+  let vista = "bandeja"; // 'bandeja' | 'revision' | 'empresas'
 
   let accion = "";
   let nota = "";
@@ -23,8 +25,22 @@
 
   let sidebarOpen = false;
 
+  // ── ESTADOS DE EMPRESAS ──
+  let empresas = [];
+  let alumnos = [];
+  let loadingEmpresas = false;
+
+  let nuevaEmpresa = "";
+  let empresaSeleccionada = "";
+  let matriculaSeleccionada = "";
+  let cuatrimestreAsignacion = "";
+  let errorAsignacion = "";
+  let exitoAsignacion = "";
+  let guardandoAsignacion = false;
+
   onMount(() => cargarReportes());
 
+  // ── FUNCIONES DE BANDEJA ──
   async function cargarReportes() {
     loading = true;
     error = "";
@@ -86,6 +102,53 @@
     }
   }
 
+  // ── FUNCIONES DE EMPRESAS ──
+  async function cargarEmpresas() {
+    loadingEmpresas = true;
+    try {
+      empresas = await api.dual.listarEmpresas();
+      alumnos = await api.dual.listarAlumnosDual();
+    } catch(e) {
+      console.error(e);
+    } finally {
+      loadingEmpresas = false;
+    }
+  }
+
+  async function crearEmpresa() {
+    if (!nuevaEmpresa.trim()) return;
+    try {
+      const emp = await api.dual.crearEmpresa({ nombre: nuevaEmpresa.trim() });
+      empresas = [...empresas, emp];
+      empresaSeleccionada = emp.id;
+      nuevaEmpresa = "";
+    } catch(e) {
+      errorAsignacion = e.message;
+    }
+  }
+
+  async function asignarEmpresa() {
+    errorAsignacion = "";
+    exitoAsignacion = "";
+    if (!matriculaSeleccionada || !empresaSeleccionada || !cuatrimestreAsignacion) {
+      errorAsignacion = "Completa todos los campos";
+      return;
+    }
+    guardandoAsignacion = true;
+    try {
+      await api.dual.asignarEmpresa({
+        matricula: matriculaSeleccionada,
+        cuatrimestre: cuatrimestreAsignacion,
+        empresa_id: parseInt(empresaSeleccionada)
+      });
+      exitoAsignacion = "Empresa asignada correctamente";
+    } catch(e) {
+      errorAsignacion = e.message;
+    } finally {
+      guardandoAsignacion = false;
+    }
+  }
+
   function handleLogout() {
     logout();
     navigate("/login", { replace: true });
@@ -135,7 +198,8 @@
   </div>
   <nav class="sidebar-nav">
     <p class="nav-section-label">Módulo Dual</p>
-    <button class="nav-item nav-item-active" on:click={() => sidebarOpen = false}>
+    
+    <button class="nav-item" class:nav-item-active={vista === 'bandeja' || vista === 'revision'} on:click={() => { vista = 'bandeja'; sidebarOpen = false; cargarReportes(); }}>
       <span class="nav-icon">
         <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round"
@@ -143,6 +207,16 @@
         </svg>
       </span>
       Bandeja de reportes
+    </button>
+
+    <button class="nav-item" class:nav-item-active={vista === 'empresas'} 
+      on:click={() => { vista = 'empresas'; cargarEmpresas(); sidebarOpen = false }}>
+      <span class="nav-icon">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21"/>
+        </svg>
+      </span>
+      Empresas y asignaciones
     </button>
   </nav>
   <div class="sidebar-footer">
@@ -234,16 +308,12 @@
 <!-- ══════════════════════ REVISIÓN ═════════════════════════════════ -->
 {:else if vista === "revision" && seleccionado}
   <div class="revision-wrap">
-
-    <!-- Topbar mínimo -->
     <div class="revision-topbar">
       <button class="btn-back" on:click={volverBandeja}>← Volver a bandeja</button>
       <span class={badgeClass(seleccionado.estado)}>{seleccionado.estado}</span>
     </div>
 
-    <!-- Split -->
     <div class="split-layout">
-
       <!-- PDF -->
       <div class="panel-pdf">
         <div class="panel-label">Reporte entregado</div>
@@ -260,14 +330,11 @@
       <!-- Panel derecho -->
       <div class="panel-acciones">
         <div class="panel-label">Decisión del agente</div>
-
-        <!-- Calificación destacada -->
         <div class="dato-cal">
           <p class="dato-label">Calificación declarada</p>
           <p class="dato-valor">{seleccionado.calificacion_alumno}</p>
         </div>
 
-        <!-- Ficha del alumno -->
         <div class="ficha-alumno">
           <p class="ficha-titulo">Datos del alumno</p>
           <div class="ficha-grid">
@@ -280,6 +347,9 @@
             <span class="ficha-key">Carrera</span>
             <span class="ficha-val">{seleccionado.carrera || "—"}</span>
 
+            <span class="ficha-key">Empresa</span>
+            <span class="ficha-val">{seleccionado.empresa || 'Sin asignar'}</span>
+
             <span class="ficha-key">Cuatrimestre</span>
             <span class="ficha-val">{seleccionado.cuatrimestre}</span>
 
@@ -291,7 +361,6 @@
           </div>
         </div>
 
-        <!-- Nota previa del agente (si existe) -->
         {#if seleccionado.nota_agente}
           <div class="nota-previa">
             <p class="dato-label">Nota del agente</p>
@@ -299,45 +368,16 @@
           </div>
         {/if}
 
-        <!-- Acciones -->
         {#if seleccionado.estado === "Pendiente"}
           <div class="acciones-grupo">
             <div class="btn-decision-row">
-              <button
-                class="btn-decision btn-aprobar"
-                class:activo={accion === "aprobar"}
-                on:click={() => { accion = "aprobar"; nota = ""; }}
-              >
-                ✅ Aprobar
-              </button>
-              <button
-                class="btn-decision btn-rechazar"
-                class:activo={accion === "rechazar"}
-                on:click={() => (accion = "rechazar")}
-              >
-                ❌ Rechazar
-              </button>
+              <button class="btn-decision btn-aprobar" class:activo={accion === "aprobar"} on:click={() => { accion = "aprobar"; nota = ""; }}>✅ Aprobar</button>
+              <button class="btn-decision btn-rechazar" class:activo={accion === "rechazar"} on:click={() => (accion = "rechazar")}>❌ Rechazar</button>
             </div>
 
-            {#if accion === "rechazar"}
+            {#if accion === "rechazar" || accion === "aprobar"}
               <div class="input-wrap" style="margin-top:12px;">
-                <textarea
-                  class="input-plain textarea-nota"
-                  placeholder="Razón del rechazo (obligatorio)…"
-                  rows="3"
-                  bind:value={nota}
-                ></textarea>
-              </div>
-            {/if}
-
-            {#if accion === "aprobar"}
-              <div class="input-wrap" style="margin-top:12px;">
-                <textarea
-                  class="input-plain textarea-nota"
-                  placeholder="Nota opcional para el alumno…"
-                  rows="3"
-                  bind:value={nota}
-                ></textarea>
+                <textarea class="input-plain textarea-nota" placeholder={accion === "rechazar" ? "Razón del rechazo (obligatorio)…" : "Nota opcional para el alumno…"} rows="3" bind:value={nota}></textarea>
               </div>
             {/if}
 
@@ -345,44 +385,106 @@
             {#if exito}<p class="exito-msg">{exito}</p>{/if}
 
             {#if !exito}
-              <button
-                class="btn-primary"
-                style="width:100%; margin-top:14px;"
-                on:click={enviarDecision}
-                disabled={enviando || !accion}
-              >
+              <button class="btn-primary" style="width:100%; margin-top:14px;" on:click={enviarDecision} disabled={enviando || !accion}>
                 {enviando ? "Enviando…" : "Confirmar decisión"}
               </button>
             {:else}
-              <button class="btn-outline" style="width:100%; margin-top:10px;" on:click={volverBandeja}>
-                ← Volver a la bandeja
-              </button>
+              <button class="btn-outline" style="width:100%; margin-top:10px;" on:click={volverBandeja}>← Volver a la bandeja</button>
             {/if}
           </div>
-
         {:else}
           <div class="ya-revisado">
-            <p>
-              Este reporte ya fue
-              <strong
-                class:text-verde={seleccionado.estado === "Aprobada"}
-                class:text-rojo={seleccionado.estado === "Rechazada"}
-              >{seleccionado.estado.toLowerCase()}</strong>.
-            </p>
-            <button class="btn-outline" style="margin-top:12px; width:100%;" on:click={volverBandeja}>
-              ← Volver a la bandeja
-            </button>
+            <p>Este reporte ya fue <strong class:text-verde={seleccionado.estado === "Aprobada"} class:text-rojo={seleccionado.estado === "Rechazada"}>{seleccionado.estado.toLowerCase()}</strong>.</p>
+            <button class="btn-outline" style="margin-top:12px; width:100%;" on:click={volverBandeja}>← Volver a la bandeja</button>
           </div>
         {/if}
       </div>
     </div>
+  </div>
+
+<!-- ══════════════════════ EMPRESAS ═════════════════════════════════ -->
+{:else if vista === 'empresas'}
+  <div class="page-wrap">
+    <div class="page-header">
+      <h1 class="page-title">Empresas y asignaciones</h1>
+      <p class="page-sub">Asigna alumnos duales a sus empresas</p>
+    </div>
+
+    {#if loadingEmpresas}
+      <div class="state-msg">Cargando...</div>
+    {:else}
+      <div class="empresas-layout">
+
+        <!-- Asignar alumno -->
+        <div class="card-seccion">
+          <h2 class="seccion-title">Asignar alumno a empresa</h2>
+          
+          {#if errorAsignacion}<div class="error-msg">{errorAsignacion}</div>{/if}
+          {#if exitoAsignacion}<div class="exito-msg">{exitoAsignacion}</div>{/if}
+
+          <div class="field">
+            <label>Alumno</label>
+            <select class="input-plain" bind:value={matriculaSeleccionada}>
+              <option value="">Selecciona un alumno</option>
+              {#each alumnos as a}
+                <option value={a.matricula}>{a.nombre} — {a.matricula}</option>
+              {/each}
+            </select>
+          </div>
+
+          <div class="field">
+            <label>Cuatrimestre</label>
+            <input class="input-plain" placeholder="Ej: Mayo-Agosto 2026" bind:value={cuatrimestreAsignacion} />
+          </div>
+
+          <div class="field">
+            <label>Empresa</label>
+            <select class="input-plain" bind:value={empresaSeleccionada}>
+              <option value="">Selecciona una empresa</option>
+              {#each empresas as e}
+                <option value={e.id}>{e.nombre}</option>
+              {/each}
+            </select>
+          </div>
+
+          <!-- Agregar empresa nueva -->
+          <div class="nueva-empresa-row">
+            <input class="input-plain" placeholder="O escribe una empresa nueva..." bind:value={nuevaEmpresa} on:keydown={(e) => e.key === 'Enter' && crearEmpresa()} />
+            <button class="btn-outline" style="white-space:nowrap" on:click={crearEmpresa} disabled={!nuevaEmpresa.trim()}>
+              + Agregar
+            </button>
+          </div>
+
+          <button class="btn-primary" style="margin-top:8px" on:click={asignarEmpresa} disabled={guardandoAsignacion}>
+            {guardandoAsignacion ? 'Guardando...' : 'Asignar empresa'}
+          </button>
+        </div>
+
+        <!-- Lista de empresas -->
+        <div class="card-seccion">
+          <h2 class="seccion-title">Empresas registradas</h2>
+          {#if empresas.length === 0}
+            <p class="empty-msg">No hay empresas registradas aún.</p>
+          {:else}
+            <ul class="empresa-list">
+              {#each empresas as e}
+                <li class="empresa-item">
+                  <span class="empresa-nombre">{e.nombre}</span>
+                </li>
+              {/each}
+            </ul>
+          {/if}
+        </div>
+
+      </div>
+    {/if}
   </div>
 {/if}
 
 </div>
 
 <style>
-  /* ── Navbar / Sidebar (igual que antes) ─────────────────────── */
+  /* ── Estilos de tu componente original ─────────────────────── */
   .navbar {
     position: fixed; top: 0; left: 0; right: 0; height: 56px;
     background: var(--bg-card); border-bottom: 1px solid var(--border);
@@ -446,10 +548,7 @@
   }
   .logout-btn:hover { background: #FEF2F2; color: var(--error); }
 
-  /* ── Layout ──────────────────────────────────────────────────── */
   .main-content { padding-top: 56px; }
-
-  /* ── Bandeja ─────────────────────────────────────────────────── */
   .page-wrap { padding: 2rem 1.5rem; max-width: 900px; margin: 0 auto; }
   .page-header { margin-bottom: 1.5rem; }
   .page-title { font-size: 1.5rem; font-weight: 700; color: var(--text-primary); margin: 0 0 4px; }
@@ -459,7 +558,6 @@
     display: flex; gap: 12px; flex-wrap: wrap;
     align-items: center; margin-bottom: 1.5rem;
   }
-
   .table-wrap {
     overflow-x: auto; border: 1px solid var(--border);
     border-radius: var(--radius-card); background: var(--bg-card);
@@ -492,47 +590,29 @@
     transition: background 0.15s, border-color 0.15s;
   }
   .btn-revisar:hover { background: var(--orange-light); border-color: var(--orange); }
-
   .count-label { font-size: 0.8rem; color: var(--text-secondary); margin: 10px 0 0; text-align: right; }
-
   .state-msg { text-align: center; padding: 3rem 1rem; color: var(--text-secondary); font-size: 0.9rem; }
   .empty { display: flex; flex-direction: column; align-items: center; gap: 8px; }
   .empty-icon { font-size: 2rem; }
 
-  /* ── Revisión ────────────────────────────────────────────────── */
-  .revision-wrap {
-    display: flex; flex-direction: column;
-    height: calc(100vh - 56px); overflow: hidden;
-  }
-
+  .revision-wrap { display: flex; flex-direction: column; height: calc(100vh - 56px); overflow: hidden; }
   .revision-topbar {
-    display: flex; align-items: center; gap: 12px;
-    padding: 10px 20px;
+    display: flex; align-items: center; gap: 12px; padding: 10px 20px;
     background: var(--bg-card); border-bottom: 1px solid var(--border);
   }
-
   .btn-back {
     background: none; border: none; cursor: pointer;
     font-size: 0.875rem; font-weight: 600;
     color: var(--orange); padding: 0;
   }
   .btn-back:hover { text-decoration: underline; }
+  .split-layout { display: grid; grid-template-columns: 1fr 340px; flex: 1; overflow: hidden; }
 
-  .split-layout {
-    display: grid; grid-template-columns: 1fr 340px;
-    flex: 1; overflow: hidden;
-  }
-
-  /* PDF */
-  .panel-pdf {
-    display: flex; flex-direction: column;
-    border-right: 1px solid var(--border); overflow: hidden;
-  }
+  .panel-pdf { display: flex; flex-direction: column; border-right: 1px solid var(--border); overflow: hidden; }
   .panel-label {
     font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
     letter-spacing: 0.07em; color: var(--text-secondary);
-    padding: 9px 16px; border-bottom: 1px solid var(--border);
-    background: #F9FAFB;
+    padding: 9px 16px; border-bottom: 1px solid var(--border); background: #F9FAFB;
   }
   .pdf-iframe { flex: 1; width: 100%; border: none; background: #fff; }
   .link-externo {
@@ -541,79 +621,37 @@
     border-top: 1px solid var(--border); background: var(--bg-card);
   }
   .link-externo:hover { text-decoration: underline; }
-  .no-pdf {
-    display: flex; align-items: center; justify-content: center;
-    flex: 1; color: var(--text-secondary); font-size: 0.875rem;
-  }
+  .no-pdf { display: flex; align-items: center; justify-content: center; flex: 1; color: var(--text-secondary); font-size: 0.875rem; }
 
-  /* Panel acciones */
-  .panel-acciones {
-    display: flex; flex-direction: column;
-    overflow-y: auto; background: var(--bg-card);
-  }
+  .panel-acciones { display: flex; flex-direction: column; overflow-y: auto; background: var(--bg-card); }
   .panel-acciones .panel-label { background: #F9FAFB; }
-
-  /* Calificación destacada */
-  .dato-cal {
-    margin: 16px 16px 0; padding: 14px 16px;
-    background: var(--orange-light); border: 1px solid #FED7AA;
-    border-radius: 10px;
-  }
-  .dato-label {
-    font-size: 0.72rem; font-weight: 700; color: var(--text-secondary);
-    margin: 0 0 4px; text-transform: uppercase; letter-spacing: 0.05em;
-  }
-  .dato-valor {
-    font-size: 2.25rem; font-weight: 800; color: var(--orange);
-    margin: 0; line-height: 1;
-  }
-
-  /* Ficha del alumno */
-  .ficha-alumno {
-    margin: 12px 16px 0; padding: 14px 16px;
-    border: 1px solid var(--border); border-radius: 10px;
-    background: #F9FAFB;
-  }
-  .ficha-titulo {
-    font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
-    letter-spacing: 0.05em; color: var(--text-secondary);
-    margin: 0 0 10px;
-  }
-  .ficha-grid {
-    display: grid; grid-template-columns: auto 1fr;
-    gap: 6px 12px; align-items: baseline;
-  }
-  .ficha-key {
-    font-size: 0.78rem; color: var(--text-secondary); white-space: nowrap;
-  }
-  .ficha-val {
-    font-size: 0.85rem; font-weight: 500; color: var(--text-primary);
-  }
+  .dato-cal { margin: 16px 16px 0; padding: 14px 16px; background: var(--orange-light); border: 1px solid #FED7AA; border-radius: 10px; }
+  .dato-label { font-size: 0.72rem; font-weight: 700; color: var(--text-secondary); margin: 0 0 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .dato-valor { font-size: 2.25rem; font-weight: 800; color: var(--orange); margin: 0; line-height: 1; }
+  
+  .ficha-alumno { margin: 12px 16px 0; padding: 14px 16px; border: 1px solid var(--border); border-radius: 10px; background: #F9FAFB; }
+  .ficha-titulo { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin: 0 0 10px; }
+  .ficha-grid { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; align-items: baseline; }
+  .ficha-key { font-size: 0.78rem; color: var(--text-secondary); white-space: nowrap; }
+  .ficha-val { font-size: 0.85rem; font-weight: 500; color: var(--text-primary); }
   .ficha-mono { font-family: monospace; letter-spacing: 0.03em; }
 
-  /* Nota previa */
-  .nota-previa {
-    margin: 12px 16px 0; padding: 12px 14px;
-    background: #FFF7ED; border: 1px solid #FED7AA; border-radius: 10px;
-  }
+  .nota-previa { margin: 12px 16px 0; padding: 12px 14px; background: #FFF7ED; border: 1px solid #FED7AA; border-radius: 10px; }
   .nota-texto { font-size: 0.85rem; color: var(--text-primary); margin: 4px 0 0; line-height: 1.5; }
 
-  /* Acciones */
   .acciones-grupo { padding: 14px 16px 20px; }
   .btn-decision-row { display: flex; gap: 8px; }
   .btn-decision {
-    flex: 1; padding: 11px 8px; border-radius: 10px;
-    font-size: 0.875rem; font-weight: 600; cursor: pointer;
-    transition: all 0.15s; border: 2px solid transparent;
-    text-align: center;
+    flex: 1; padding: 11px 8px; border-radius: 10px; font-size: 0.875rem; font-weight: 600; cursor: pointer;
+    transition: all 0.15s; border: 2px solid transparent; text-align: center;
   }
   .btn-aprobar { background: #F0FDF4; color: #15803D; border-color: #BBF7D0; }
   .btn-aprobar:hover, .btn-aprobar.activo { background: #DCFCE7; border-color: #4ADE80; }
   .btn-rechazar { background: #FEF2F2; color: #B91C1C; border-color: #FECACA; }
   .btn-rechazar:hover, .btn-rechazar.activo { background: #FEE2E2; border-color: #F87171; }
-
   .textarea-nota { width: 100%; min-height: 80px; resize: vertical; box-sizing: border-box; }
-
+  
+  .error-msg { color: #B91C1C; font-size: 0.85rem; margin: 4px 0; }
   .exito-msg {
     color: #15803D; background: #F0FDF4; border: 1px solid #BBF7D0;
     border-radius: 8px; padding: 10px 14px; font-size: 0.875rem; margin-top: 12px;
@@ -621,4 +659,49 @@
   .ya-revisado { padding: 16px; font-size: 0.9rem; color: var(--text-secondary); }
   .text-verde { color: #15803D; }
   .text-rojo  { color: #B91C1C; }
+
+  /* Elementos de formulario genéricos */
+  .input-plain {
+    width: 100%; padding: 10px 14px;
+    border: 1px solid var(--border, #E5E7EB); border-radius: 8px;
+    font-size: 0.875rem; font-family: var(--font, inherit);
+    background: #fff; box-sizing: border-box; transition: border-color 0.15s;
+  }
+  .input-plain:focus { outline: none; border-color: var(--orange, #EA580C); }
+  .btn-outline {
+    background: transparent; border: 1px solid var(--border, #E5E7EB); border-radius: 8px;
+    padding: 10px 16px; font-size: 0.875rem; font-weight: 600; color: var(--text-primary, #111827);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .btn-outline:hover:not(:disabled) { background: #F9FAFB; border-color: #D1D5DB; }
+  .btn-outline:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-primary {
+    background: var(--orange, #EA580C); border: none; border-radius: 8px;
+    padding: 11px 16px; font-size: 0.875rem; font-weight: 600; color: #fff; cursor: pointer; transition: background 0.15s;
+  }
+  .btn-primary:hover:not(:disabled) { background: #C2410C; }
+  .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  /* ── TUS ESTILOS NUEVOS DE EMPRESAS EXACTOS ── */
+  .empresas-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 8px; }
+  .card-seccion {
+    background: var(--bg-card); border-radius: var(--radius-card, 12px);
+    box-shadow: var(--shadow-card, 0 1px 3px rgba(0,0,0,0.05)); padding: 24px 28px;
+    display: flex; flex-direction: column; gap: 14px; border: 1px solid var(--border, #E5E7EB); /* Añadí border por si tu sombra no estaba definida globalmente */
+  }
+  .seccion-title { font-size: 15px; font-weight: 700; color: var(--text-primary); margin: 0; }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field label { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+  .nueva-empresa-row { display: flex; gap: 8px; align-items: center; }
+  .empresa-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; max-height: 400px; }
+  .empresa-item {
+    padding: 10px 14px; border: 1px solid var(--border);
+    border-radius: 8px; background: var(--bg-page, #F9FAFB);
+  }
+  .empresa-nombre { font-size: 14px; font-weight: 500; color: var(--text-primary); }
+  .empty-msg { font-size: 0.9rem; color: var(--text-secondary); margin: 0; }
+  
+  @media (max-width: 640px) {
+    .empresas-layout { grid-template-columns: 1fr; }
+  }
 </style>
