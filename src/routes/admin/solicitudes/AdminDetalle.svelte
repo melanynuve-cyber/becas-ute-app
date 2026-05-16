@@ -2,49 +2,47 @@
   import { onMount } from 'svelte'
   import { navigate } from 'svelte-routing'
   import { get } from 'svelte/store'
-  import { isAuthenticated, isAdmin } from '../../../lib/stores/auth.js'
+  import { isAuthenticated, isAdmin, token } from '../../../lib/stores/auth.js'
   import { api } from '../../../lib/services/api.js'
   import Navbar from '../../../lib/components/Navbar.svelte'
+  import { estadoBadgeClass, estadoLabel } from '../../../lib/utils.js'
 
   export let id
 
   let solicitud = null
-  let loading = true
+  let loading   = true
   let guardando = false
-  let error = ''
-  let exito = ''
+  let error     = ''
+  let exito     = ''
   let nuevoEstado = ''
 
-  const estados = ['Pendiente', 'En_revision', 'Aprobada', 'Rechazada']
-  const estadoLabel = {
-    'Pendiente':   'Pendiente',
-    'En_revision': 'En revisión',
-    'Aprobada':    'Aprobada',
-    'Rechazada':   'Rechazada',
-  }
+  const estadoOpciones = ['Pendiente', 'En_revision', 'Aprobada', 'Rechazada']
 
   const tiposBeca = {
-    academica:    'A. Académica',
-    deportiva:    'B. Deportiva',
-    cultural:     'C. Cultural',
-    alimentos:    'D. Alimentos',
-    transporte:   'E. Transporte',
-    empleado_hijo:'F. Empleado y/o hijo de empleado',
+    academica:     'A. Académica',
+    deportiva:     'B. Deportiva',
+    cultural:      'C. Cultural',
+    alimentos:     'D. Alimentos',
+    transporte:    'E. Transporte',
+    empleado_hijo: 'F. Empleado y/o hijo de empleado',
   }
 
   const nombresDoc = {
-    kardex:                 'Kárdex',
-    recibo_ingresos:        'Recibo de Ingresos',
-    recibo_servicio_publico:'Recibo de Servicio Público',
-    recibo_inscripcion:     'Comprobante de Inscripción',
+    kardex:                  'Kárdex',
+    recibo_ingresos:         'Recibo de Ingresos',
+    recibo_servicio_publico: 'Recibo de Servicio Público',
+    recibo_inscripcion:      'Comprobante de Inscripción',
   }
 
   onMount(async () => {
-    if (!get(isAuthenticated) || !get(isAdmin)) { navigate('/login', { replace: true }); return }
+    if (!get(isAuthenticated) || !get(isAdmin)) {
+      navigate('/login', { replace: true })
+      return
+    }
     try {
-      solicitud = await api.admin.detalle(id)
+      solicitud   = await api.admin.detalle(id)
       nuevoEstado = solicitud.estado
-    } catch (e) {
+    } catch {
       error = 'No se pudo cargar la solicitud'
     } finally {
       loading = false
@@ -66,31 +64,24 @@
     }
   }
 
-  function badgeClass(estado) {
-    const map = { pendiente:'badge-pendiente', en_revision:'badge-en_revision', aprobada:'badge-aprobada', rechazada:'badge-rechazada' }
-    return `badge ${map[estado?.toLowerCase()] || ''}`
-  }
-
   async function abrirDoc(tipo) {
+    error = ''
     try {
-      const { get: getStore } = await import('svelte/store')
-      const { token } = await import('../../../lib/stores/auth.js')
-      const jwt = getStore(token)
+      const jwt     = get(token)
       const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
       const res = await fetch(`${BASE_URL}/admin/solicitudes/${id}/documento/${tipo}`, {
-        headers: { Authorization: `Bearer ${jwt}` }
+        headers: { Authorization: `Bearer ${jwt}` },
       })
       if (!res.ok) throw new Error('No se pudo cargar el documento')
       const blob = await res.blob()
-      const url = URL.createObjectURL(blob)
-      window.open(url, '_blank')
+      window.open(URL.createObjectURL(blob), '_blank')
     } catch (e) {
       error = e.message
     }
   }
 
   $: p = solicitud?.payload || {}
-  $: d = p.datos_personales || {}
+  $: d = p.datos_personales  || {}
 </script>
 
 <Navbar />
@@ -107,22 +98,29 @@
       <div class="loading-wrap"><div class="spinner-lg"></div></div>
     {:else if solicitud}
 
-      <!-- Estado actual + cambio -->
+      <!-- Estado actual + cambio ─────────────────────────────────────────── -->
       <div class="card estado-card">
         <div class="estado-row">
           <div>
             <p class="field-label">Estado actual</p>
-            <span class={badgeClass(solicitud.estado)}>{estadoLabel[solicitud.estado] || solicitud.estado}</span>
+            <span class={estadoBadgeClass(solicitud.estado)}>
+              {estadoLabel(solicitud.estado)}
+            </span>
           </div>
           <div class="estado-change">
             <p class="field-label">Cambiar estado</p>
             <div class="estado-actions">
               <select class="select-estado" bind:value={nuevoEstado}>
-                {#each estados as e}
-                  <option value={e}>{estadoLabel[e]}</option>
+                {#each estadoOpciones as op}
+                  <option value={op}>{estadoLabel(op)}</option>
                 {/each}
               </select>
-              <button class="btn-primary" style="width:auto;padding:10px 20px" on:click={guardarEstado} disabled={guardando || nuevoEstado === solicitud.estado}>
+              <button
+                class="btn-primary"
+                style="width:auto;padding:10px 20px"
+                on:click={guardarEstado}
+                disabled={guardando || nuevoEstado === solicitud.estado}
+              >
                 {guardando ? 'Guardando...' : 'Guardar'}
               </button>
             </div>
@@ -132,7 +130,7 @@
         {#if error}<div class="error-msg">{error}</div>{/if}
       </div>
 
-      <!-- Datos personales -->
+      <!-- Datos personales ────────────────────────────────────────────────── -->
       <div class="card">
         <h2 class="section-title">Datos Personales</h2>
         <div class="grid-2">
@@ -154,7 +152,7 @@
         </div>
       </div>
 
-      <!-- Beca solicitada -->
+      <!-- Beca solicitada ─────────────────────────────────────────────────── -->
       <div class="card">
         <h2 class="section-title">Beca Solicitada</h2>
         <div class="grid-2">
@@ -163,7 +161,7 @@
         </div>
       </div>
 
-      <!-- Info general -->
+      <!-- Información general ──────────────────────────────────────────────── -->
       <div class="card">
         <h2 class="section-title">Información General</h2>
         <div class="grid-2">
@@ -174,7 +172,7 @@
         </div>
       </div>
 
-      <!-- Ingresos y egresos -->
+      <!-- Ingresos y egresos ───────────────────────────────────────────────── -->
       <div class="card">
         <h2 class="section-title">Ingresos y Egresos Mensuales</h2>
         <div class="grid-2">
@@ -185,11 +183,14 @@
           <div class="field"><span class="field-label">Renta / Hipoteca</span><span>${p.egreso_mensual?.gastos_renta_hipoteca || '0'}</span></div>
           <div class="field"><span class="field-label">Servicios</span><span>${p.egreso_mensual?.gastos_servicios || '0'}</span></div>
           <div class="field"><span class="field-label">Gastos varios</span><span>${p.egreso_mensual?.gastos_varios || '0'}</span></div>
-          <div class="field"><span class="field-label"><strong>Total egresos</strong></span><span><strong>${p.egreso_mensual?.total_egresos || '0'}</strong></span></div>
+          <div class="field">
+            <span class="field-label"><strong>Total egresos</strong></span>
+            <span><strong>${p.egreso_mensual?.total_egresos || '0'}</strong></span>
+          </div>
         </div>
       </div>
 
-      <!-- Documentos -->
+      <!-- Documentos ───────────────────────────────────────────────────────── -->
       <div class="card">
         <h2 class="section-title">Documentos Adjuntos</h2>
         <div class="docs-grid">
@@ -222,7 +223,7 @@
 </main>
 
 <style>
-  .main { padding-top: 56px; min-height: 100vh; background: var(--bg-page); }
+  .main    { padding-top: 56px; min-height: 100vh; background: var(--bg-page); }
   .content { max-width: 900px; margin: 0 auto; padding: 32px 16px; display: flex; flex-direction: column; gap: 20px; }
 
   .top-row { display: flex; align-items: center; gap: 16px; }
@@ -235,12 +236,22 @@
   .page-title { font-size: 22px; font-weight: 700; color: var(--text-primary); }
 
   .loading-wrap { display: flex; justify-content: center; padding: 60px 0; }
-  .spinner-lg { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--orange); border-radius: 50%; animation: spin 0.8s linear infinite; }
+  .spinner-lg {
+    width: 36px; height: 36px;
+    border: 3px solid var(--border);
+    border-top-color: var(--orange);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  .card { background: var(--bg-card); border-radius: var(--radius-card); box-shadow: var(--shadow-card); padding: 24px 28px; display: flex; flex-direction: column; gap: 16px; }
+  .card {
+    background: var(--bg-card); border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card); padding: 24px 28px;
+    display: flex; flex-direction: column; gap: 16px;
+  }
 
-  .estado-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
+  .estado-row    { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
   .estado-change { display: flex; flex-direction: column; gap: 8px; }
   .estado-actions { display: flex; gap: 10px; align-items: center; }
   .select-estado {
@@ -251,40 +262,38 @@
   .select-estado:focus { border-color: var(--orange); }
   .msg-exito { font-size: 13px; color: var(--success); font-weight: 500; }
 
-  .section-title { font-size: 16px; font-weight: 600; color: var(--text-primary); padding-bottom: 12px; border-bottom: 1.5px solid var(--border); }
+  .section-title {
+    font-size: 16px; font-weight: 600; color: var(--text-primary);
+    padding-bottom: 12px; border-bottom: 1.5px solid var(--border);
+  }
 
   .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 24px; }
-  .field { display: flex; flex-direction: column; gap: 3px; }
-  .field-label { font-size: 11px; color: var(--text-secondary); font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; }
+  .field  { display: flex; flex-direction: column; gap: 3px; }
+  .field-label {
+    font-size: 11px; color: var(--text-secondary); font-weight: 500;
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
 
   .docs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .doc-btn {
     display: flex; align-items: center; gap: 10px;
     padding: 14px 16px; border: 1.5px solid var(--border); border-radius: var(--radius-input);
-    background: var(--bg-page); cursor: pointer; font-family: var(--font); font-size: 14px;
-    font-weight: 500; color: var(--text-primary); transition: all 0.15s; text-align: left;
+    background: var(--bg-page); cursor: pointer; font-family: var(--font);
+    font-size: 14px; font-weight: 500; color: var(--text-primary);
+    transition: all 0.15s; text-align: left;
   }
-  .doc-btn:hover { border-color: var(--orange); color: var(--orange); }
-  .doc-ver { margin-left: auto; font-size: 12px; color: var(--orange); }
+  .doc-btn:hover      { border-color: var(--orange); color: var(--orange); }
+  .doc-ver            { margin-left: auto; font-size: 12px; color: var(--orange); }
+  .doc-pendiente      { cursor: default; opacity: 0.7; border-style: dashed; }
+  .doc-badge-pendiente {
+    margin-left: auto; font-size: 11px; font-weight: 600;
+    color: #92400E; background: #FEF3C7; padding: 2px 8px; border-radius: 20px;
+  }
 
   @media (max-width: 640px) {
-    .card { padding: 16px; }
-    .grid-2 { grid-template-columns: 1fr; }
-    .docs-grid { grid-template-columns: 1fr; }
+    .card       { padding: 16px; }
+    .grid-2     { grid-template-columns: 1fr; }
+    .docs-grid  { grid-template-columns: 1fr; }
     .estado-row { flex-direction: column; }
-  }
-  .doc-pendiente {
-  cursor: default;
-  opacity: 0.7;
-  border-style: dashed;
-  }
-  .doc-badge-pendiente {
-    margin-left: auto;
-    font-size: 11px;
-    font-weight: 600;
-    color: #92400E;
-    background: #FEF3C7;
-    padding: 2px 8px;
-    border-radius: 20px;
   }
 </style>

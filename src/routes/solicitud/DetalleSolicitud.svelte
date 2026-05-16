@@ -6,22 +6,23 @@
   import { api } from '../../lib/services/api.js'
   import Navbar from '../../lib/components/Navbar.svelte'
   import PerfilModal from '../../lib/components/PerfilModal.svelte'
+  import { estadoBadgeClass, estadoLabel } from '../../lib/utils.js'
 
-  export let id
+  export let id  // UUID — sin parseInt ni conversión
 
   let showPerfil = false
-  let solicitud = null
-  let loading = true
-  let error = ''
-  let alumno = null
+  let solicitud  = null
+  let loading    = true
+  let error      = ''
+  let alumno     = null
 
   const tiposBeca = [
-    { key: 'academica',       label: 'A. Académica' },
-    { key: 'deportiva',       label: 'B. Deportiva' },
-    { key: 'cultural',        label: 'C. Cultural' },
-    { key: 'alimentos',       label: 'D. Alimentos' },
-    { key: 'transporte',      label: 'E. Transporte' },
-    { key: 'empleado_hijo',   label: 'F. Empleado y/o hijo de empleado' },
+    { key: 'academica',     label: 'A. Académica' },
+    { key: 'deportiva',     label: 'B. Deportiva' },
+    { key: 'cultural',      label: 'C. Cultural' },
+    { key: 'alimentos',     label: 'D. Alimentos' },
+    { key: 'transporte',    label: 'E. Transporte' },
+    { key: 'empleado_hijo', label: 'F. Empleado y/o hijo de empleado' },
   ]
 
   const nombresDocumentos = {
@@ -32,54 +33,43 @@
   }
 
   onMount(async () => {
-  if (!get(isAuthenticated)) { navigate('/login', { replace: true }); return }
-  try {
-    const [sol, alum] = await Promise.all([
-      api.solicitudes.detalle(id),
-      api.alumno.me()
-    ])
-    solicitud = sol
-    alumno = alum
-  } catch (e) {
-    error = 'No se pudo cargar la solicitud.'
-  } finally {
-    loading = false
-  }
-})
+    if (!get(isAuthenticated)) {
+      navigate('/login', { replace: true })
+      return
+    }
+    try {
+      const [sol, alum] = await Promise.all([
+        api.solicitudes.detalle(id),
+        api.alumno.me(),
+      ])
+      solicitud = sol
+      alumno    = alum
+    } catch {
+      error = 'No se pudo cargar la solicitud.'
+    } finally {
+      loading = false
+    }
+  })
 
-  function estadoBadgeClass(estado) {
-    return `badge badge-${estado?.toLowerCase().replace(' ', '_')}`
-  }
-
-  function estadoLabel(estado) {
-    const map = { pendiente: 'Pendiente', en_revision: 'En revisión', aprobada: 'Aprobada', rechazada: 'Rechazada' }
-    return map[estado?.toLowerCase()] || estado
-  }
-
-  $: p = solicitud?.payload || {}
-  $: d = p.datos_personales || {}
-  $: b = p.beca_solicitada || {}
-  $: info = p.informacion_general || {}
-  $: ing = p.ingreso_mensual || {}
-  $: egr = p.egreso_mensual || {}
-  $: docs = solicitud?.documentos || {}
-  $: inscripcionPendiente = docs.recibo_inscripcion === 'pendiente' && !exitoInscripcion
-
+  // ── Comprobante de inscripción pendiente ──────────────────────────────────
   let subiendoInscripcion = false
-  let errorInscripcion = ''
-  let exitoInscripcion = false
+  let errorInscripcion    = ''
+  let exitoInscripcion    = false
 
   async function onArchivoInscripcion(e) {
     const file = e.target.files[0]
     if (!file) return
-    if (!file.name.toLowerCase().endsWith('.pdf')) { errorInscripcion = 'Solo se aceptan archivos PDF'; return }
-    errorInscripcion = ''
+    if (!file.name.toLowerCase().endsWith('.pdf')) {
+      errorInscripcion = 'Solo se aceptan archivos PDF'
+      return
+    }
+    errorInscripcion    = ''
     subiendoInscripcion = true
     try {
       const fd = new FormData()
       fd.append('recibo_inscripcion', file)
       await api.solicitudes.subirInscripcion(id, fd)
-      solicitud = { ...solicitud, documentos: { ...docs, recibo_inscripcion: file.name } }
+      solicitud        = { ...solicitud, documentos: { ...docs, recibo_inscripcion: file.name } }
       exitoInscripcion = true
     } catch (e) {
       errorInscripcion = e.message || 'Error al subir el archivo'
@@ -87,6 +77,25 @@
       subiendoInscripcion = false
     }
   }
+
+  // ── Derivados reactivos ───────────────────────────────────────────────────
+  $: p    = solicitud?.payload || {}
+  $: d    = p.datos_personales  || {}
+  $: b    = p.beca_solicitada   || {}
+  $: info = p.informacion_general || {}
+  $: ing  = p.ingreso_mensual   || {}
+  $: egr  = p.egreso_mensual    || {}
+  $: docs = solicitud?.documentos || {}
+  $: inscripcionPendiente = docs.recibo_inscripcion === 'pendiente' && !exitoInscripcion
+
+  // Nota: la fecha aquí usa month:'long' ("1 de marzo de 2025") a diferencia de
+  // formatFecha en utils que usa month:'short' ("1 mar 2025") para tablas.
+  // Se mantiene inline intencionalmente.
+  $: fechaEnvio = solicitud
+    ? new Date(solicitud.created_at).toLocaleDateString('es-MX', {
+        day: 'numeric', month: 'long', year: 'numeric'
+      })
+    : ''
 </script>
 
 <Navbar onAlumnoClick={() => showPerfil = true} />
@@ -102,7 +111,8 @@
       <div class="error-msg">{error}</div>
 
     {:else if solicitud}
-      <!-- Encabezado -->
+
+      <!-- Encabezado ─────────────────────────────────────────────────────── -->
       <div class="top-bar">
         <button class="back-btn" on:click={() => navigate('/dashboard')}>
           <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -110,7 +120,9 @@
           </svg>
           Regresar
         </button>
-        <span class={estadoBadgeClass(solicitud.estado)}>{estadoLabel(solicitud.estado)}</span>
+        <span class={estadoBadgeClass(solicitud.estado)}>
+          {estadoLabel(solicitud.estado)}
+        </span>
       </div>
 
       <div class="form-card">
@@ -118,11 +130,11 @@
           <div class="preview-icon">📄</div>
           <div>
             <h1 class="form-title">Solicitud de Beca Interna</h1>
-            <p class="preview-sub">Enviada el {new Date(solicitud.created_at).toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+            <p class="preview-sub">Enviada el {fechaEnvio}</p>
           </div>
         </div>
 
-        <!-- Datos personales -->
+        <!-- Datos personales ───────────────────────────────────────────────── -->
         <div class="preview-section">
           <h3 class="preview-section-title">Datos Personales</h3>
           <div class="preview-grid">
@@ -144,7 +156,7 @@
           </div>
         </div>
 
-        <!-- Beca -->
+        <!-- Beca ──────────────────────────────────────────────────────────── -->
         <div class="preview-section">
           <h3 class="preview-section-title">Beca Solicitada</h3>
           <div class="preview-grid">
@@ -154,14 +166,16 @@
             </div>
             <div class="preview-field">
               <span class="preview-label">Tipos de beca</span>
-              <span>{(b.tipos_beca || []).length > 0
-                ? b.tipos_beca.map(k => tiposBeca.find(t => t.key === k)?.label).join(', ')
-                : '—'}</span>
+              <span>
+                {(b.tipos_beca || []).length > 0
+                  ? b.tipos_beca.map(k => tiposBeca.find(t => t.key === k)?.label).join(', ')
+                  : '—'}
+              </span>
             </div>
           </div>
         </div>
 
-        <!-- Info general -->
+        <!-- Info general ───────────────────────────────────────────────────── -->
         <div class="preview-section">
           <h3 class="preview-section-title">Información General</h3>
           <div class="preview-grid">
@@ -172,7 +186,7 @@
           </div>
         </div>
 
-        <!-- Ingreso -->
+        <!-- Ingreso ────────────────────────────────────────────────────────── -->
         <div class="preview-section">
           <h3 class="preview-section-title">Ingreso Mensual</h3>
           <div class="preview-grid">
@@ -181,7 +195,7 @@
           </div>
         </div>
 
-        <!-- Egreso -->
+        <!-- Egreso ─────────────────────────────────────────────────────────── -->
         <div class="preview-section">
           <h3 class="preview-section-title">Egreso Mensual</h3>
           <div class="preview-grid">
@@ -197,7 +211,7 @@
           </div>
         </div>
 
-        <!-- Documentos -->
+        <!-- Documentos ─────────────────────────────────────────────────────── -->
         <div class="preview-section">
           <h3 class="preview-section-title">Documentos Adjuntos</h3>
           <div class="docs-grid">
@@ -215,13 +229,21 @@
                     <span class="badge-ok-doc">✓</span>
                   {/if}
                 </div>
+
                 {#if key === 'recibo_inscripcion' && inscripcionPendiente}
                   <p class="doc-hint">Adjunta tu comprobante cuando esté disponible.</p>
-                  {#if errorInscripcion}<span class="error-inline">{errorInscripcion}</span>{/if}
+                  {#if errorInscripcion}
+                    <span class="error-inline">{errorInscripcion}</span>
+                  {/if}
                   <label class="doc-upload-btn" class:disabled={subiendoInscripcion}>
                     {subiendoInscripcion ? 'Subiendo...' : 'Adjuntar PDF'}
-                    <input type="file" accept=".pdf" style="display:none"
-                      disabled={subiendoInscripcion} on:change={onArchivoInscripcion} />
+                    <input
+                      type="file"
+                      accept=".pdf"
+                      style="display:none"
+                      disabled={subiendoInscripcion}
+                      on:change={onArchivoInscripcion}
+                    />
                   </label>
                 {/if}
               </div>
@@ -235,7 +257,11 @@
 </div>
 
 <style>
-  .page { max-width: 900px; margin: 0 auto; padding: 32px 16px 64px; display: flex; flex-direction: column; gap: 16px; }
+  .page {
+    max-width: 900px; margin: 0 auto;
+    padding: 32px 16px 64px;
+    display: flex; flex-direction: column; gap: 16px;
+  }
 
   .loading-wrap { display: flex; justify-content: center; padding: 60px; }
   .spinner-lg {
@@ -247,15 +273,12 @@
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  .top-bar {
-    display: flex; align-items: center; justify-content: space-between;
-  }
+  .top-bar { display: flex; align-items: center; justify-content: space-between; }
   .back-btn {
     display: flex; align-items: center; gap: 8px;
     background: none; border: none; cursor: pointer;
     font-family: var(--font); font-size: 14px; font-weight: 600;
-    color: var(--text-secondary);
-    padding: 8px 0;
+    color: var(--text-secondary); padding: 8px 0;
     transition: color 0.15s;
   }
   .back-btn:hover { color: var(--orange); }
@@ -265,6 +288,7 @@
     box-shadow: var(--shadow-card); padding: 32px 36px;
     display: flex; flex-direction: column; gap: 28px;
   }
+
   .preview-header { display: flex; align-items: center; gap: 16px; }
   .preview-icon {
     width: 48px; height: 48px; border-radius: 50%;
@@ -272,15 +296,15 @@
     display: flex; align-items: center; justify-content: center;
     font-size: 22px; flex-shrink: 0;
   }
-  .form-title { font-size: 22px; font-weight: 700; margin: 0; }
+  .form-title  { font-size: 22px; font-weight: 700; margin: 0; }
   .preview-sub { font-size: 14px; color: var(--text-secondary); margin-top: 4px; }
 
-  .preview-section { display: flex; flex-direction: column; gap: 12px; }
+  .preview-section       { display: flex; flex-direction: column; gap: 12px; }
   .preview-section-title {
     font-size: 15px; font-weight: 600; color: var(--text-primary);
     padding-bottom: 8px; border-bottom: 1.5px solid var(--border);
   }
-  .preview-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 24px; }
+  .preview-grid  { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 24px; }
   .preview-field { display: flex; flex-direction: column; gap: 2px; }
   .preview-label { font-size: 12px; color: var(--text-secondary); }
 
@@ -288,21 +312,22 @@
   .doc-item {
     display: flex; flex-direction: column; gap: 8px;
     padding: 10px 14px;
-    border: 1.5px solid var(--border);
-    border-radius: var(--radius-input);
+    border: 1.5px solid var(--border); border-radius: var(--radius-input);
     background: var(--bg-page);
   }
   .doc-pendiente { border-color: var(--orange-mid); background: var(--orange-light); }
-  .doc-header { display: flex; align-items: center; gap: 10px; }
-  .doc-nombre { font-size: 13px; font-weight: 600; color: var(--text-primary); flex: 1; }
+  .doc-header    { display: flex; align-items: center; gap: 10px; }
+  .doc-nombre    { font-size: 13px; font-weight: 600; color: var(--text-primary); flex: 1; }
+
   .badge-pendiente-doc {
     font-size: 11px; font-weight: 600;
     background: #FEF3C7; color: #D97706;
     padding: 2px 8px; border-radius: 999px; white-space: nowrap;
   }
-  .badge-ok-doc { font-size: 12px; font-weight: 700; color: var(--success); }
-  .doc-hint { font-size: 12px; color: var(--text-secondary); margin: 0; }
-  .error-inline { font-size: 12px; color: var(--error); }
+  .badge-ok-doc  { font-size: 12px; font-weight: 700; color: var(--success); }
+  .doc-hint      { font-size: 12px; color: var(--text-secondary); margin: 0; }
+  .error-inline  { font-size: 12px; color: var(--error); }
+
   .doc-upload-btn {
     display: inline-flex; align-items: center; gap: 6px;
     padding: 8px 14px; background: var(--orange); color: white;
@@ -314,8 +339,8 @@
   .doc-upload-btn.disabled { opacity: 0.6; cursor: not-allowed; }
 
   @media (max-width: 640px) {
-    .form-card { padding: 20px 16px; }
+    .form-card    { padding: 20px 16px; }
     .preview-grid { grid-template-columns: 1fr; }
-    .docs-grid { grid-template-columns: 1fr; }
+    .docs-grid    { grid-template-columns: 1fr; }
   }
 </style>

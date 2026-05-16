@@ -1,42 +1,74 @@
 <script>
   import { onMount } from 'svelte'
   import { Router, Route, navigate } from 'svelte-routing'
-  import { isAuthenticated, isAdmin } from './lib/stores/auth.js'
+  import { get } from 'svelte/store'
+  import {
+    isAuthenticated,
+    isAdmin,
+    isAlumnoDual,
+    isAgenteDual,
+    isTutor,
+    isDirectivo,
+  } from './lib/stores/auth.js'
 
-  import Login      from './routes/login/Login.svelte'
-  import Register   from './routes/register/Register.svelte'
-  import Verificar  from './routes/verificar/Verificar.svelte'
-  import Dashboard  from './routes/dashboard/Dashboard.svelte'
-  import NuevaSolicitud from './routes/solicitud/NuevaSolicitud.svelte'
+  import Login           from './routes/login/Login.svelte'
+  import Register        from './routes/register/Register.svelte'
+  import Verificar       from './routes/verificar/Verificar.svelte'
+  import Dashboard       from './routes/dashboard/Dashboard.svelte'
+  import NuevaSolicitud  from './routes/solicitud/NuevaSolicitud.svelte'
   import DetalleSolicitud from './routes/solicitud/DetalleSolicitud.svelte'
   import AdminSolicitudes from './routes/admin/solicitudes/AdminSolicitudes.svelte'
-  import AdminDetalle from './routes/admin/solicitudes/AdminDetalle.svelte'
-  import ReportesDual from './routes/dual/ReportesDual.svelte'
-  import AgenteDual from './routes/dual/AgenteDual.svelte'
+  import AdminDetalle    from './routes/admin/solicitudes/AdminDetalle.svelte'
+  import ReportesDual    from './routes/dual/ReportesDual.svelte'
+  import AgenteDual      from './routes/dual/AgenteDual.svelte'
+  // import TutorDual    from './routes/dual/TutorDual.svelte'  // ⏳ pendiente
 
- onMount(() => {
+  // ── Guard único para rutas protegidas ──────────────────────────────────────
+  // Cada componente de ruta llama a requireAuth() en su propio onMount;
+  // aquí sólo gestionamos la redirección inicial desde "/".
+  // Los guards específicos por rol viven en cada componente.
+  onMount(() => {
     if (window.location.pathname === '/') {
-      navigate('/login', { replace: true })
+      if (get(isAuthenticated)) {
+        redirectByRole()
+      } else {
+        navigate('/login', { replace: true })
+      }
     }
   })
+
+  function redirectByRole() {
+    if (get(isAdmin))       return navigate('/admin/solicitudes', { replace: true })
+    if (get(isAgenteDual))  return navigate('/dual/agente',       { replace: true })
+    if (get(isTutor) || get(isDirectivo)) return navigate('/dual/tutor', { replace: true })
+    navigate('/dashboard', { replace: true })
+  }
 </script>
 
 <Router url={window.location.pathname}>
-  <!-- Públicas -->
+  <!-- ── Públicas ─────────────────────────────────────────────────────────── -->
   <Route path="/login"    component={Login} />
   <Route path="/register" component={Register} />
   <Route path="/verificar" component={Verificar} />
 
-  <!-- Estudiante -->
-  <Route path="/dashboard"       component={Dashboard} />
-  <Route path="/solicitud/nueva" component={NuevaSolicitud} />
-  <Route path="/solicitud/:id"   component={DetalleSolicitud} />
-  <Route path="dual/reportes"   component={ReportesDual} />
-  <Route path="dual/agente" component={AgenteDual} />
-  
-  <!-- Admin -->
-  <Route path="/admin/solicitudes"     component={AdminSolicitudes} />
-  <Route path="/admin/solicitudes/:id" component={AdminDetalle} />
+  <!-- ── Alumno ───────────────────────────────────────────────────────────── -->
+  <Route path="/dashboard"        component={Dashboard} />
+  <Route path="/solicitud/nueva"  component={NuevaSolicitud} />
+  <Route path="/solicitud/:id"    component={DetalleSolicitud} />
+
+  <!-- ── Alumno Dual ──────────────────────────────────────────────────────── -->
+  <Route path="/dual/reportes"    component={ReportesDual} />
+
+  <!-- ── Agente Dual ──────────────────────────────────────────────────────── -->
+  <Route path="/dual/agente"      component={AgenteDual} />
+
+  <!-- ── Tutor / Directivo ─────────────────────────────────────────────────
+  <Route path="/dual/tutor"       component={TutorDual} />
+  ────────────────────────────────────────────────────────────────────────── -->
+
+  <!-- ── Admin Becas ──────────────────────────────────────────────────────── -->
+  <Route path="/admin/solicitudes"      component={AdminSolicitudes} />
+  <Route path="/admin/solicitudes/:id"  component={AdminDetalle} />
 </Router>
 
 <style>
@@ -69,22 +101,22 @@
   }
 
   :global([data-theme="dark"]) {
-  --bg-page:    #111827;
-  --bg-card:    #1F2937;
-  --border:     #374151;
-  --border-input: #4B5563;
-  --text-primary:   #F9FAFB;
-  --text-secondary: #9CA3AF;
-  --text-disabled:  #6B7280;
-  --orange-light:   #431407;
-  --shadow-card: 0 1px 8px rgba(0,0,0,0.4);
-}
-:global([data-theme="dark"] .input-plain),
-:global([data-theme="dark"] .input-wrap input) {
-  background: #374151;
-  color: var(--text-primary);
-  border-color: #4B5563;
-}
+    --bg-page:        #111827;
+    --bg-card:        #1F2937;
+    --border:         #374151;
+    --border-input:   #4B5563;
+    --text-primary:   #F9FAFB;
+    --text-secondary: #9CA3AF;
+    --text-disabled:  #6B7280;
+    --orange-light:   #431407;
+    --shadow-card:    0 1px 8px rgba(0,0,0,0.4);
+  }
+  :global([data-theme="dark"] .input-plain),
+  :global([data-theme="dark"] .input-wrap input) {
+    background: #374151;
+    color: var(--text-primary);
+    border-color: #4B5563;
+  }
 
   :global(body) {
     font-family: var(--font);
@@ -94,7 +126,7 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  /* ── Botones globales ── */
+  /* ── Botones globales ────────────────────────────────────────────────────── */
   :global(.btn-primary) {
     display: flex;
     align-items: center;
@@ -147,7 +179,7 @@
     background: var(--orange-light);
   }
 
-  /* ── Inputs globales ── */
+  /* ── Inputs globales ─────────────────────────────────────────────────────── */
   :global(.input-group) {
     display: flex;
     flex-direction: column;
@@ -182,17 +214,14 @@
     outline: none;
     transition: border-color 0.15s;
   }
-  :global(.input-wrap input:focus) {
-    border-color: var(--orange);
-  }
-  :global(.input-wrap input::placeholder) {
-    color: var(--text-disabled);
-  }
+  :global(.input-wrap input:focus)       { border-color: var(--orange); }
+  :global(.input-wrap input::placeholder) { color: var(--text-disabled); }
   :global(.input-wrap input:disabled) {
     background: var(--bg-page);
     color: var(--text-secondary);
     cursor: not-allowed;
   }
+
   :global(.input-plain) {
     width: 100%;
     padding: 11px 14px;
@@ -205,16 +234,14 @@
     outline: none;
     transition: border-color 0.15s;
   }
-  :global(.input-plain:focus) {
-    border-color: var(--orange);
-  }
+  :global(.input-plain:focus) { border-color: var(--orange); }
   :global(.input-plain:disabled) {
     background: var(--bg-page);
     color: var(--text-secondary);
     cursor: not-allowed;
   }
 
-  /* ── Error message ── */
+  /* ── Error message ───────────────────────────────────────────────────────── */
   :global(.error-msg) {
     background: #FEF2F2;
     border: 1px solid #FECACA;
@@ -225,18 +252,16 @@
     font-weight: 500;
   }
 
-  /* ── Link naranja ── */
+  /* ── Link naranja ────────────────────────────────────────────────────────── */
   :global(.link-orange) {
     color: var(--orange);
     font-weight: 600;
     text-decoration: none;
     cursor: pointer;
   }
-  :global(.link-orange:hover) {
-    text-decoration: underline;
-  }
+  :global(.link-orange:hover) { text-decoration: underline; }
 
-  /* ── Badge de estado ── */
+  /* ── Badges de estado ────────────────────────────────────────────────────── */
   :global(.badge) {
     display: inline-block;
     padding: 3px 10px;
@@ -249,4 +274,3 @@
   :global(.badge-aprobada)    { background: #F0FDF4; color: #15803D; }
   :global(.badge-rechazada)   { background: #FEF2F2; color: #B91C1C; }
 </style>
-

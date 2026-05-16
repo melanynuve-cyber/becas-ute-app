@@ -6,40 +6,42 @@
   import { api } from '../../lib/services/api.js'
   import Navbar from '../../lib/components/Navbar.svelte'
   import PerfilModal from '../../lib/components/PerfilModal.svelte'
+  import { formatFecha, estadoBadgeClass } from '../../lib/utils.js'
 
-  let alumno = null
+  let alumno   = null
   let showPerfil = false
   let reportes = []
-  let loading = true
+  let loading  = true
   let enviando = false
-  let error = ''
-  let exito = ''
+  let error    = ''
+  let exito    = ''
 
   // Formulario
-  let semana = ''
+  let semana       = ''
   let calificacion = ''
-  let archivo = null
-  let errorForm = ''
+  let archivo      = null
+  let errorForm    = ''
 
   const SEMANAS = Array.from({ length: 14 }, (_, i) => i + 1)
 
+  // TODO: conectar con archivos reales cuando estén disponibles en el servidor
   const PLANTILLAS = [
-    { label: 'Plantilla Word', ext: 'DOCX', icon: '📄', color: '#2B579A' },
-    { label: 'Plantilla Excel', ext: 'XLSX', icon: '📊', color: '#217346' },
-    { label: 'Plantilla PDF', ext: 'PDF', icon: '📋', color: '#DC2626' },
+    { label: 'Plantilla Word',  ext: 'DOCX', icon: '📄', color: '#2B579A', url: null },
+    { label: 'Plantilla Excel', ext: 'XLSX', icon: '📊', color: '#217346', url: null },
+    { label: 'Plantilla PDF',   ext: 'PDF',  icon: '📋', color: '#DC2626', url: null },
   ]
 
   onMount(async () => {
-    if (!get(isAuthenticated)) { navigate('/login', { replace: true }); return }
-    if (!get(isAlumnoDual))    { navigate('/dashboard', { replace: true }); return }
+    if (!get(isAuthenticated)) { navigate('/login',      { replace: true }); return }
+    if (!get(isAlumnoDual))    { navigate('/dashboard',  { replace: true }); return }
     try {
       const [alum, reps] = await Promise.all([
         api.alumno.me(),
-        api.dual.misReportes()
+        api.dual.misReportes(),
       ])
-      alumno = alum
+      alumno   = alum
       reportes = reps
-    } catch (e) {
+    } catch {
       error = 'No se pudieron cargar los datos.'
     } finally {
       loading = false
@@ -50,45 +52,35 @@
     const file = e.target.files[0]
     if (!file) return
     if (!file.name.toLowerCase().endsWith('.pdf')) {
-      errorForm = 'Solo se aceptan archivos PDF'
-      archivo = null
+      errorForm = 'Solo se aceptan archivos PDF.'
+      archivo   = null
       return
     }
     errorForm = ''
-    archivo = file
+    archivo   = file
   }
 
   async function enviarReporte() {
     errorForm = ''
-    if (!semana)      { errorForm = 'Selecciona la semana'; return }
-    if (!calificacion){ errorForm = 'Ingresa la calificación'; return }
-    if (!archivo)     { errorForm = 'Adjunta el PDF del reporte'; return }
+    if (!semana)       { errorForm = 'Selecciona la semana.';           return }
+    if (!calificacion) { errorForm = 'Ingresa la calificación.';        return }
+    if (!archivo)      { errorForm = 'Adjunta el PDF del reporte.';     return }
 
     enviando = true
     try {
       const fd = new FormData()
-      fd.append('semana', semana)
-      fd.append('calificacion_alumno', calificacion)
-      fd.append('archivo', archivo)
+      fd.append('semana',               semana)
+      fd.append('calificacion_alumno',  calificacion)
+      fd.append('archivo',              archivo)
       await api.dual.subirReporte(fd)
-      exito = `Reporte de la Semana ${semana} enviado correctamente.`
-      // Refrescar historial
+      exito    = `Reporte de la Semana ${semana} enviado correctamente.`
       reportes = await api.dual.misReportes()
       semana = ''; calificacion = ''; archivo = null
     } catch (e) {
-      errorForm = e.message || 'Error al enviar el reporte'
+      errorForm = e.message || 'Error al enviar el reporte.'
     } finally {
       enviando = false
     }
-  }
-
-  function estadoBadge(estado) {
-    const map = {
-      'Pendiente': 'badge-pendiente',
-      'Aprobada':  'badge-aprobada',
-      'Rechazada': 'badge-rechazada',
-    }
-    return `badge ${map[estado] || 'badge-pendiente'}`
   }
 </script>
 
@@ -109,13 +101,23 @@
         <h2 class="card-title">Plantillas de Reporte</h2>
         <div class="plantillas-grid">
           {#each PLANTILLAS as p}
-            <button class="plantilla-btn" style="--color: {p.color}">
-              <span class="plantilla-icon">{p.icon}</span>
-              <div>
-                <div class="plantilla-label">{p.label}</div>
-                <div class="plantilla-ext">{p.ext}</div>
-              </div>
-            </button>
+            {#if p.url}
+              <a href={p.url} download class="plantilla-btn" style="--color: {p.color}">
+                <span class="plantilla-icon">{p.icon}</span>
+                <div>
+                  <div class="plantilla-label">{p.label}</div>
+                  <div class="plantilla-ext">{p.ext}</div>
+                </div>
+              </a>
+            {:else}
+              <button class="plantilla-btn plantilla-disabled" style="--color: {p.color}" disabled title="Próximamente">
+                <span class="plantilla-icon">{p.icon}</span>
+                <div>
+                  <div class="plantilla-label">{p.label}</div>
+                  <div class="plantilla-ext plantilla-pronto">Próximamente</div>
+                </div>
+              </button>
+            {/if}
           {/each}
         </div>
       </div>
@@ -154,7 +156,7 @@
           </div>
 
           <div class="field field-full">
-            <label for="archivo">Reporte firmado (PDF) <span class="req">*</span></label>
+            <label for="archivo-input">Reporte firmado (PDF) <span class="req">*</span></label>
             {#if archivo}
               <div class="doc-selected">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="2">
@@ -208,9 +210,9 @@
                   <tr>
                     <td>Semana {r.semana}</td>
                     <td>{r.calificacion_alumno}</td>
-                    <td><span class={estadoBadge(r.estado)}>{r.estado}</span></td>
+                    <td><span class={estadoBadgeClass(r.estado)}>{r.estado}</span></td>
                     <td>{r.nota_agente || '—'}</td>
-                    <td>{new Date(r.created_at).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
+                    <td>{formatFecha(r.created_at)}</td>
                   </tr>
                 {/each}
               </tbody>
@@ -224,7 +226,7 @@
 </div>
 
 <style>
-  .page { max-width: 860px; margin: 0 auto; padding: 32px 16px 64px; display: flex; flex-direction: column; gap: 24px; }
+  .page       { max-width: 860px; margin: 0 auto; padding: 32px 16px 64px; display: flex; flex-direction: column; gap: 24px; }
   .page-title { font-size: 24px; font-weight: 700; color: var(--text-primary); }
 
   .loading-wrap { display: flex; justify-content: center; padding: 60px; }
@@ -249,26 +251,29 @@
     padding: 14px 16px;
     border: 1.5px solid var(--border); border-radius: var(--radius-input);
     background: var(--bg-page); cursor: pointer;
-    font-family: var(--font); text-align: left;
+    font-family: var(--font); text-align: left; text-decoration: none;
     transition: border-color 0.15s, background 0.15s;
   }
-  .plantilla-btn:hover { border-color: var(--color); background: #fff; }
-  .plantilla-icon { font-size: 24px; flex-shrink: 0; }
+  .plantilla-btn:hover       { border-color: var(--color); background: #fff; }
+  .plantilla-disabled        { cursor: not-allowed; opacity: 0.6; }
+  .plantilla-disabled:hover  { border-color: var(--border); background: var(--bg-page); }
+  .plantilla-icon  { font-size: 24px; flex-shrink: 0; }
   .plantilla-label { font-size: 13px; font-weight: 600; color: var(--text-primary); }
-  .plantilla-ext { font-size: 11px; color: var(--color); font-weight: 700; }
+  .plantilla-ext   { font-size: 11px; color: var(--color); font-weight: 700; }
+  .plantilla-pronto { color: var(--text-secondary) !important; font-weight: 500; }
 
   /* Formulario */
   .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field      { display: flex; flex-direction: column; gap: 6px; }
   .field label { font-size: 13px; font-weight: 600; color: var(--text-primary); }
   .field-full { grid-column: 1 / -1; }
-  .req { color: var(--orange); }
+  .req        { color: var(--orange); }
   .form-actions { display: flex; }
 
   .doc-upload {
     display: flex; align-items: center; gap: 8px;
     padding: 12px 14px;
-    border: 1.5px dashed var(--border-input); border-radius: var(--radius-input);
+    border: 1.5px dashed var(--border); border-radius: var(--radius-input);
     cursor: pointer; font-size: 13px; color: var(--text-secondary);
     transition: border-color 0.15s, color 0.15s;
   }
@@ -279,22 +284,22 @@
     border: 1.5px solid var(--border); border-radius: var(--radius-input);
     background: var(--orange-light);
   }
-  .doc-name { flex: 1; font-size: 13px; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .doc-name   { flex: 1; font-size: 13px; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .doc-remove { background: none; border: none; cursor: pointer; color: var(--text-secondary); font-size: 14px; }
-  .doc-remove:hover { color: var(--error); }
+  .doc-remove:hover { color: #B91C1C; }
 
   /* Historial */
-  .empty-msg { font-size: 14px; color: var(--text-secondary); text-align: center; padding: 20px 0; }
+  .empty-msg  { font-size: 14px; color: var(--text-secondary); text-align: center; padding: 20px 0; }
   .tabla-wrap { overflow-x: auto; }
-  .tabla { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .tabla      { width: 100%; border-collapse: collapse; font-size: 14px; }
   .tabla th {
     text-align: left; padding: 10px 14px;
     font-size: 12px; font-weight: 600; color: var(--text-secondary);
     border-bottom: 1.5px solid var(--border); white-space: nowrap;
   }
-  .tabla td { padding: 12px 14px; border-bottom: 1px solid var(--border); color: var(--text-primary); }
+  .tabla td   { padding: 12px 14px; border-bottom: 1px solid var(--border); color: var(--text-primary); }
   .tabla tr:last-child td { border-bottom: none; }
-  .tabla tr:hover td { background: var(--bg-page); }
+  .tabla tr:hover td      { background: var(--bg-page); }
 
   .success-msg {
     background: #F0FDF4; border: 1px solid #BBF7D0; color: #15803D;
@@ -302,8 +307,8 @@
   }
 
   @media (max-width: 640px) {
-    .card { padding: 20px 16px; }
+    .card            { padding: 20px 16px; }
     .plantillas-grid { grid-template-columns: 1fr; }
-    .form-grid { grid-template-columns: 1fr; }
+    .form-grid       { grid-template-columns: 1fr; }
   }
 </style>

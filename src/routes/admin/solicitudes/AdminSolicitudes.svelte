@@ -5,6 +5,7 @@
   import { isAuthenticated, isAdmin } from '../../../lib/stores/auth.js'
   import { api } from '../../../lib/services/api.js'
   import Navbar from '../../../lib/components/Navbar.svelte'
+  import { formatFecha, estadoBadgeClass, estadoLabel } from '../../../lib/utils.js'
 
   let solicitudes = []
   let loading = true
@@ -12,11 +13,11 @@
 
   const estados = ['', 'Pendiente', 'En_revision', 'Aprobada', 'Rechazada']
   const etiquetas = {
-    '':           'Todas',
-    'Pendiente':  'Pendiente',
-    'En_revision':'En revisión',
-    'Aprobada':   'Aprobada',
-    'Rechazada':  'Rechazada',
+    '':            'Todas',
+    'Pendiente':   'Pendiente',
+    'En_revision': 'En revisión',
+    'Aprobada':    'Aprobada',
+    'Rechazada':   'Rechazada',
   }
 
   onMount(async () => {
@@ -31,8 +32,8 @@
     loading = true
     try {
       solicitudes = await api.admin.lista(filtro)
-    } catch (e) {
-      console.error(e)
+    } catch {
+      // silencioso — la tabla queda vacía, el usuario ve el estado "sin resultados"
     } finally {
       loading = false
     }
@@ -42,36 +43,13 @@
     filtro = estado
     await cargar()
   }
-
-  function badgeClass(estado) {
-    const map = {
-      pendiente:   'badge-pendiente',
-      en_revision: 'badge-revision',
-      aprobada:    'badge-aprobada',
-      rechazada:   'badge-rechazada',
-    }
-    return `badge ${map[estado?.toLowerCase()] || ''}`
-  }
-
-  function estadoLabel(estado) {
-    const map = {
-      pendiente:   'Pendiente',
-      en_revision: 'En revisión',
-      aprobada:    'Aprobada',
-      rechazada:   'Rechazada',
-    }
-    return map[estado?.toLowerCase()] || estado
-  }
-
-  function formatFecha(iso) {
-    return new Date(iso).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })
-  }
 </script>
 
 <Navbar />
 
 <main class="main">
   <div class="content">
+
     <div class="page-header">
       <h1 class="page-title">Solicitudes de Beca</h1>
       <p class="page-sub">Panel de administración — Servicios Estudiantiles</p>
@@ -92,7 +70,9 @@
     {#if loading}
       <div class="loading-wrap"><div class="spinner-lg"></div></div>
     {:else if solicitudes.length === 0}
-      <div class="empty">No hay solicitudes {filtro ? `con estado "${etiquetas[filtro]}"` : ''}.</div>
+      <div class="empty">
+        No hay solicitudes {filtro ? `con estado "${etiquetas[filtro]}"` : ''}.
+      </div>
     {:else}
       <div class="table-wrap">
         <table class="table">
@@ -113,9 +93,9 @@
                 <td>{s.cuatrimestre}</td>
                 <td>{s.tipo}</td>
                 <td>
-                  <span class={badgeClass(s.estado)}>{estadoLabel(s.estado)}</span>
+                  <span class={estadoBadgeClass(s.estado)}>{estadoLabel(s.estado)}</span>
                   {#if s.documentos?.recibo_inscripcion === 'pendiente'}
-                    <span class="badge" style="background:#FEF3C7;color:#92400E;margin-left:6px">Doc. pendiente</span>
+                    <span class="badge badge-doc-pendiente">Doc. pendiente</span>
                   {/if}
                 </td>
                 <td>{formatFecha(s.created_at)}</td>
@@ -130,6 +110,7 @@
         </table>
       </div>
     {/if}
+
   </div>
 </main>
 
@@ -147,15 +128,12 @@
     flex-direction: column;
     gap: 24px;
   }
-  .page-header { display: flex; flex-direction: column; gap: 4px; }
-  .page-title { font-size: 24px; font-weight: 700; color: var(--text-primary); }
-  .page-sub { font-size: 14px; color: var(--text-secondary); }
 
-  .filtros {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
+  .page-header { display: flex; flex-direction: column; gap: 4px; }
+  .page-title  { font-size: 24px; font-weight: 700; color: var(--text-primary); }
+  .page-sub    { font-size: 14px; color: var(--text-secondary); }
+
+  .filtros { display: flex; gap: 8px; flex-wrap: wrap; }
   .filtro-btn {
     padding: 7px 16px;
     border-radius: 20px;
@@ -168,18 +146,10 @@
     cursor: pointer;
     transition: all 0.15s;
   }
-  .filtro-btn:hover { border-color: var(--orange); color: var(--orange); }
-  .filtro-btn.active {
-    background: var(--orange);
-    border-color: var(--orange);
-    color: white;
-  }
+  .filtro-btn:hover  { border-color: var(--orange); color: var(--orange); }
+  .filtro-btn.active { background: var(--orange); border-color: var(--orange); color: white; }
 
-  .loading-wrap {
-    display: flex;
-    justify-content: center;
-    padding: 60px 0;
-  }
+  .loading-wrap { display: flex; justify-content: center; padding: 60px 0; }
   .spinner-lg {
     width: 36px; height: 36px;
     border: 3px solid var(--border);
@@ -202,14 +172,8 @@
     box-shadow: var(--shadow-card);
     overflow: hidden;
   }
-  .table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-  .table thead {
-    background: var(--bg-page);
-    border-bottom: 1.5px solid var(--border);
-  }
+  .table { width: 100%; border-collapse: collapse; }
+  .table thead { background: var(--bg-page); border-bottom: 1.5px solid var(--border); }
   .table th {
     padding: 12px 16px;
     text-align: left;
@@ -230,6 +194,9 @@
 
   .td-matricula { font-family: var(--font-mono, monospace); font-size: 13px; }
 
+  /* Badge local solo para "Doc. pendiente" — no redefine los globales de App.svelte */
+  :global(.badge-doc-pendiente) { background: #FEF3C7; color: #92400E; margin-left: 6px; }
+
   .btn-ver {
     padding: 6px 14px;
     border-radius: 8px;
@@ -242,22 +209,7 @@
     cursor: pointer;
     transition: all 0.15s;
   }
-  .btn-ver:hover {
-    border-color: var(--orange);
-    color: var(--orange);
-  }
-
-  :global(.badge) {
-    display: inline-block;
-    padding: 3px 10px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 600;
-  }
-  :global(.badge-pendiente)  { background: #FEF3C7; color: #92400E; }
-  :global(.badge-revision)   { background: #DBEAFE; color: #1E40AF; }
-  :global(.badge-aprobada)   { background: #D1FAE5; color: #065F46; }
-  :global(.badge-rechazada)  { background: #FEE2E2; color: #991B1B; }
+  .btn-ver:hover { border-color: var(--orange); color: var(--orange); }
 
   @media (max-width: 640px) {
     .table th:nth-child(2),

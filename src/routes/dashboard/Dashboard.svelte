@@ -6,46 +6,42 @@
   import { api } from '../../lib/services/api.js'
   import Navbar from '../../lib/components/Navbar.svelte'
   import PerfilModal from '../../lib/components/PerfilModal.svelte'
+  import { estadoBadgeClass, estadoLabel } from '../../lib/utils.js'
 
-  let alumno = null
+  let alumno      = null
   let solicitudes = []
-  let loading = true
-  let showPerfil = false
+  let loading     = true
+  let loadError   = false
+  let showPerfil  = false
 
   onMount(async () => {
-    if (!get(isAuthenticated)) { navigate('/login', { replace: true }); return }
-    if (get(isAdmin)) { navigate('/admin/solicitudes', { replace: true }); return }
+    if (!get(isAuthenticated)) { navigate('/login',             { replace: true }); return }
+    if (get(isAdmin))          { navigate('/admin/solicitudes', { replace: true }); return }
 
     try {
       const [alumnoData, solData] = await Promise.all([
         api.alumno.me(),
-        api.solicitudes.mias()
+        api.solicitudes.mias(),
       ])
-      alumno = alumnoData
+      alumno      = alumnoData
       solicitudes = solData
-    } catch (e) {
-      console.error(e)
+    } catch {
+      loadError = true
     } finally {
       loading = false
     }
   })
 
-  $: primerNombre = alumno?.nombre?.split(' ')[0] || ''
+  $: primerNombre    = alumno?.nombre?.split(' ')[0] || ''
   $: solicitudActual = solicitudes[0] || null
 
-  function estadoBadgeClass(estado) {
-    return `badge badge-${estado?.toLowerCase().replace(' ', '_')}`
-  }
-
-  function estadoLabel(estado) {
-    const map = {
-      pendiente: 'Pendiente',
-      en_revision: 'En revisión',
-      aprobada: 'Aprobada',
-      rechazada: 'Rechazada'
-    }
-    return map[estado?.toLowerCase()] || estado
-  }
+  // Nota: month:'long' es intencional aquí ("1 de marzo de 2025") — formato de frase,
+  // diferente al formato de tabla de formatFecha() en utils.
+  $: fechaEnvio = solicitudActual
+    ? new Date(solicitudActual.created_at).toLocaleDateString('es-MX', {
+        day: 'numeric', month: 'long', year: 'numeric',
+      })
+    : ''
 </script>
 
 <Navbar onAlumnoClick={() => showPerfil = true} />
@@ -55,6 +51,12 @@
   {#if loading}
     <div class="loading-wrap">
       <div class="spinner-lg"></div>
+    </div>
+  {:else if loadError}
+    <div class="content">
+      <div class="card">
+        <p class="error-msg">No se pudieron cargar los datos. Intenta recargar la página.</p>
+      </div>
     </div>
   {:else}
     <div class="content">
@@ -72,14 +74,22 @@
             </div>
             <div class="status-meta">
               <span>Cuatrimestre: <strong>{solicitudActual.cuatrimestre}</strong></span>
-              <span>Enviada el {new Date(solicitudActual.created_at).toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+              <span>Enviada el {fechaEnvio}</span>
             </div>
-            <button class="btn-primary" style="margin-top:8px" on:click={() => navigate(`/solicitud/${solicitudActual.id}`)}>
+            <button
+              class="btn-primary"
+              style="margin-top:8px"
+              on:click={() => navigate(`/solicitud/${solicitudActual.id}`)}
+            >
               Ver solicitud
             </button>
           </div>
         {:else}
-          <button class="btn-primary" style="margin-top:8px" on:click={() => navigate('/solicitud/nueva')}>
+          <button
+            class="btn-primary"
+            style="margin-top:8px"
+            on:click={() => navigate('/solicitud/nueva')}
+          >
             Iniciar Nueva Solicitud
           </button>
         {/if}
@@ -126,7 +136,8 @@
     text-align: center;
   }
   .welcome { font-size: 26px; font-weight: 700; color: var(--text-primary); }
-  .sub { font-size: 14px; color: var(--text-secondary); margin-bottom: 8px; }
+  .sub     { font-size: 14px; color: var(--text-secondary); margin-bottom: 8px; }
+
   .solicitud-status {
     width: 100%; max-width: 380px;
     display: flex; flex-direction: column; gap: 10px; margin-top: 8px;
