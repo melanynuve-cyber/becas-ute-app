@@ -14,7 +14,6 @@
   let cuatrimestres = [];
 
   let seleccionado = null;
-  // Unificamos vistaActual y vista en una sola variable para evitar conflictos
   let vista = "bandeja"; // 'bandeja' | 'revision' | 'empresas'
 
   let accion = "";
@@ -84,10 +83,15 @@
     try {
       await api.dual.actualizarAlumnoDual(alumnoPreview.matricula, {
         alumno_dual: true,
-        empresa_id: parseInt(empresaSeleccionada)
+        empresa_id: empresaSeleccionada  // UUID — sin parseInt
       })
       exitoAsignacion = 'Alumno dual actualizado correctamente'
-      alumnoPreview = { ...alumnoPreview, es_alumno_dual: 'true', empresa_id: parseInt(empresaSeleccionada), empresa: empresas.find(e => e.id == empresaSeleccionada)?.nombre }
+      alumnoPreview = {
+        ...alumnoPreview,
+        es_alumno_dual: true,
+        empresa_id: empresaSeleccionada,
+        empresa: empresas.find(e => e.id === empresaSeleccionada)?.nombre
+      }
     } catch(e) {
       errorAsignacion = e.message
     } finally {
@@ -103,7 +107,7 @@
     try {
       await api.dual.actualizarAlumnoDual(alumnoPreview.matricula, { alumno_dual: false })
       exitoAsignacion = 'Rol dual removido correctamente'
-      alumnoPreview = { ...alumnoPreview, es_alumno_dual: 'false', activo: false }
+      alumnoPreview = { ...alumnoPreview, es_alumno_dual: false, activo: false }
     } catch(e) {
       errorAsignacion = e.message
     } finally {
@@ -173,7 +177,7 @@
     }
   }
 
-  // ── FUNCIONES DE EMPRESAS ──
+  //FUNCIONES DE EMPRESAS
   function handleLogout() {
     logout();
     navigate("/login", { replace: true });
@@ -194,6 +198,8 @@
       day: "2-digit", month: "short", year: "numeric",
     });
   }
+
+  onMount(cargarReportes)
 </script>
 
 <!-- NAVBAR -->
@@ -210,11 +216,10 @@
 </header>
 
 {#if sidebarOpen}
-  <div class="overlay" on:click={() => sidebarOpen = false}
-    role="button" tabindex="0"
+  <button class="overlay" on:click={() => sidebarOpen = false}
     on:keydown={(e) => e.key === "Escape" && (sidebarOpen = false)}
     aria-label="Cerrar menú">
-  </div>
+  </button>
 {/if}
 
 <aside class="sidebar" class:open={sidebarOpen}>
@@ -375,8 +380,8 @@
             <span class="ficha-key">Empresa</span>
             <span class="ficha-val">{seleccionado.empresa || 'Sin asignar'}</span>
 
-            <span class="ficha-key">Cuatrimestre</span>
-            <span class="ficha-val">{seleccionado.cuatrimestre}</span>
+            <span class="ficha-key">Grupo</span>
+            <span class="ficha-val">{seleccionado.nomenclatura || seleccionado.cuatrimestre || "—"}</span>
 
             <span class="ficha-key">Semana</span>
             <span class="ficha-val">Semana {seleccionado.semana}</span>
@@ -463,13 +468,11 @@
               <span class="ficha-key">Nombre</span>
               <span class="ficha-val">{alumnoPreview.nombre}</span>
               <span class="ficha-key">Carrera</span>
-              <span class="ficha-val">{alumnoPreview.carrera}</span>
+              <span class="ficha-val">{alumnoPreview.carrera || '—'}</span>
               <span class="ficha-key">Grupo</span>
-              <span class="ficha-val">{alumnoPreview.grupo}</span>
-              <span class="ficha-key">Cuatrimestre</span>
-              <span class="ficha-val">{alumnoPreview.cuatrimestre_actual}</span>
+              <span class="ficha-val">{alumnoPreview.nomenclatura || '—'}</span>
               <span class="ficha-key">Es dual</span>
-              <span class="ficha-val">{alumnoPreview.es_alumno_dual === 'true' ? '✅ Sí' : '❌ No'}</span>
+              <span class="ficha-val">{alumnoPreview.es_alumno_dual ? '✅ Sí' : '❌ No'}</span>
               <span class="ficha-key">Empresa</span>
               <span class="ficha-val">{alumnoPreview.empresa || 'Sin asignar'}</span>
             </div>
@@ -498,9 +501,9 @@
           <div style="display:flex;gap:8px;margin-top:4px">
             <button class="btn-primary" style="flex:1"
               on:click={guardarAsignacion} disabled={guardandoAsignacion || !empresaSeleccionada}>
-              {guardandoAsignacion ? 'Guardando...' : alumnoPreview.es_alumno_dual === 'true' ? 'Actualizar empresa' : 'Activar como dual'}
+              {guardandoAsignacion ? 'Guardando...' : alumnoPreview.es_alumno_dual ? 'Actualizar empresa' : 'Activar como dual'}
             </button>
-            {#if alumnoPreview.es_alumno_dual === 'true'}
+            {#if alumnoPreview.es_alumno_dual}
               <button class="btn-outline" style="flex:1;color:#B91C1C;border-color:#FECACA"
                 on:click={quitarDual} disabled={guardandoAsignacion}>
                 Quitar dual
@@ -552,6 +555,7 @@
   .overlay {
     position: fixed; inset: 0; background: rgba(0,0,0,0.3);
     z-index: 200; backdrop-filter: blur(2px);
+    border: none; width: 100%; cursor: default;
   }
   .sidebar {
     position: fixed; top: 0; left: 0; bottom: 0; width: 260px;
@@ -736,7 +740,7 @@
   .card-seccion {
     background: var(--bg-card); border-radius: var(--radius-card, 12px);
     box-shadow: var(--shadow-card, 0 1px 3px rgba(0,0,0,0.05)); padding: 24px 28px;
-    display: flex; flex-direction: column; gap: 14px; border: 1px solid var(--border, #E5E7EB); /* Añadí border por si tu sombra no estaba definida globalmente */
+    display: flex; flex-direction: column; gap: 14px; border: 1px solid var(--border, #E5E7EB);
   }
   .seccion-title { font-size: 15px; font-weight: 700; color: var(--text-primary); margin: 0; }
   .field { display: flex; flex-direction: column; gap: 6px; }

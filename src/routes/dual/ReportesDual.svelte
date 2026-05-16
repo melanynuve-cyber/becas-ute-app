@@ -67,7 +67,6 @@
     enviando = true
     try {
       const fd = new FormData()
-      fd.append('cuatrimestre', alumno.cuatrimestre_actual?.toString() || '')
       fd.append('semana', semana)
       fd.append('calificacion_alumno', calificacion)
       fd.append('archivo', archivo)

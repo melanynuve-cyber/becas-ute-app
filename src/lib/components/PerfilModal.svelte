@@ -6,14 +6,15 @@
 </script>
 
 {#if show && alumno}
-  <div class="modal-overlay"
+  <button
+    class="modal-overlay"
     on:click={cerrar}
-    role="button" tabindex="0"
     on:keydown={(e) => e.key === 'Escape' && cerrar()}
+    aria-label="Cerrar modal"
   >
     <div class="modal-card"
       on:click|stopPropagation
-      role="dialog" aria-modal="true" tabindex="-1"
+      role="dialog" aria-modal="true" aria-label="Perfil del alumno"
     >
       <div class="modal-header">
         <div class="avatar">
@@ -34,7 +35,7 @@
         </div>
         <div class="field-card">
           <span class="field-label">Carrera</span>
-          <span class="field-value">{alumno.carrera}</span>
+          <span class="field-value">{alumno.carrera || '—'}</span>
         </div>
         <div class="field-card two-col">
           <div>
@@ -42,8 +43,28 @@
             <span class="field-value">{alumno.matricula}</span>
           </div>
           <div>
-            <span class="field-label">Cuatrimestre</span>
-            <span class="field-value">{alumno.cuatrimestre_actual}° Cuatrimestre</span>
+            <span class="field-label">Grupo</span>
+            <span class="field-value">{alumno.nomenclatura || '—'}</span>
+          </div>
+        </div>
+        <div class="field-card dual-card" class:dual-activo={alumno.es_alumno_dual}>
+          <div class="dual-row">
+            <div>
+              <span class="field-label">Modalidad Dual</span>
+              <span class="field-value">
+                {#if alumno.es_alumno_dual}
+                  <span class="dual-badge">✦ Activo</span>
+                {:else}
+                  <span class="nodual-badge">No inscrito</span>
+                {/if}
+              </span>
+            </div>
+            {#if alumno.es_alumno_dual && alumno.empresa}
+              <div>
+                <span class="field-label">Empresa</span>
+                <span class="field-value empresa-val">{alumno.empresa}</span>
+              </div>
+            {/if}
           </div>
         </div>
       </div>
@@ -54,7 +75,7 @@
         </svg>
       </button>
     </div>
-  </div>
+  </button>
 {/if}
 
 <style>
@@ -65,6 +86,7 @@
     display: flex; align-items: center; justify-content: center;
     padding: 24px;
     backdrop-filter: blur(2px);
+    border: none; cursor: default; width: 100%; text-align: left;
   }
   .modal-card {
     background: var(--bg-card);
@@ -96,6 +118,24 @@
   .field-card.two-col > div { display: flex; flex-direction: column; gap: 3px; }
   .field-label { font-size: 11px; color: var(--text-secondary); font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; }
   .field-value  { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+
+  /* Dual section */
+  .dual-card { background: var(--bg-page); }
+  .dual-activo { background: #FFF7ED; border: 1px solid #FED7AA; }
+  .dual-row { display: flex; gap: 24px; }
+  .dual-row > div { display: flex; flex-direction: column; gap: 3px; }
+  .dual-badge {
+    display: inline-block; font-size: 12px; font-weight: 700;
+    color: var(--orange); background: #FFF7ED;
+    border: 1px solid #FED7AA; border-radius: 6px;
+    padding: 2px 8px; margin-top: 2px;
+  }
+  .nodual-badge {
+    display: inline-block; font-size: 12px; font-weight: 600;
+    color: var(--text-secondary);
+  }
+  .empresa-val { color: var(--text-primary); }
+
   .modal-close {
     position: absolute; top: 16px; right: 16px;
     background: var(--bg-page); border: none; border-radius: 8px;
