@@ -1,15 +1,28 @@
 <script>
   import { onMount } from 'svelte'
-  import { navigate } from 'svelte-routing'
+  import { navigate, useLocation } from 'svelte-routing'
   import { get } from 'svelte/store'
   import { isAuthenticated, isAgenteDual } from '../../lib/stores/auth.js'
   import { api } from '../../lib/services/api.js'
   import Navbar from '../../lib/components/Navbar.svelte'
   import { formatFecha, estadoBadgeClass } from '../../lib/utils.js'
 
+  const location = useLocation()
+
   // ── Estado de vistas ───────────────────────────────────────────────────────
-  let vista = 'bandeja'  // 'bandeja' | 'revision' | 'empresas'
-  let sidebarOpen = false
+  let vista = 'bandeja'
+
+  // Hacemos que la vista reaccione a los clicks en la barra lateral
+  $: {
+    const queryVista = new URLSearchParams($location.search).get('vista') === 'empresas' ? 'empresas' : 'bandeja';
+    if (queryVista === 'empresas' && vista !== 'empresas') {
+      vista = 'empresas';
+      cargarEmpresas();
+    } else if (queryVista === 'bandeja' && vista === 'empresas') {
+      vista = 'bandeja';
+      cargarReportes();
+    }
+  }
 
   // ── Bandeja ────────────────────────────────────────────────────────────────
   let reportes           = []
@@ -45,7 +58,10 @@
       navigate('/login', { replace: true })
       return
     }
-    cargarReportes()
+    const initialVista = new URLSearchParams(window.location.search).get('vista') === 'empresas' ? 'empresas' : 'bandeja';
+    vista = initialVista;
+    if (vista === 'empresas') cargarEmpresas();
+    else cargarReportes();
   })
 
   // ── Bandeja ────────────────────────────────────────────────────────────────
@@ -56,6 +72,7 @@
       const params = new URLSearchParams()
       if (filtroEstado)       params.append('estado',       filtroEstado)
       if (filtroCuatrimestre) params.append('cuatrimestre', filtroCuatrimestre)
+    
       const data    = await api.dual.listarReportes(params.toString())
       reportes      = data
       const set     = new Set(data.map(r => r.cuatrimestre))
@@ -153,7 +170,7 @@
     errorAsignacion = ''
     exitoAsignacion = ''
     if (!alumnoPreview)       { errorAsignacion = 'Busca un alumno primero.'; return }
-    if (!empresaSeleccionada) { errorAsignacion = 'Selecciona una empresa.';  return }
+    if (!empresaSeleccionada) { errorAsignacion = 'Selecciona una empresa.'; return }
     guardandoAsignacion = true
     try {
       await api.dual.actualizarAlumnoDual(alumnoPreview.matricula, {
@@ -191,73 +208,10 @@
   }
 </script>
 
-<!-- ── Navbar global ───────────────────────────────────────────────────────── -->
 <Navbar />
 
-<!-- ── Overlay del sidebar de módulo ─────────────────────────────────────── -->
-{#if sidebarOpen}
-  <div
-    class="overlay"
-    role="button"
-    tabindex="0"
-    aria-label="Cerrar menú"
-    on:click={() => sidebarOpen = false}
-    on:keydown={(e) => e.key === 'Escape' && (sidebarOpen = false)}
-  ></div>
-{/if}
-
-<!-- ── Sidebar de módulo (solo navegación de vistas internas) ─────────────── -->
-<aside class="sidebar" class:open={sidebarOpen}>
-  <div class="sidebar-header">
-    <span class="sidebar-titulo">Módulo Dual</span>
-  </div>
-  <nav class="sidebar-nav">
-    <button
-      class="nav-item"
-      class:nav-item-active={vista === 'bandeja' || vista === 'revision'}
-      on:click={() => { vista = 'bandeja'; sidebarOpen = false; cargarReportes() }}
-    >
-      <span class="nav-icon">
-        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round"
-            d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25z"/>
-        </svg>
-      </span>
-      Bandeja de reportes
-    </button>
-
-    <button
-      class="nav-item"
-      class:nav-item-active={vista === 'empresas'}
-      on:click={() => { vista = 'empresas'; cargarEmpresas(); sidebarOpen = false }}
-    >
-      <span class="nav-icon">
-        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round"
-            d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21"/>
-        </svg>
-      </span>
-      Empresas y asignaciones
-    </button>
-  </nav>
-</aside>
-
-<!-- ── Botón del sidebar de módulo ────────────────────────────────────────── -->
-<button
-  class="module-hamburger"
-  on:click={() => sidebarOpen = true}
-  aria-label="Navegación del módulo"
->
-  <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h16.5"/>
-  </svg>
-  Módulo Dual
-</button>
-
-<!-- ── Contenido principal ─────────────────────────────────────────────────── -->
 <div class="main-content">
 
-  <!-- ══ BANDEJA ══════════════════════════════════════════════════════════ -->
   {#if vista === 'bandeja'}
     <div class="page-wrap">
       <div class="page-header">
@@ -273,6 +227,7 @@
           <option value="Rechazada">Rechazada</option>
         </select>
         <select bind:value={filtroCuatrimestre} on:change={cargarReportes} class="input-plain" style="min-width:180px">
+         
           <option value="">Todos los cuatrimestres</option>
           {#each cuatrimestres as c}
             <option value={c}>{c}</option>
@@ -285,6 +240,7 @@
         <div class="state-msg">Cargando reportes…</div>
       {:else if error}
         <p class="error-msg">{error}</p>
+  
       {:else if reportes.length === 0}
         <div class="state-msg empty">
           <span class="empty-icon">📭</span>
@@ -294,12 +250,14 @@
         <div class="table-wrap">
           <table class="reporte-table">
             <thead>
+         
               <tr>
                 <th>Matrícula</th>
                 <th>Nombre</th>
                 <th>Calificación</th>
                 <th>Estado</th>
                 <th>Entregado</th>
+               
                 <th></th>
               </tr>
             </thead>
@@ -307,12 +265,14 @@
               {#each reportes as r}
                 <tr class:row-pendiente={r.estado === 'Pendiente'}>
                   <td class="td-matricula">{r.matricula}</td>
+          
                   <td class="td-nombre">{r.nombre || '—'}</td>
                   <td class="td-cal">{r.calificacion_alumno}</td>
                   <td><span class={estadoBadgeClass(r.estado)}>{r.estado}</span></td>
                   <td class="td-fecha">{formatFecha(r.created_at)}</td>
                   <td>
                     <button class="btn-revisar" on:click={() => abrirRevision(r)}>
+ 
                       {r.estado === 'Pendiente' ? 'Revisar →' : 'Ver →'}
                     </button>
                   </td>
@@ -320,12 +280,12 @@
               {/each}
             </tbody>
           </table>
+      
         </div>
         <p class="count-label">{reportes.length} reporte{reportes.length !== 1 ? 's' : ''}</p>
       {/if}
     </div>
 
-  <!-- ══ REVISIÓN ═════════════════════════════════════════════════════════ -->
   {:else if vista === 'revision' && seleccionado}
     <div class="revision-wrap">
       <div class="revision-topbar">
@@ -334,8 +294,8 @@
       </div>
 
       <div class="split-layout">
-        <!-- PDF -->
         <div class="panel-pdf">
+        
           <div class="panel-label">Reporte entregado</div>
           {#if seleccionado.archivo_pdf_url}
             <iframe src={seleccionado.archivo_pdf_url} title="Reporte PDF" class="pdf-iframe"></iframe>
@@ -343,17 +303,18 @@
               Abrir en nueva pestaña ↗
             </a>
           {:else}
+            
             <div class="no-pdf">No hay PDF disponible.</div>
           {/if}
         </div>
 
-        <!-- Panel derecho -->
         <div class="panel-acciones">
           <div class="panel-label">Decisión del agente</div>
 
           <div class="dato-cal">
             <p class="dato-label">Calificación declarada</p>
             <p class="dato-valor">{seleccionado.calificacion_alumno}</p>
+       
           </div>
 
           <div class="ficha-alumno">
@@ -377,6 +338,7 @@
           </div>
 
           {#if seleccionado.nota_agente}
+    
             <div class="nota-previa">
               <p class="dato-label">Nota del agente</p>
               <p class="nota-texto">{seleccionado.nota_agente}</p>
@@ -385,6 +347,7 @@
 
           {#if seleccionado.estado === 'Pendiente'}
             <div class="acciones-grupo">
+           
               <div class="btn-decision-row">
                 <button
                   class="btn-decision btn-aprobar"
@@ -395,6 +358,7 @@
                   class="btn-decision btn-rechazar"
                   class:activo={accion === 'rechazar'}
                   on:click={() => accion = 'rechazar'}
+   
                 >❌ Rechazar</button>
               </div>
 
@@ -403,11 +367,13 @@
                   <textarea
                     class="input-plain textarea-nota"
                     placeholder={accion === 'rechazar'
+                    
                       ? 'Razón del rechazo (obligatorio)…'
                       : 'Nota opcional para el alumno…'}
                     rows="3"
                     bind:value={nota}
                   ></textarea>
+         
                 </div>
               {/if}
 
@@ -416,6 +382,7 @@
 
               {#if !exito}
                 <button
+               
                   class="btn-primary"
                   style="width:100%;margin-top:14px"
                   on:click={enviarDecision}
@@ -427,6 +394,7 @@
                 <button class="btn-outline" style="width:100%;margin-top:10px" on:click={volverBandeja}>
                   ← Volver a la bandeja
                 </button>
+          
               {/if}
             </div>
           {:else}
@@ -434,6 +402,7 @@
               <p>Este reporte ya fue
                 <strong
                   class:text-verde={seleccionado.estado === 'Aprobada'}
+        
                   class:text-rojo={seleccionado.estado === 'Rechazada'}
                 >{seleccionado.estado.toLowerCase()}</strong>.
               </p>
@@ -446,7 +415,6 @@
       </div>
     </div>
 
-  <!-- ══ EMPRESAS ══════════════════════════════════════════════════════════ -->
   {:else if vista === 'empresas'}
     <div class="page-wrap">
       <div class="page-header">
@@ -460,6 +428,7 @@
         <div class="empresas-layout">
 
           <div class="card-seccion">
+          
             <h2 class="seccion-title">Buscar alumno</h2>
 
             {#if errorAsignacion}<div class="error-msg">{errorAsignacion}</div>{/if}
@@ -469,6 +438,7 @@
               <input
                 class="input-plain"
                 placeholder="Matrícula del alumno"
+       
                 bind:value={matriculaBusqueda}
                 on:keydown={(e) => e.key === 'Enter' && buscarAlumno()}
               />
@@ -481,6 +451,7 @@
               <div class="ficha-alumno" style="margin:0">
                 <p class="ficha-titulo">Datos del alumno</p>
                 <div class="ficha-grid">
+       
                   <span class="ficha-key">Nombre</span>
                   <span class="ficha-val">{alumnoPreview.nombre}</span>
                   <span class="ficha-key">Carrera</span>
@@ -504,6 +475,7 @@
                 </select>
               </div>
 
+         
               <div class="nueva-empresa-row">
                 <input
                   class="input-plain"
@@ -516,6 +488,7 @@
                 </button>
               </div>
 
+           
               <div style="display:flex;gap:8px;margin-top:4px">
                 <button
                   class="btn-primary"
@@ -528,12 +501,14 @@
                 {#if alumnoPreview.es_alumno_dual}
                   <button
                     class="btn-outline btn-danger"
+                   
                     style="flex:1"
                     on:click={quitarDual}
                     disabled={guardandoAsignacion}
                   >
                     Quitar dual
                   </button>
+  
                 {/if}
               </div>
             {/if}
@@ -542,12 +517,14 @@
           <div class="card-seccion">
             <h2 class="seccion-title">Empresas registradas</h2>
             {#if empresas.length === 0}
+          
               <p class="empty-msg">No hay empresas registradas aún.</p>
             {:else}
               <ul class="empresa-list">
                 {#each empresas as emp}
                   <li class="empresa-item">
                     <span class="empresa-nombre">{emp.nombre}</span>
+     
                   </li>
                 {/each}
               </ul>
@@ -562,58 +539,8 @@
 </div>
 
 <style>
-  /* ── Overlay ─────────────────────────────────────────────────────────────── */
-  .overlay {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.3);
-    z-index: 200; backdrop-filter: blur(2px); cursor: pointer; border: none;
-  }
-
-  /* ── Sidebar de módulo ───────────────────────────────────────────────────── */
-  .sidebar {
-    position: fixed; top: 0; left: 0; bottom: 0; width: 260px;
-    background: var(--bg-card); z-index: 300;
-    display: flex; flex-direction: column;
-    transform: translateX(-100%);
-    transition: transform 0.25s cubic-bezier(0.4,0,0.2,1);
-    box-shadow: 4px 0 20px rgba(0,0,0,0.1);
-  }
-  .sidebar.open { transform: translateX(0); }
-  .sidebar-header {
-    padding: 16px 20px; border-bottom: 1px solid var(--border);
-    display: flex; align-items: center;
-  }
-  .sidebar-titulo {
-    font-size: 15px; font-weight: 700; color: var(--text-primary);
-  }
-  .sidebar-nav {
-    flex: 1; padding: 12px 8px;
-    display: flex; flex-direction: column; gap: 4px;
-  }
-  .nav-item {
-    display: flex; align-items: center; gap: 12px;
-    padding: 11px 14px; border-radius: 10px;
-    font-family: var(--font); font-size: 14px; font-weight: 500;
-    color: var(--text-primary); background: none; border: none;
-    cursor: pointer; text-align: left; width: 100%;
-    transition: background 0.15s, color 0.15s;
-  }
-  .nav-item:hover  { background: var(--orange-light); color: var(--orange); }
-  .nav-item-active { background: var(--orange-light); color: var(--orange); font-weight: 600; }
-  .nav-icon        { display: flex; flex-shrink: 0; }
-
-  /* ── Botón del sidebar de módulo ─────────────────────────────────────────── */
-  .module-hamburger {
-    position: fixed; top: 56px; left: 0; right: 0; z-index: 90;
-    display: flex; align-items: center; gap: 8px; padding: 8px 16px;
-    background: var(--bg-card); border: none; border-bottom: 1px solid var(--border);
-    font-family: var(--font); font-size: 13px; font-weight: 600;
-    color: var(--text-secondary); cursor: pointer;
-    transition: background 0.15s, color 0.15s;
-  }
-  .module-hamburger:hover { background: var(--orange-light); color: var(--orange); }
-
   /* ── Layout general ──────────────────────────────────────────────────────── */
-  .main-content { padding-top: calc(56px + 36px); }
+  .main-content { padding-top: 56px; } /* Ajuste del Navbar superior */
   .page-wrap    { padding: 2rem 1.5rem; max-width: 900px; margin: 0 auto; }
   .page-header  { margin-bottom: 1.5rem; }
   .page-title   { font-size: 1.5rem; font-weight: 700; color: var(--text-primary); margin: 0 0 4px; }
@@ -621,8 +548,7 @@
 
   /* ── Filtros ─────────────────────────────────────────────────────────────── */
   .filters-row {
-    display: flex; gap: 12px; flex-wrap: wrap;
-    align-items: center; margin-bottom: 1.5rem;
+    display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 1.5rem;
   }
 
   /* ── Tabla ───────────────────────────────────────────────────────────────── */
@@ -665,7 +591,7 @@
   .empty-icon  { font-size: 2rem; }
 
   /* ── Vista revisión ──────────────────────────────────────────────────────── */
-  .revision-wrap   { display: flex; flex-direction: column; height: calc(100vh - 92px); overflow: hidden; }
+  .revision-wrap   { display: flex; flex-direction: column; height: calc(100vh - 56px); overflow: hidden; }
   .revision-topbar {
     display: flex; align-items: center; gap: 12px; padding: 10px 20px;
     background: var(--bg-card); border-bottom: 1px solid var(--border);
@@ -686,9 +612,8 @@
   }
   .panel-label {
     font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
-    letter-spacing: 0.07em; color: var(--text-secondary);
-    padding: 9px 16px; border-bottom: 1px solid var(--border);
-    background: var(--bg-page);
+    letter-spacing: 0.07em; color: var(--text-secondary); padding: 9px 16px;
+    border-bottom: 1px solid var(--border); background: var(--bg-page);
   }
   .pdf-iframe  { flex: 1; width: 100%; border: none; background: #fff; }
   .link-externo {
@@ -745,10 +670,6 @@
   .btn-rechazar.activo { background: #FEE2E2; border-color: #F87171; }
   .textarea-nota { width: 100%; min-height: 80px; resize: vertical; box-sizing: border-box; }
 
-  /* Nota: btn-aprobar/btn-rechazar usan colores directos porque son estados semánticos
-     (verde/rojo) sin equivalente en el design system actual. Candidatos a variables
-     --color-success / --color-error en una iteración futura. */
-
   .exito-msg {
     color: #15803D; background: #F0FDF4; border: 1px solid #BBF7D0;
     border-radius: 8px; padding: 10px 14px; font-size: 0.875rem; margin-top: 12px;
@@ -757,7 +678,6 @@
   .text-verde  { color: #15803D; }
   .text-rojo   { color: #B91C1C; }
 
-  /* ── Botón de peligro (quitar dual) ──────────────────────────────────────── */
   .btn-danger { color: #B91C1C; border-color: #FECACA; }
   .btn-danger:hover { background: #FEF2F2; border-color: #F87171; }
 

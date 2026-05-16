@@ -24,8 +24,10 @@
         api.solicitudes.mias(),
       ])
       alumno      = alumnoData
-      solicitudes = solData
-    } catch {
+      // Blindaje extra para evitar que Svelte truene si el backend manda un error encubierto
+      solicitudes = Array.isArray(solData) ? solData : [] 
+    } catch (e) {
+      console.error("Error al cargar datos del dashboard:", e)
       loadError = true
     } finally {
       loading = false
@@ -33,11 +35,11 @@
   })
 
   $: primerNombre    = alumno?.nombre?.split(' ')[0] || ''
-  $: solicitudActual = solicitudes[0] || null
+  $: solicitudActual = solicitudes.length > 0 ? solicitudes[0] : null
 
   // Nota: month:'long' es intencional aquí ("1 de marzo de 2025") — formato de frase,
   // diferente al formato de tabla de formatFecha() en utils.
-  $: fechaEnvio = solicitudActual
+  $: fechaEnvio = solicitudActual?.created_at
     ? new Date(solicitudActual.created_at).toLocaleDateString('es-MX', {
         day: 'numeric', month: 'long', year: 'numeric',
       })

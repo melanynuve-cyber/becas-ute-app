@@ -3,7 +3,7 @@
   import { fade } from 'svelte/transition'
   import { onMount } from 'svelte'
   import { api } from '../../lib/services/api.js'
-  import { login, isAuthenticated, isAdmin } from '../../lib/stores/auth.js'
+  import { login, isAuthenticated, isAdmin, isAgenteDual, isTutor, isDirectivo } from '../../lib/stores/auth.js'
   import { get } from 'svelte/store'
 
   let email = ''
@@ -14,7 +14,10 @@
 
   onMount(() => {
     if (get(isAuthenticated)) {
-      navigate(get(isAdmin) ? '/admin/solicitudes' : '/dashboard', { replace: true })
+      if (get(isAdmin)) navigate('/admin/solicitudes', { replace: true })
+      else if (get(isAgenteDual)) navigate('/dual/agente', { replace: true })
+      else if (get(isTutor) || get(isDirectivo)) navigate('/dual/tutor', { replace: true })
+      else navigate('/dashboard', { replace: true })
     }
   })
 
@@ -30,13 +33,23 @@
       const payload = JSON.parse(atob(res.access_token.split('.')[1]))
       const userData = { roles: payload.roles, matricula: payload.matricula, email: payload.sub }
       login(res.access_token, userData)
-      navigate(payload.roles?.admin ? '/admin/solicitudes' : '/dashboard', { replace: true })
+      
+      // Redirección inteligente por rol exacto post-login
+      if (payload.roles?.agente_becas || payload.roles?.root) {
+        navigate('/admin/solicitudes', { replace: true })
+      } else if (payload.roles?.agente_dual) {
+        navigate('/dual/agente', { replace: true })
+      } else if (payload.roles?.agente_tutor || payload.roles?.agente_directivo) {
+        navigate('/dual/tutor', { replace: true })
+      } else {
+        navigate('/dashboard', { replace: true })
+      }
     } catch (e) {
       error = e.message
     } finally {
       loading = false
     }
-}
+  }
 
   function handleKeydown(e) {
     if (e.key === 'Enter') handleSubmit()
@@ -85,11 +98,21 @@
           </span>
           <input
             id="password"
-            type={showPassword ? 'text' : 'password'}
+            type="password"
             bind:value={password}
             placeholder="••••••••"
             on:keydown={handleKeydown}
             autocomplete="current-password"
+            style={showPassword ? 'display:none' : ''}
+          />
+          <input
+            id="password-text"
+            type="text"
+            bind:value={password}
+            placeholder="••••••••"
+            on:keydown={handleKeydown}
+            autocomplete="current-password"
+            style={showPassword ? '' : 'display:none'}
           />
           <button
             type="button"

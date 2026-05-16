@@ -3,6 +3,15 @@
   export let show = false
 
   function cerrar() { show = false }
+
+  // Diccionario para mapear las siglas con los nombres completos
+  const nombresCarreras = {
+    "TII": "Ingeniería en Tecnologías de la Información e Innovación Digital"
+    // Aquí puedes ir agregando más en el futuro, ej: "MEC": "Mecatrónica"
+  };
+
+  // Variable reactiva que busca el nombre largo, si no lo encuentra deja la sigla
+  $: nombreCompletoCarrera = alumno ? (nombresCarreras[alumno.carrera] || alumno.carrera) : '—';
 </script>
 
 {#if show && alumno}
@@ -35,7 +44,7 @@
         </div>
         <div class="field-card">
           <span class="field-label">Carrera</span>
-          <span class="field-value">{alumno.carrera || '—'}</span>
+          <span class="field-value">{nombreCompletoCarrera}</span>
         </div>
         <div class="field-card two-col">
           <div>

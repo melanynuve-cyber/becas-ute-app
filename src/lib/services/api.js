@@ -34,50 +34,58 @@ async function request(method, path, body = null, isMultipart = false) {
   return data
 }
 
-// ── Auth ─────────────────────────────────────────────
+// ── Auth ──────────────────────────────────────────────────────────────────────
 export const api = {
   auth: {
     register: (body) => request('POST', '/auth/register', body),
     login:    (body) => request('POST', '/auth/login', body),
     verificar:(body) => request('POST', '/auth/verificar', body),
     reenviar: (body) => request('POST', '/auth/reenviar', body),
-    me:       ()     => request('GET',  '/auth/me')
+    me:       ()     => request('GET',  '/auth/me'),
   },
 
-  // ── Alumno ─────────────────────────────────────────
+  // ── Alumno ──────────────────────────────────────────────────────────────────
   alumno: {
-    me: () => request('GET', '/alumnos/me')
+    me: () => request('GET', '/alumnos/me'),
   },
 
-  // ── Solicitudes ─────────────────────────────────────
+  // ── Solicitudes ─────────────────────────────────────────────────────────────
   solicitudes: {
-    crear:            (formData) => request('POST', '/solicitudes/', formData, true),
-    mias:             ()         => request('GET',  '/solicitudes/mias'),
-    detalle:          (id)       => request('GET',  `/solicitudes/${id}`),
+    crear:            (formData) => request('POST',  '/solicitudes/', formData, true),
+    mias:             ()         => request('GET',   '/solicitudes/mias'),
+    detalle:          (id)       => request('GET',   `/solicitudes/${id}`),
     subirInscripcion: (id, fd)   => request('PATCH', `/solicitudes/${id}/documento/recibo_inscripcion`, fd, true),
   },
 
-  // ── Admin ───────────────────────────────────────────
+  // ── Admin ────────────────────────────────────────────────────────────────────
   admin: {
-    lista:        (estado)     => request('GET', `/admin/solicitudes${estado ? `?estado=${estado}` : ''}`),
-    detalle:      (id)         => request('GET', `/admin/solicitudes/${id}`),
+    lista:        (estado)     => request('GET',   `/admin/solicitudes${estado ? `?estado=${estado}` : ''}`),
+    detalle:      (id)         => request('GET',   `/admin/solicitudes/${id}`),
     cambiarEstado:(id, estado) => request('PATCH', `/admin/solicitudes/${id}/estado`, { estado }),
-    documentoUrl: (id, tipo)   => `${BASE_URL}/admin/solicitudes/${id}/documento/${tipo}`
+    documentoUrl: (id, tipo)   => `${BASE_URL}/admin/solicitudes/${id}/documento/${tipo}`,
   },
 
-  // ── Dual ────────────────────────────────────────────
+  // ── Dual ─────────────────────────────────────────────────────────────────────
   dual: {
-    subirReporte:   (fd)          => request('POST',  '/dual/alumno/', fd, true),
-    misReportes:    (cuatrimestre) => request('GET',   `/dual/alumno/mis-reportes${cuatrimestre ? `?cuatrimestre=${cuatrimestre}` : ''}`),
-    listarReportes: (params)      => request('GET',   `/dual/agente/reportes${params ? `?${params}` : ''}`),
-    revisarReporte: (id, data)    => request('PATCH', `/dual/agente/reportes/${id}`, data),
-    listarAlumnos:  (params)      => request('GET',   `/dual/tutor/alumnos${params ? `?${params}` : ''}`),
-    expediente:     (matricula)   => request('GET',   `/dual/tutor/alumnos/${matricula}/reportes`),
-    exportarCSV:    (matricula)   => `${BASE_URL}/dual/tutor/alumnos/${matricula}/exportar-csv`,
-    buscarAlumno: (matricula) => request('GET', `/dual/agente/alumnos/${matricula}`),
-    actualizarAlumnoDual: (matricula, body) => request('PATCH', `/dual/agente/alumnos/${matricula}`, body),
-    listarEmpresas: ()     => request('GET',  '/dual/agente/empresas'),
-    crearEmpresa:   (body) => request('POST', '/dual/agente/empresas', body),
-    asignarEmpresa: (body) => request('POST', '/dual/agente/asignaciones', body),
-  }
+    // Alumno dual
+    subirReporte: (fd)             => request('POST', '/dual/alumno/', fd, true),
+    misReportes:  (cuatrimestre)   => request('GET',  `/dual/alumno/mis-reportes${cuatrimestre ? `?cuatrimestre=${cuatrimestre}` : ''}`),
+
+    // Agente dual
+    listarReportes:      (params)        => request('GET',   `/dual/agente/reportes${params ? `?${params}` : ''}`),
+    revisarReporte:      (id, data)      => request('PATCH', `/dual/agente/reportes/${id}`, data),
+    listarEmpresas:      ()              => request('GET',   '/dual/agente/empresas'),
+    crearEmpresa:        (body)          => request('POST',  '/dual/agente/empresas', body),
+    asignarEmpresa:      (body)          => request('POST',  '/dual/agente/asignaciones', body),
+    buscarAlumno:        (matricula)     => request('GET',   `/dual/agente/alumnos/${matricula}`),
+    actualizarAlumnoDual:(matricula, body) => request('PATCH', `/dual/agente/alumnos/${matricula}`, body),
+
+    // Tutor / Directivo
+    listarAlumnos: (params)                  => request('GET', `/dual/tutor/alumnos${params ? `?${params}` : ''}`),
+    expediente:    (matricula, cuatrimestre) => {
+      const params = cuatrimestre ? `?cuatrimestre=${cuatrimestre}` : ''
+      return request('GET', `/dual/tutor/alumnos/${matricula}/reportes${params}`)
+    },
+    exportarCSV: (matricula) => `${BASE_URL}/dual/tutor/alumnos/${matricula}/exportar-csv`,
+  },
 }

@@ -21,7 +21,7 @@
   import AdminDetalle    from './routes/admin/solicitudes/AdminDetalle.svelte'
   import ReportesDual    from './routes/dual/ReportesDual.svelte'
   import AgenteDual      from './routes/dual/AgenteDual.svelte'
-  // import TutorDual    from './routes/dual/TutorDual.svelte'  // ⏳ pendiente
+  import TutorDual    from './routes/dual/TutorDual.svelte'
 
   // ── Guard único para rutas protegidas ──────────────────────────────────────
   // Cada componente de ruta llama a requireAuth() en su propio onMount;
@@ -62,9 +62,8 @@
   <!-- ── Agente Dual ──────────────────────────────────────────────────────── -->
   <Route path="/dual/agente"      component={AgenteDual} />
 
-  <!-- ── Tutor / Directivo ─────────────────────────────────────────────────
+  <!-- ── Tutor / Directivo ─────────────────────────────────────────────────-->
   <Route path="/dual/tutor"       component={TutorDual} />
-  ────────────────────────────────────────────────────────────────────────── -->
 
   <!-- ── Admin Becas ──────────────────────────────────────────────────────── -->
   <Route path="/admin/solicitudes"      component={AdminSolicitudes} />
