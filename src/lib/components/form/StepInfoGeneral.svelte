@@ -1,7 +1,10 @@
+// src/lib/components/form/StepInfoGeneral.svelte
 <script>
+  // Exportaciones de props y variables dependientes
   export let info
-  export let tipoSolicitud  // 'Nueva' | 'Renovacion'
+  export let tipoSolicitud 
 
+  // Derivados reactivos de la solicitud
   $: esNuevo     = tipoSolicitud === 'Nueva'
   $: esRenovacion = tipoSolicitud === 'Renovacion'
 </script>

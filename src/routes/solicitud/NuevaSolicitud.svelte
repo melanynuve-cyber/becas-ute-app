@@ -1,11 +1,12 @@
+// src/routes/solicitud/NuevaSolicitud.svelte
 <script>
+  // Importaciones
   import { onMount } from 'svelte'
   import { navigate } from 'svelte-routing'
   import { get } from 'svelte/store'
   import { isAuthenticated } from '../../lib/stores/auth.js'
   import { api } from '../../lib/services/api.js'
-  import Navbar from '../../lib/components/Navbar.svelte'
-
+  import Navbar from '../../lib/components/layout/Navbar.svelte'
   import StepDatosPersonales from '../../lib/components/form/StepDatosPersonales.svelte'
   import StepBecaSolicitada  from '../../lib/components/form/StepBecaSolicitada.svelte'
   import StepInfoGeneral     from '../../lib/components/form/StepInfoGeneral.svelte'
@@ -13,18 +14,20 @@
   import StepEgreso          from '../../lib/components/form/StepEgreso.svelte'
   import StepDocumentos      from '../../lib/components/form/StepDocumentos.svelte'
   import SolicitudPreview    from '../../lib/components/form/SolicitudPreview.svelte'
-  import PerfilModal         from '../../lib/components/PerfilModal.svelte'
+  import PerfilModal         from '../../lib/components/layout/PerfilModal.svelte'
 
+  // Variables de estado
   let showPerfil   = false
   let alumno       = null
   let enviando     = false
   let errorGeneral = ''
   let solicitudId  = null
-  let paso         = 'formulario'  // 'formulario' | 'preview' | 'confirmacion'
+  let paso         = 'formulario'
 
   const hoy = new Date()
   const fechaFormato = `${String(hoy.getDate()).padStart(2,'0')}/${String(hoy.getMonth()+1).padStart(2,'0')}/${hoy.getFullYear()}`
 
+  // Almacenamiento de archivos
   let archivos = {
     kardex:                  null,
     recibo_ingresos:         null,
@@ -33,18 +36,17 @@
   }
   let erroresArchivos = {}
 
+  // Estructura del formulario
   let form = {
     cuatrimestre: '',
     tipo: 'Nueva',
     datos_personales: {
       fecha: fechaFormato, nombres: '', apellido_paterno: '', apellido_materno: '',
       matricula: '', programa_educativo: '', cuatrimestre_a_cursar: '', turno: '',
-      // grupo se mapea desde alumno.nomenclatura una vez que la migración de BD
-      // esté completa en el frontend (ver contexto: alumno.grupo → alumno.nomenclatura)
       grupo: '', domicilio_calle: '', domicilio_numero: '', colonia: '', municipio: '',
       correo_electronico: '', estado_civil: '', edad: '', celular: '', rfc: '', curp: '',
     },
-    beca_solicitada:     { tipo_solicitud: 'Nueva', tipo_beca: '' },
+    beca_solicitada: { tipo_solicitud: 'Nueva', tipo_beca: '' },
     informacion_general: { promedio_preparatoria: '', porcentaje_beca_anterior: '', promedio_cuatrimestre_anterior: '', otra_beca: '' },
     ingreso_mensual:     { monto_ingreso: '', numero_dependientes: '' },
     egreso_mensual:      { gastos_alimentacion: '', gastos_educacion: '', gastos_renta_hipoteca: '', gastos_servicios: '', gastos_varios: '' },
@@ -58,6 +60,7 @@
     form.egreso_mensual.gastos_varios,
   ].reduce((sum, v) => sum + (parseFloat(v) || 0), 0)
 
+  // Carga inicial y prellenado de datos
   onMount(async () => {
     if (!get(isAuthenticated)) {
       navigate('/login', { replace: true })
@@ -78,43 +81,37 @@
     }
   })
 
-  // ── Validación ────────────────────────────────────────────────────────────
+  // Lógica de validación
   function validar() {
     const d = form.datos_personales
-    if (!d.nombres || !d.apellido_paterno || !d.apellido_materno)
-      return 'Completa nombre y apellidos'
-    if (d.cuatrimestre_a_cursar === '' || d.cuatrimestre_a_cursar == null)
-      return 'Ingresa el cuatrimestre a cursar'
-    if (!d.turno)   return 'Selecciona el turno'
-    if (!d.grupo)   return 'Ingresa el grupo'
+    if (!d.nombres || !d.apellido_paterno || !d.apellido_materno) return 'Completa nombre y apellidos'
+    if (d.cuatrimestre_a_cursar === '' || d.cuatrimestre_a_cursar == null) return 'Ingresa el cuatrimestre a cursar'
+    if (!d.turno) return 'Selecciona el turno'
+    if (!d.grupo) return 'Ingresa el grupo'
     if (!d.domicilio_calle || !d.domicilio_numero) return 'Ingresa el domicilio completo'
-    if (!d.colonia || !d.municipio)                return 'Ingresa colonia y municipio'
-    if (!d.estado_civil || !d.edad)                return 'Ingresa estado civil y edad'
+    if (!d.colonia || !d.municipio) return 'Ingresa colonia y municipio'
+    if (!d.estado_civil || !d.edad) return 'Ingresa estado civil y edad'
     if (!d.celular) return 'Ingresa el celular'
-    if (!d.rfc)     return 'Ingresa el RFC'
-    if (!d.curp)    return 'Ingresa el CURP'
-    if (!form.beca_solicitada.tipo_beca)           return 'Selecciona un tipo de beca'
-    if (!archivos.kardex)                          return 'Adjunta el Kárdex'
-    if (!archivos.recibo_ingresos)                 return 'Adjunta el Recibo de Ingresos'
-    if (!archivos.recibo_servicio_publico)         return 'Adjunta el Recibo de Servicio Público'
-    if (!form.ingreso_mensual.monto_ingreso)       return 'Ingresa el monto de ingreso'
-    if (form.ingreso_mensual.numero_dependientes === '' || form.ingreso_mensual.numero_dependientes == null)
-      return 'Ingresa el número de dependientes'
-    if (!form.egreso_mensual.gastos_alimentacion)  return 'Ingresa los gastos de alimentación'
-    if (!form.egreso_mensual.gastos_educacion)     return 'Ingresa los gastos de educación'
+    if (!d.rfc) return 'Ingresa el RFC'
+    if (!d.curp) return 'Ingresa el CURP'
+    if (!form.beca_solicitada.tipo_beca) return 'Selecciona un tipo de beca'
+    if (!archivos.kardex) return 'Adjunta el Kárdex'
+    if (!archivos.recibo_ingresos) return 'Adjunta el Recibo de Ingresos'
+    if (!archivos.recibo_servicio_publico) return 'Adjunta el Recibo de Servicio Público'
+    if (!form.ingreso_mensual.monto_ingreso) return 'Ingresa el monto de ingreso'
+    if (form.ingreso_mensual.numero_dependientes === '' || form.ingreso_mensual.numero_dependientes == null) return 'Ingresa el número de dependientes'
+    if (!form.egreso_mensual.gastos_alimentacion) return 'Ingresa los gastos de alimentación'
+    if (!form.egreso_mensual.gastos_educacion) return 'Ingresa los gastos de educación'
     if (!form.egreso_mensual.gastos_renta_hipoteca) return 'Ingresa los gastos de renta'
-    if (!form.egreso_mensual.gastos_servicios)     return 'Ingresa los gastos de servicios'
-    if (!form.egreso_mensual.gastos_varios)        return 'Ingresa los gastos varios'
-    if (!form.informacion_general.otra_beca)
-      return 'Indica si recibes otra beca (escribe "No" si no tienes)'
-    if (form.beca_solicitada.tipo_solicitud === 'Renovacion' && !form.informacion_general.porcentaje_beca_anterior)
-      return 'Ingresa el porcentaje de beca anterior'
+    if (!form.egreso_mensual.gastos_servicios) return 'Ingresa los gastos de servicios'
+    if (!form.egreso_mensual.gastos_varios) return 'Ingresa los gastos varios'
+    if (!form.informacion_general.otra_beca) return 'Indica si recibes otra beca (escribe "No" si no tienes)'
+    if (form.beca_solicitada.tipo_solicitud === 'Renovacion' && !form.informacion_general.porcentaje_beca_anterior) return 'Ingresa el porcentaje de beca anterior'
     return ''
   }
 
-  // ── Navegación del wizard ─────────────────────────────────────────────────
+  // Navegación hacia la vista previa
   function irAPreview() {
-    // Limpiar campos irrelevantes según tipo de solicitud
     if (form.beca_solicitada.tipo_solicitud === 'Nueva') {
       form.informacion_general.porcentaje_beca_anterior      = ''
       form.informacion_general.promedio_cuatrimestre_anterior = ''
@@ -131,7 +128,7 @@
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  // ── Envío ─────────────────────────────────────────────────────────────────
+  // Envío de la solicitud al backend
   async function enviar() {
     enviando     = true
     errorGeneral = ''
@@ -147,14 +144,13 @@
       fd.append('cuatrimestre', form.cuatrimestre)
       fd.append('tipo',         form.tipo)
       fd.append('payload',      JSON.stringify(payload))
-      fd.append('kardex',                  archivos.kardex)
+      fd.append('kardex',       archivos.kardex)
       fd.append('recibo_ingresos',         archivos.recibo_ingresos)
       fd.append('recibo_servicio_publico', archivos.recibo_servicio_publico)
       if (archivos.recibo_inscripcion) {
         fd.append('recibo_inscripcion', archivos.recibo_inscripcion)
       }
       const res = await api.solicitudes.crear(fd)
-      // UUID devuelto por el backend — sin parseInt ni conversión
       solicitudId = res.solicitud_id
       paso = 'confirmacion'
       window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -248,7 +244,8 @@
   .confirm-card { max-width: 560px; margin: 0 auto; text-align: center; align-items: center; }
   .confirm-icon {
     width: 72px; height: 72px; border-radius: 50%;
-    background: var(--orange-light); color: var(--orange);
+    background: var(--orange-light);
+    color: var(--orange);
     display: flex; align-items: center; justify-content: center;
     font-size: 32px; font-weight: 700;
   }

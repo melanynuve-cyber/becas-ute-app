@@ -1,11 +1,14 @@
+// src/routes/Login.svelte
 <script>
+  // Importaciones
   import { navigate, link } from 'svelte-routing'
   import { fade } from 'svelte/transition'
   import { onMount } from 'svelte'
-  import { api } from '../../lib/services/api.js'
-  import { login, isAuthenticated, isAdmin, isAgenteDual, isTutor, isDirectivo } from '../../lib/stores/auth.js'
+  import { api } from '../lib/services/api.js'
+  import { login, isAuthenticated, isAdmin, isCoordinadorDual, isCoordinadorCarrera } from '../lib/stores/auth.js'
   import { get } from 'svelte/store'
 
+  // Variables de estado
   let email = ''
   let password = ''
   let loading = false
@@ -13,17 +16,19 @@
   let showPassword = false
   let passwordEl
 
+  // Redirección por sesión activa
   onMount(() => {
     if (get(isAuthenticated)) {
       if (get(isAdmin)) navigate('/admin/solicitudes', { replace: true })
-      else if (get(isAgenteDual)) navigate('/dual/agente', { replace: true })
-      else if (get(isTutor) || get(isDirectivo)) navigate('/dual/tutor', { replace: true })
+      else if (get(isCoordinadorDual)) navigate('/dual/coordinador', { replace: true })
+      else if (get(isCoordinadorCarrera)) navigate('/dual/carrera', { replace: true })
       else navigate('/dashboard', { replace: true })
     }
   })
 
+  // Manejo de envío de credenciales
   async function handleSubmit(e) {
-    if (e) e.preventDefault(); // 1. Frena de golpe cualquier intento del navegador de recargar la página
+    if (e) e.preventDefault();
 
     if (!email.endsWith('@ute.edu.mx')) {
       error = 'Debes usar tu correo institucional (@ute.edu.mx)'
@@ -33,7 +38,6 @@
     try {
       const res = await api.auth.login({ email, password })
       
-      // 2. Candado de seguridad por si las credenciales fallan y la respuesta viene vacía
       if (!res || !res.access_token) {
         throw new Error('Contraseña incorrecta o usuario no encontrado.')
       }
@@ -42,17 +46,17 @@
       const userData = { roles: payload.roles, matricula: payload.matricula, email: payload.sub }
       login(res.access_token, userData)
       
-      if (payload.roles?.agente_becas || payload.roles?.root) {
+      // Enrutamiento basado en roles
+      if (payload.roles?.admin || payload.roles?.root) {
         navigate('/admin/solicitudes', { replace: true })
-      } else if (payload.roles?.agente_dual) {
-        navigate('/dual/agente', { replace: true })
-      } else if (payload.roles?.agente_tutor || payload.roles?.agente_directivo) {
-        navigate('/dual/tutor', { replace: true })
+      } else if (payload.roles?.coordinador_dual) {
+        navigate('/dual/coordinador', { replace: true })
+      } else if (payload.roles?.coordinador_carrera) {
+        navigate('/dual/carrera', { replace: true })
       } else {
         navigate('/dashboard', { replace: true })
       }
     } catch (e) {
-      // Traduce el error feo de JS a un mensaje amigable para el alumno
       error = e.message === "Cannot read properties of undefined (reading 'access_token')"
         ? 'Contraseña incorrecta o usuario no encontrado.'
         : (e.message || 'Error al conectar con el servidor.');
@@ -61,8 +65,9 @@
     }
   }
 
+  // Soporte de tecla enter
   function handleKeydown(e) {
-    if (e.key === 'Enter') handleSubmit(e) // Pasa el contexto del evento para bloquear la recarga
+    if (e.key === 'Enter') handleSubmit(e) 
   }
 
 </script>
@@ -156,8 +161,7 @@
       </button>
 
       <p class="bottom-text">
-        ¿No tienes cuenta?
-        <a href="/register" class="link-orange" use:link>Registrarme</a>
+        ¿No tienes cuenta? <a href="/register" class="link-orange" use:link>Registrarme</a>
       </p>
     </div>
   </div>

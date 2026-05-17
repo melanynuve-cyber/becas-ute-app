@@ -1,17 +1,12 @@
+// src/lib/components/layout/PerfilModal.svelte
 <script>
+  // Exportaciones de props
   export let alumno
   export let show = false
 
+  // Funciones de control UI
   function cerrar() { show = false }
 
-  // Diccionario para mapear las siglas con los nombres completos
-  const nombresCarreras = {
-    "TII": "Ingeniería en Tecnologías de la Información e Innovación Digital"
-    // Aquí puedes ir agregando más en el futuro, ej: "MEC": "Mecatrónica"
-  };
-
-  // Variable reactiva que busca el nombre largo, si no lo encuentra deja la sigla
-  $: nombreCompletoCarrera = alumno ? (nombresCarreras[alumno.carrera] || alumno.carrera) : '—';
 </script>
 
 {#if show && alumno}
@@ -44,7 +39,7 @@
         </div>
         <div class="field-card">
           <span class="field-label">Carrera</span>
-          <span class="field-value">{nombreCompletoCarrera}</span>
+          <span class="field-value">{alumno.carrera || '—'}</span>
         </div>
         <div class="field-card two-col">
           <div>
@@ -100,8 +95,7 @@
   .modal-card {
     background: var(--bg-card);
     border-radius: var(--radius-card);
-    box-shadow: 0 8px 40px rgba(0,0,0,0.15);
-    padding: 28px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.15); padding: 28px;
     width: 100%; max-width: 420px;
     position: relative;
     display: flex; flex-direction: column; gap: 20px;
@@ -109,8 +103,7 @@
   .modal-header { display: flex; align-items: center; gap: 16px; }
   .avatar {
     width: 52px; height: 52px;
-    background: var(--orange); border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
+    background: var(--orange); border-radius: 50%; display: flex; align-items: center; justify-content: center;
     flex-shrink: 0;
   }
   .modal-title    { font-size: 17px; font-weight: 700; }
@@ -119,8 +112,7 @@
   .field-card {
     background: var(--bg-page); border-radius: 10px;
     padding: 12px 14px;
-    display: flex; flex-direction: column; gap: 3px;
-  }
+    display: flex; flex-direction: column; gap: 3px; }
   .field-card.two-col {
     display: grid; grid-template-columns: 1fr 1fr;
   }
@@ -128,7 +120,6 @@
   .field-label { font-size: 11px; color: var(--text-secondary); font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; }
   .field-value  { font-size: 14px; font-weight: 600; color: var(--text-primary); }
 
-  /* Dual section */
   .dual-card { background: var(--bg-page); }
   .dual-activo { background: #FFF7ED; border: 1px solid #FED7AA; }
   .dual-row { display: flex; gap: 24px; }
@@ -137,21 +128,17 @@
     display: inline-block; font-size: 12px; font-weight: 700;
     color: var(--orange); background: #FFF7ED;
     border: 1px solid #FED7AA; border-radius: 6px;
-    padding: 2px 8px; margin-top: 2px;
-  }
+    padding: 2px 8px; margin-top: 2px; }
   .nodual-badge {
     display: inline-block; font-size: 12px; font-weight: 600;
-    color: var(--text-secondary);
-  }
+    color: var(--text-secondary); }
   .empresa-val { color: var(--text-primary); }
 
   .modal-close {
-    position: absolute; top: 16px; right: 16px;
-    background: var(--bg-page); border: none; border-radius: 8px;
+    position: absolute; top: 16px; right: 16px; background: var(--bg-page); border: none; border-radius: 8px;
     width: 32px; height: 32px;
     display: flex; align-items: center; justify-content: center;
-    cursor: pointer; color: var(--text-secondary);
-    transition: background 0.15s;
+    cursor: pointer; color: var(--text-secondary); transition: background 0.15s;
   }
   .modal-close:hover { background: var(--border); }
 </style>

@@ -1,4 +1,6 @@
+// src/lib/components/form/StepDatosPersonales.svelte
 <script>
+  // Exportaciones
   export let datos
   export let fechaFormato
 </script>
@@ -47,7 +49,6 @@
       <input id="programa_educativo" class="input-plain" bind:value={datos.programa_educativo} />
     </div>
     <div class="field">
-        <!-- svelte-ignore a11y-label-has-associated-control -->
         <label>Turno <span class="req">*</span></label>
       <div class="checkbox-row">
         <label class="check-label">

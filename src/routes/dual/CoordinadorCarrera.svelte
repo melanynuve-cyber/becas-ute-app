@@ -1,17 +1,18 @@
+// src/routes/dual/CoordinadorCarrera.svelte
 <script>
   import { onMount } from 'svelte'
   import { navigate } from 'svelte-routing'
   import { get } from 'svelte/store'
-  import { isAuthenticated, isTutor } from '../../lib/stores/auth.js'
+  import { isAuthenticated, isCoordinadorCarrera } from '../../lib/stores/auth.js'
   import { api } from '../../lib/services/api.js'
-  import Navbar from '../../lib/components/Navbar.svelte'
-  import FiltrosBarra from '../../lib/components/FiltrosBarra.svelte'
+  import Navbar from '../../lib/components/layout/Navbar.svelte'
+  import FiltrosBarra from '../../lib/components/shared/FiltrosBarra.svelte'
   import { formatFecha } from '../../lib/utils.js'
 
-  // ── Vistas ─────────────────────────────────────────────────────────────────
+  // Vistas
   let vista = 'directorio'   // 'directorio' | 'expediente'
 
-  // ── Directorio ─────────────────────────────────────────────────────────────
+  // Directorio
   let alumnos            = []
   let loading            = true
   let error              = ''
@@ -21,22 +22,22 @@
   let filtroCarrera      = ''
   let filtroEstado       = ''
 
-  // ── Expediente ─────────────────────────────────────────────────────────────
+  // Expediente
   let alumnoSeleccionado  = null
   let reportes            = []
   let loadingExpediente   = false
   let errorExpediente     = ''
 
-  // ── Guard ──────────────────────────────────────────────────────────────────
+  // Guard
   onMount(async () => {
-    if (!get(isAuthenticated) || !get(isTutor)) {
+    if (!get(isAuthenticated) || !get(isCoordinadorCarrera)) {
       navigate('/login', { replace: true })
       return
     }
     await cargarAlumnos()
   })
 
-  // ── Directorio ─────────────────────────────────────────────────────────────
+  // Directorio
   async function cargarAlumnos() {
     loading = true
     error   = ''
@@ -66,7 +67,7 @@
     return matchBusqueda && matchCarrera;
   });
 
-  // ── Expediente ─────────────────────────────────────────────────────────────
+  // Expediente
   async function abrirExpediente(alumno) {
     alumnoSeleccionado = alumno
     reportes           = []
@@ -89,23 +90,20 @@
     vista              = 'directorio'
   }
 
-  // ── Exportar CSV ───────────────────────────────────────────────────────────
+  // Exportar CSV
   function descargarCSV(matricula) {
     const params = filtroCuatrimestre ? `?cuatrimestre=${filtroCuatrimestre}` : ''
     const url    = api.dual.exportarCSV(matricula) + params
     window.open(url, '_blank')
   }
 
-  // ── Promedio visual ────────────────────────────────────────────────────────
+  // Promedio visual
   $: promedioExpediente = reportes.length
     ? (reportes.reduce((s, r) => s + Number(r.calificacion_alumno), 0) / reportes.length).toFixed(2)
     : null
 
-  // Diccionario para mapear el nombre largo de la carrera
-  const nombresCarreras = {
-    "TII": "Ingeniería en Tecnologías de la Información e Innovación Digital"
-  };
-  $: carreraCompletaExpediente = alumnoSeleccionado ? (nombresCarreras[alumnoSeleccionado.carrera] || alumnoSeleccionado.carrera) : '—';
+  $: carreraCompletaExpediente = alumnoSeleccionado ? alumnoSeleccionado.carrera : '—';
+
 </script>
 
 <Navbar />
@@ -284,7 +282,7 @@
                       </td>
                     </tr>
                   {/each}
-                </tbody>
+                 </tbody>
               </table>
             </div>
             <p class="count-label">{reportes.length} reporte{reportes.length !== 1 ? 's' : ''} aprobado{reportes.length !== 1 ? 's' : ''}</p>
@@ -337,7 +335,7 @@
   .spinner { width: 32px; height: 32px; margin: 0 auto; border: 3px solid var(--border); border-top-color: var(--orange); border-radius: 50%; animation: spin 0.8s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* ── Expediente ──────────────────────────────────────────────────────────── */
+  /* Expediente */
   .expediente-topbar { margin-bottom: 1.5rem; }
   .btn-back { background: none; border: none; cursor: pointer; padding: 0; font-size: 0.875rem; font-weight: 600; color: var(--orange); }
   .btn-back:hover { text-decoration: underline; }

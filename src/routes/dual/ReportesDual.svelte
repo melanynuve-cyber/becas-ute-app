@@ -1,13 +1,15 @@
 <script>
+  // src/routes/dual/ReportesDual.svelte
   import { onMount } from 'svelte'
   import { navigate } from 'svelte-routing'
   import { get } from 'svelte/store'
   import { isAuthenticated, isAlumnoDual } from '../../lib/stores/auth.js'
   import { api } from '../../lib/services/api.js'
-  import Navbar from '../../lib/components/Navbar.svelte'
-  import PerfilModal from '../../lib/components/PerfilModal.svelte'
+  import Navbar from '../../lib/components/layout/Navbar.svelte'
+  import PerfilModal from '../../lib/components/layout/PerfilModal.svelte'
   import { formatFecha, estadoBadgeClass } from '../../lib/utils.js'
 
+  // Variables de estado
   let alumno   = null
   let showPerfil = false
   let reportes = []
@@ -16,10 +18,10 @@
   let error    = ''
   let exito    = ''
 
-  // Formulario
+  // Datos del formulario
   let semana       = ''
   let calificacion = ''
-  let archivo       = null
+  let archivo      = null
   let errorForm    = ''
 
   const SEMANAS = Array.from({ length: 14 }, (_, i) => i + 1)
@@ -62,9 +64,9 @@
 
   async function enviarReporte() {
     errorForm = ''
-    if (!semana)       { errorForm = 'Selecciona la semana.';           return }
-    if (!calificacion) { errorForm = 'Ingresa la calificación.';        return }
-    if (!archivo)      { errorForm = 'Adjunta el PDF del reporte.';     return }
+    if (!semana)       { errorForm = 'Selecciona la semana.'; return }
+    if (!calificacion) { errorForm = 'Ingresa la calificación.'; return }
+    if (!archivo)      { errorForm = 'Adjunta el PDF del reporte.'; return }
 
     enviando = true
     try {
@@ -241,7 +243,6 @@
   }
   .card-title { font-size: 16px; font-weight: 700; color: var(--text-primary); }
 
-  /* Plantillas */
   .plantillas-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
   .plantilla-btn {
     display: flex; align-items: center; gap: 12px;
@@ -259,7 +260,6 @@
   .plantilla-ext   { font-size: 11px; color: var(--color); font-weight: 700; }
   .plantilla-pronto { color: var(--text-secondary) !important; font-weight: 500; }
 
-  /* Formulario */
   .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
   .field      { display: flex; flex-direction: column; gap: 6px; }
   .field label { font-size: 13px; font-weight: 600; color: var(--text-primary); }
@@ -277,22 +277,19 @@
   .doc-upload:hover { border-color: var(--orange); color: var(--orange); }
   .doc-selected {
     display: flex; align-items: center; gap: 8px;
-    padding: 10px 14px;
-    border: 1.5px solid var(--border); border-radius: var(--radius-input);
+    padding: 10px 14px; border: 1.5px solid var(--border); border-radius: var(--radius-input);
     background: var(--orange-light);
   }
   .doc-name   { flex: 1; font-size: 13px; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .doc-remove { background: none; border: none; cursor: pointer; color: var(--text-secondary); font-size: 14px; }
   .doc-remove:hover { color: #B91C1C; }
 
-  /* Historial */
   .empty-msg  { font-size: 14px; color: var(--text-secondary); text-align: center; padding: 20px 0; }
   .tabla-wrap { overflow-x: auto; }
   .tabla      { width: 100%; border-collapse: collapse; font-size: 14px; }
   .tabla th {
     text-align: left; padding: 10px 14px;
-    font-size: 12px; font-weight: 600; color: var(--text-secondary);
-    border-bottom: 1.5px solid var(--border); white-space: nowrap;
+    font-size: 12px; font-weight: 600; color: var(--text-secondary); border-bottom: 1.5px solid var(--border); white-space: nowrap;
   }
   .tabla td   { padding: 12px 14px; border-bottom: 1px solid var(--border); color: var(--text-primary); }
   .tabla tr:last-child td { border-bottom: none; }

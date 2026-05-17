@@ -1,30 +1,32 @@
+// src/lib/components/shared/FiltrosBarra.svelte
 <script>
+  // Importaciones
   import { createEventDispatcher } from 'svelte'
   const dispatch = createEventDispatcher()
 
-  // Props operacionales para controlar la visibilidad
+  // Props de visibilidad
   export let mostrarEstado = true
   export let mostrarCarrera = true
   export let mostrarGrupo = true
 
+  // Props de filtros
   export let filtroBusqueda = ''
   export let filtroGrupo = ''
   export let filtroCarrera = ''
   export let filtroEstado = ''
   
-  export let grupos = [] // Lista de nomenclaturas (ej: '24-TII-1-B-5A')
-  
-  // Lista de carreras con clave interna y nombre largo para la interfaz
+  // Datos de selectores
+  export let grupos = []
   export let carreras = [
     { id: 'TII', nombre: 'Ingeniería en Tecnologías de la Información e Innovación Digital' }
   ]
 
-  // Filtrar los grupos de manera reactiva según la carrera seleccionada
+  // Filtrado reactivo
   $: gruposFiltrados = filtroCarrera
     ? grupos.filter(g => g.toLowerCase().includes(filtroCarrera.toLowerCase()))
     : []
 
-  // Si cambia la carrera, reiniciamos el grupo seleccionado
+  // Manejo de eventos
   function handleCarreraChange() {
     filtroGrupo = ''
     handleBuscar()
@@ -83,7 +85,7 @@
   .filters-row {
     display: flex;
     gap: 8px;
-    flex-wrap: nowrap; /* Forzar una sola línea limpia */
+    flex-wrap: nowrap;
     align-items: center;
     background: var(--bg-card);
     padding: 12px 16px;

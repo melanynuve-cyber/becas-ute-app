@@ -1,20 +1,25 @@
+// src/routes/Register.svelte
 <script>
+  // Importaciones
   import { navigate, link } from 'svelte-routing'
   import { onMount } from 'svelte'
-  import { api } from '../../lib/services/api.js'
-  import { isAuthenticated } from '../../lib/stores/auth.js'
+  import { api } from '../lib/services/api.js'
+  import { isAuthenticated } from '../lib/stores/auth.js'
   import { get } from 'svelte/store'
 
+  // Variables de estado
   let email = ''
   let password = ''
   let confirmPassword = ''
   let loading = false
   let error = ''
 
+  // Redirección por sesión activa
   onMount(() => {
     if (get(isAuthenticated)) navigate('/dashboard', { replace: true })
   })
 
+  // Validación y envío del formulario
   async function handleSubmit() {
     error = ''
     if (!email.endsWith('@ute.edu.mx')) {
@@ -117,8 +122,7 @@
       </button>
 
       <p class="bottom-text">
-        ¿Ya tienes cuenta?
-        <a href="/login" class="link-orange" use:link>Iniciar Sesión</a>
+        ¿Ya tienes cuenta? <a href="/login" class="link-orange" use:link>Iniciar Sesión</a>
       </p>
     </div>
   </div>

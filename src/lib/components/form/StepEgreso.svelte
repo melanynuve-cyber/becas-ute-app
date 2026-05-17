@@ -1,6 +1,9 @@
+// src/lib/components/form/StepEgreso.svelte
 <script>
+  // Exportación del objeto de egresos
   export let egreso
 
+  // Cálculo reactivo del total de egresos
   $: total = [
     egreso.gastos_alimentacion,
     egreso.gastos_educacion,

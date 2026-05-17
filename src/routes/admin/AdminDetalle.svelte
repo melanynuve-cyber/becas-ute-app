@@ -1,14 +1,18 @@
+// src/routes/admin/AdminDetalle.svelte
 <script>
+  // Importación de dependencias y componentes de navegación globales
   import { onMount } from 'svelte'
   import { navigate } from 'svelte-routing'
   import { get } from 'svelte/store'
-  import { isAuthenticated, isAdmin, token } from '../../../lib/stores/auth.js'
-  import { api } from '../../../lib/services/api.js'
-  import Navbar from '../../../lib/components/Navbar.svelte'
-  import { estadoBadgeClass, estadoLabel } from '../../../lib/utils.js'
+  import { isAuthenticated, isAdmin, token } from '../../lib/stores/auth.js'
+  import { api } from '../../lib/services/api.js'
+  import Navbar from '../../lib/components/layout/Navbar.svelte'
+  import { estadoBadgeClass, estadoLabel } from '../../lib/utils.js'
 
+  // Propiedades recibidas del enrutador
   export let id
 
+  // Variables de estado para el manejo de la solicitud y carga
   let solicitud = null
   let loading   = true
   let guardando = false
@@ -16,8 +20,10 @@
   let exito     = ''
   let nuevoEstado = ''
 
+  // Opciones válidas para el cambio de estado administrativo
   const estadoOpciones = ['Pendiente', 'En_revision', 'Aprobada', 'Rechazada']
 
+  // Catálogo de tipos de becas disponibles en la institución
   const tiposBeca = {
     academica:     'A. Académica',
     deportiva:     'B. Deportiva',
@@ -27,6 +33,7 @@
     empleado_hijo: 'F. Empleado y/o hijo de empleado',
   }
 
+  // Identificadores de los documentos requeridos en el expediente
   const nombresDoc = {
     kardex:                  'Kárdex',
     recibo_ingresos:         'Recibo de Ingresos',
@@ -34,6 +41,7 @@
     recibo_inscripcion:      'Comprobante de Inscripción',
   }
 
+  // Validación de sesión y rol de administrador al montar el componente
   onMount(async () => {
     if (!get(isAuthenticated) || !get(isAdmin)) {
       navigate('/login', { replace: true })
@@ -49,6 +57,7 @@
     }
   })
 
+  // Envío de la actualización del estado de la solicitud al backend
   async function guardarEstado() {
     guardando = true
     exito = ''
@@ -64,6 +73,7 @@
     }
   }
 
+  // Descarga y apertura segura de archivos PDF adjuntos desde el servidor
   async function abrirDoc(tipo) {
     error = ''
     try {
@@ -80,6 +90,7 @@
     }
   }
 
+  // Procesamiento reactivo del payload de la solicitud activa
   $: p = solicitud?.payload || {}
   $: d = p.datos_personales  || {}
 </script>
@@ -98,7 +109,6 @@
       <div class="loading-wrap"><div class="spinner-lg"></div></div>
     {:else if solicitud}
 
-      <!-- Estado actual + cambio ─────────────────────────────────────────── -->
       <div class="card estado-card">
         <div class="estado-row">
           <div>
@@ -130,7 +140,6 @@
         {#if error}<div class="error-msg">{error}</div>{/if}
       </div>
 
-      <!-- Datos personales ────────────────────────────────────────────────── -->
       <div class="card">
         <h2 class="section-title">Datos Personales</h2>
         <div class="grid-2">
@@ -152,7 +161,6 @@
         </div>
       </div>
 
-      <!-- Beca solicitada ─────────────────────────────────────────────────── -->
       <div class="card">
         <h2 class="section-title">Beca Solicitada</h2>
         <div class="grid-2">
@@ -161,7 +169,6 @@
         </div>
       </div>
 
-      <!-- Información general ──────────────────────────────────────────────── -->
       <div class="card">
         <h2 class="section-title">Información General</h2>
         <div class="grid-2">
@@ -172,7 +179,6 @@
         </div>
       </div>
 
-      <!-- Ingresos y egresos ───────────────────────────────────────────────── -->
       <div class="card">
         <h2 class="section-title">Ingresos y Egresos Mensuales</h2>
         <div class="grid-2">
@@ -190,7 +196,6 @@
         </div>
       </div>
 
-      <!-- Documentos ───────────────────────────────────────────────────────── -->
       <div class="card">
         <h2 class="section-title">Documentos Adjuntos</h2>
         <div class="docs-grid">
@@ -239,8 +244,7 @@
   .spinner-lg {
     width: 36px; height: 36px;
     border: 3px solid var(--border);
-    border-top-color: var(--orange);
-    border-radius: 50%;
+    border-top-color: var(--orange); border-radius: 50%;
     animation: spin 0.8s linear infinite;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
@@ -278,8 +282,7 @@
   .doc-btn {
     display: flex; align-items: center; gap: 10px;
     padding: 14px 16px; border: 1.5px solid var(--border); border-radius: var(--radius-input);
-    background: var(--bg-page); cursor: pointer; font-family: var(--font);
-    font-size: 14px; font-weight: 500; color: var(--text-primary);
+    background: var(--bg-page); cursor: pointer; font-family: var(--font); font-size: 14px; font-weight: 500; color: var(--text-primary);
     transition: all 0.15s; text-align: left;
   }
   .doc-btn:hover      { border-color: var(--orange); color: var(--orange); }

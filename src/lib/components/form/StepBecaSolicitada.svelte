@@ -1,6 +1,9 @@
+// src/lib/components/form/StepBecaSolicitada.svelte
 <script>
+  // Exportación del formulario
   export let form
 
+  // Catálogo de tipos de beca
   const tiposBeca = [
     { key: 'academica',     label: 'A. Académica' },
     { key: 'deportiva',     label: 'B. Deportiva' },

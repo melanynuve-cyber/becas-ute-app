@@ -1,20 +1,23 @@
+// src/routes/Verificar.svelte
 <script>
+  // Importaciones
   import { navigate } from 'svelte-routing'
   import { onMount } from 'svelte'
-  import { api } from '../../lib/services/api.js'
+  import { api } from '../lib/services/api.js'
 
-  // Leer email y posible código del query string
+  // Recuperación de parámetros de la URL
   const params  = new URLSearchParams(window.location.search)
   const email   = params.get('email') || ''
   const autoCode = params.get('codigo') || ''
 
+  // Variables de estado
   let digits = ['', '', '', '', '', '']
   let inputs = []
   let loading = false
   let error = ''
   let resendMsg = ''
 
-  // Si llegó por link con código, autocompletar y enviar
+  // Autocompletado desde URL
   onMount(() => {
     if (autoCode && autoCode.length === 6) {
       digits = autoCode.split('')
@@ -22,6 +25,7 @@
     }
   })
 
+  // Control de entrada de dígitos
   function handleInput(i, e) {
     const val = e.target.value.replace(/\D/g, '').slice(-1)
     digits[i] = val
@@ -29,12 +33,14 @@
     if (val && i < 5) inputs[i + 1]?.focus()
   }
 
+  // Soporte de navegación con teclado
   function handleKeydown(i, e) {
     if (e.key === 'Backspace' && !digits[i] && i > 0) {
       inputs[i - 1]?.focus()
     }
   }
 
+  // Soporte para pegar código completo
   function handlePaste(e) {
     const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6)
     if (pasted.length === 6) {
@@ -44,9 +50,11 @@
     e.preventDefault()
   }
 
+  // Estados computados del código
   $: code = digits.join('')
   $: isComplete = code.length === 6
 
+  // Envío del código de verificación
   async function submitCode() {
     if (!isComplete) return
     error = ''
@@ -63,6 +71,7 @@
     }
   }
 
+  // Solicitud de reenvío de correo
   async function reenviar() {
     resendMsg = ''
     error = ''

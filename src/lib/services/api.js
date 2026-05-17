@@ -1,3 +1,4 @@
+// src/lib/services/api.js
 import { get } from 'svelte/store'
 import { token, logout } from '../stores/auth.js'
 
@@ -34,7 +35,7 @@ async function request(method, path, body = null, isMultipart = false) {
   return data
 }
 
-// ── Auth ──────────────────────────────────────────────────────────────────────
+// Endpoints de autenticación y manejo de sesiones
 export const api = {
   auth: {
     register: (body) => request('POST', '/auth/register', body),
@@ -44,12 +45,12 @@ export const api = {
     me:       ()     => request('GET',  '/auth/me'),
   },
 
-  // ── Alumno ──────────────────────────────────────────────────────────────────
+  // Consulta de información del perfil del alumno
   alumno: {
     me: () => request('GET', '/alumnos/me'),
   },
 
-  // ── Solicitudes ─────────────────────────────────────────────────────────────
+  // Gestión de solicitudes de becas internas y expedientes
   solicitudes: {
     crear:            (formData) => request('POST',  '/solicitudes/', formData, true),
     mias:             ()         => request('GET',   '/solicitudes/mias'),
@@ -57,35 +58,35 @@ export const api = {
     subirInscripcion: (id, fd)   => request('PATCH', `/solicitudes/${id}/documento/recibo_inscripcion`, fd, true),
   },
 
-  // ── Admin ────────────────────────────────────────────────────────────────────
+  // Panel de administración de becas para dictamen de solicitudes
   admin: {
     lista:        (estado)     => request('GET',   `/admin/solicitudes${estado ? `?estado=${estado}` : ''}`),
     detalle:      (id)         => request('GET',   `/admin/solicitudes/${id}`),
     cambiarEstado:(id, estado) => request('PATCH', `/admin/solicitudes/${id}/estado`, { estado }),
-    documentoUrl: (id, tipo)   => `${BASE_URL}/admin/solicitudes/${id}/documento/${tipo}`,
+    documentUrl:  (id, tipo)   => `${BASE_URL}/admin/solicitudes/${id}/documento/${tipo}`,
   },
 
-  // ── Dual ─────────────────────────────────────────────────────────────────────
+  // Endpoints correspondientes a la modalidad dual
   dual: {
-    // Alumno dual
+    // Operaciones del alumno dual
     subirReporte: (fd)             => request('POST', '/dual/alumno/', fd, true),
     misReportes:  (cuatrimestre)   => request('GET',  `/dual/alumno/mis-reportes${cuatrimestre ? `?cuatrimestre=${cuatrimestre}` : ''}`),
 
-    // Agente dual
-    listarReportes:      (params)        => request('GET',   `/dual/agente/reportes${params ? `?${params}` : ''}`),
-    revisarReporte:      (id, data)      => request('PATCH', `/dual/agente/reportes/${id}`, data),
-    listarEmpresas:      ()              => request('GET',   '/dual/agente/empresas'),
-    crearEmpresa:        (body)          => request('POST',  '/dual/agente/empresas', body),
-    asignarEmpresa:      (body)          => request('POST',  '/dual/agente/asignaciones', body),
-    buscarAlumno:        (matricula)     => request('GET',   `/dual/agente/alumnos/${matricula}`),
-    actualizarAlumnoDual:(matricula, body) => request('PATCH', `/dual/agente/alumnos/${matricula}`, body),
+    // Operaciones del coordinador dual
+    listarReportes:      (params)        => request('GET',   `/dual/coordinador/reportes${params ? `?${params}` : ''}`),
+    revisarReporte:      (id, data)      => request('PATCH', `/dual/coordinador/reportes/${id}`, data),
+    listarEmpresas:      ()              => request('GET',   '/dual/coordinador/empresas'),
+    crearEmpresa:        (body)          => request('POST',  '/dual/coordinador/empresas', body),
+    asignarEmpresa:      (body)          => request('POST',  '/dual/coordinador/asignaciones', body),
+    buscarAlumno:        (matricula)     => request('GET',   `/dual/coordinador/alumnos/${matricula}`),
+    actualizarAlumnoDual:(matricula, body) => request('PATCH', `/dual/coordinador/alumnos/${matricula}`, body),
 
-    // Tutor / Directivo
-    listarAlumnos: (params)                  => request('GET', `/dual/tutor/alumnos${params ? `?${params}` : ''}`),
+    // Operaciones del coordinador de carrera
+    listarAlumnos: (params)                  => request('GET', `/dual/carrera/alumnos${params ? `?${params}` : ''}`),
     expediente:    (matricula, cuatrimestre) => {
       const params = cuatrimestre ? `?cuatrimestre=${cuatrimestre}` : ''
-      return request('GET', `/dual/tutor/alumnos/${matricula}/reportes${params}`)
+      return request('GET', `/dual/carrera/alumnos/${matricula}/reportes${params}`)
     },
-    exportarCSV: (matricula) => `${BASE_URL}/dual/tutor/alumnos/${matricula}/exportar-csv`,
+    exportarCSV: (matricula) => `${BASE_URL}/dual/carrera/alumnos/${matricula}/exportar-csv`,
   },
 }

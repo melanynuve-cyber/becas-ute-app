@@ -1,16 +1,17 @@
+//src/routes/dual/CoordinadorDual.svelte
 <script>
   import { onMount } from 'svelte'
   import { navigate, useLocation } from 'svelte-routing'
   import { get } from 'svelte/store'
-  import { isAuthenticated, isAgenteDual } from '../../lib/stores/auth.js'
+  import { isAuthenticated, isCoordinadorDual } from '../../lib/stores/auth.js'
   import { api } from '../../lib/services/api.js'
-  import Navbar from '../../lib/components/Navbar.svelte'
-  import FiltrosBarra from '../../lib/components/FiltrosBarra.svelte'
+  import Navbar from '../../lib/components/layout/Navbar.svelte'
+  import FiltrosBarra from '../../lib/components/shared/FiltrosBarra.svelte'
   import { formatFecha, estadoBadgeClass } from '../../lib/utils.js'
 
   const location = useLocation()
 
-  // ── Estado de vistas ───────────────────────────────────────────────────────
+  // Estado de vistas
   let vista = 'bandeja'
 
   // Hacemos que la vista reaccione a los clicks en la barra lateral
@@ -25,7 +26,7 @@
     }
   }
 
-  // ── Bandeja ────────────────────────────────────────────────────────────────
+  // Bandeja
   let reportes           = []
   let loading            = true
   let error              = ''
@@ -47,7 +48,7 @@
     return matchBusqueda && matchCarrera && matchGrupo && matchEstado;
   });
 
-  // ── Revisión ───────────────────────────────────────────────────────────────
+  // Revisión
   let seleccionado = null
   let accion       = ''
   let nota         = ''
@@ -55,7 +56,7 @@
   let exito        = ''
   let errorAccion  = ''
 
-  // ── Empresas y asignaciones ────────────────────────────────────────────────
+  // Empresas y asignaciones
   let empresas            = []
   let loadingEmpresas     = false
   let nuevaEmpresa        = ''
@@ -67,19 +68,21 @@
   let exitoAsignacion     = ''
   let guardandoAsignacion = false
 
-  // ── Guard ──────────────────────────────────────────────────────────────────
+  // Guard
   onMount(() => {
-    if (!get(isAuthenticated) || !get(isAgenteDual)) {
+    if (!get(isAuthenticated) || !get(isCoordinadorDual)) {
       navigate('/login', { replace: true })
       return
     }
+    
     const initialVista = new URLSearchParams(window.location.search).get('vista') === 'empresas' ? 'empresas' : 'bandeja';
     vista = initialVista;
+
     if (vista === 'empresas') cargarEmpresas();
     else cargarReportes();
   })
 
-  // ── Bandeja ────────────────────────────────────────────────────────────────
+  // Bandeja
   async function cargarReportes() {
     loading = true
     error   = ''
@@ -89,6 +92,7 @@
     
       const data    = await api.dual.listarReportes(params.toString())
       reportes      = data
+   
     } catch (e) {
       error = e.message || 'Error al cargar reportes.'
     } finally {
@@ -107,6 +111,7 @@
 
   function volverBandeja() {
     seleccionado = null
+   
     vista        = 'bandeja'
     cargarReportes()
   }
@@ -139,7 +144,7 @@
     }
   }
 
-  // ── Empresas ───────────────────────────────────────────────────────────────
+  // Empresas
   async function cargarEmpresas() {
     loadingEmpresas = true
     try {
@@ -173,6 +178,7 @@
       empresas            = [...empresas, emp]
       empresaSeleccionada = emp.id
       nuevaEmpresa        = ''
+  
     } catch (e) {
       errorAsignacion = e.message || 'Error al crear la empresa.'
     }
@@ -219,13 +225,9 @@
     }
   }
 
-  // Diccionario para mapear el nombre largo de la carrera
-  const nombresCarreras = {
-    "TII": "Ingeniería en Tecnologías de la Información e Innovación Digital"
-  };
+  $: carreraCompletaRevision = seleccionado ? seleccionado.carrera : '—';
+  $: carreraCompletaPreview = alumnoPreview ? alumnoPreview.carrera : '—';
 
-  $: carreraCompletaRevision = seleccionado ? (nombresCarreras[seleccionado.carrera] || seleccionado.carrera) : '—';
-  $: carreraCompletaPreview = alumnoPreview ? (nombresCarreras[alumnoPreview.carrera] || alumnoPreview.carrera) : '—';
 </script>
 
 <Navbar />
@@ -344,7 +346,7 @@
           </div>
 
           {#if seleccionado.nota_agente}
-            <div class="nota-previa">
+             <div class="nota-previa">
               <p class="dato-label">Nota del agente</p>
               <p class="nota-texto">{seleccionado.nota_agente}</p>
             </div>
@@ -352,7 +354,7 @@
 
           {#if seleccionado.estado === 'Pendiente'}
             <div class="acciones-grupo">
-              <div class="btn-decision-row">
+               <div class="btn-decision-row">
                 <button
                   class="btn-decision btn-aprobar"
                   class:activo={accion === 'aprobar'}

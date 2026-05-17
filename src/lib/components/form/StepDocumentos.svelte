@@ -1,7 +1,10 @@
+// src/lib/components/form/StepDocumentos.svelte
 <script>
+  // Exportaciones
   export let archivos
   export let erroresArchivos = {}
 
+  // Listado de documentos requeridos
   const docs = [
     { key: 'kardex',                  label: 'A. Kárdex (PDF)',                    requerido: true },
     { key: 'recibo_ingresos',         label: 'B. Recibo de Ingresos (PDF)',         requerido: true },
@@ -9,6 +12,7 @@
     { key: 'recibo_inscripcion',      label: 'D. Comprobante de Inscripción (PDF)', requerido: false },
   ]
 
+  // Manejador de carga de archivos
   function onArchivo(e, key) {
     const file = e.target.files[0]
     if (!file) return
@@ -20,6 +24,7 @@
     archivos = { ...archivos, [key]: file }
   }
 
+  // Remoción de archivo adjunto
   function quitarArchivo(key) {
     archivos = { ...archivos, [key]: null }
   }
@@ -95,8 +100,7 @@
   .doc-selected {
     display: flex; align-items: center; gap: 8px;
     padding: 10px 14px;
-    border: 1.5px solid var(--border);
-    border-radius: var(--radius-input);
+    border: 1.5px solid var(--border); border-radius: var(--radius-input);
     background: var(--orange-light);
     color: var(--orange);
   }

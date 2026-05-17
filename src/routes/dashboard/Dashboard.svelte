@@ -1,19 +1,23 @@
+// src/routes/dashboard/Dashboard.svelte
 <script>
+  // Importaciones
   import { onMount } from 'svelte'
   import { navigate } from 'svelte-routing'
   import { get } from 'svelte/store'
   import { isAuthenticated, isAdmin } from '../../lib/stores/auth.js'
   import { api } from '../../lib/services/api.js'
-  import Navbar from '../../lib/components/Navbar.svelte'
-  import PerfilModal from '../../lib/components/PerfilModal.svelte'
+  import Navbar from '../../lib/components/layout/Navbar.svelte'
+  import PerfilModal from '../../lib/components/layout/PerfilModal.svelte'
   import { estadoBadgeClass, estadoLabel } from '../../lib/utils.js'
 
+  // Variables de estado
   let alumno      = null
   let solicitudes = []
   let loading     = true
   let loadError   = false
   let showPerfil  = false
 
+  // Carga inicial
   onMount(async () => {
     if (!get(isAuthenticated)) { navigate('/login',             { replace: true }); return }
     if (get(isAdmin))          { navigate('/admin/solicitudes', { replace: true }); return }
@@ -24,7 +28,8 @@
         api.solicitudes.mias(),
       ])
       alumno      = alumnoData
-      // Blindaje extra para evitar que Svelte truene si el backend manda un error encubierto
+      
+      // Validación de estructura de respuesta
       solicitudes = Array.isArray(solData) ? solData : [] 
     } catch (e) {
       console.error("Error al cargar datos del dashboard:", e)
@@ -34,11 +39,11 @@
     }
   })
 
+  // Variables reactivas
   $: primerNombre    = alumno?.nombre?.split(' ')[0] || ''
   $: solicitudActual = solicitudes.length > 0 ? solicitudes[0] : null
 
-  // Nota: month:'long' es intencional aquí ("1 de marzo de 2025") — formato de frase,
-  // diferente al formato de tabla de formatFecha() en utils.
+  // Formato de fecha en texto largo
   $: fechaEnvio = solicitudActual?.created_at
     ? new Date(solicitudActual.created_at).toLocaleDateString('es-MX', {
         day: 'numeric', month: 'long', year: 'numeric',
@@ -150,7 +155,8 @@
   }
   .status-label { font-size: 14px; color: var(--text-secondary); }
   .status-meta {
-    display: flex; flex-direction: column; gap: 4px;
+    display: flex; flex-direction: column;
+    gap: 4px;
     font-size: 13px; color: var(--text-secondary); text-align: left;
   }
 </style>

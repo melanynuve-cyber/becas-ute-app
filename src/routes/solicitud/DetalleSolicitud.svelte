@@ -1,21 +1,25 @@
+// src/routes/solicitud/DetalleSolicitud.svelte
 <script>
+  // Importaciones
   import { onMount } from 'svelte'
   import { navigate } from 'svelte-routing'
   import { get } from 'svelte/store'
   import { isAuthenticated } from '../../lib/stores/auth.js'
   import { api } from '../../lib/services/api.js'
-  import Navbar from '../../lib/components/Navbar.svelte'
-  import PerfilModal from '../../lib/components/PerfilModal.svelte'
+  import Navbar from '../../lib/components/layout/Navbar.svelte'
+  import PerfilModal from '../../lib/components/layout/PerfilModal.svelte'
   import { estadoBadgeClass, estadoLabel } from '../../lib/utils.js'
 
-  export let id  // UUID — sin parseInt ni conversión
+  export let id
 
+  // Variables de estado
   let showPerfil = false
   let solicitud  = null
   let loading    = true
   let error      = ''
   let alumno     = null
 
+  // Catálogos
   const tiposBeca = [
     { key: 'academica',     label: 'A. Académica' },
     { key: 'deportiva',     label: 'B. Deportiva' },
@@ -32,6 +36,7 @@
     recibo_inscripcion:      'Comprobante de Inscripción',
   }
 
+  // Carga inicial
   onMount(async () => {
     if (!get(isAuthenticated)) {
       navigate('/login', { replace: true })
@@ -51,7 +56,7 @@
     }
   })
 
-  // ── Comprobante de inscripción pendiente ──────────────────────────────────
+  // Manejo de comprobante de inscripción
   let subiendoInscripcion = false
   let errorInscripcion    = ''
   let exitoInscripcion    = false
@@ -78,7 +83,7 @@
     }
   }
 
-  // ── Derivados reactivos ───────────────────────────────────────────────────
+  // Variables reactivas
   $: p    = solicitud?.payload || {}
   $: d    = p.datos_personales  || {}
   $: b    = p.beca_solicitada   || {}
@@ -88,9 +93,6 @@
   $: docs = solicitud?.documentos || {}
   $: inscripcionPendiente = docs.recibo_inscripcion === 'pendiente' && !exitoInscripcion
 
-  // Nota: la fecha aquí usa month:'long' ("1 de marzo de 2025") a diferencia de
-  // formatFecha en utils que usa month:'short' ("1 mar 2025") para tablas.
-  // Se mantiene inline intencionalmente.
   $: fechaEnvio = solicitud
     ? new Date(solicitud.created_at).toLocaleDateString('es-MX', {
         day: 'numeric', month: 'long', year: 'numeric'
@@ -112,7 +114,6 @@
 
     {:else if solicitud}
 
-      <!-- Encabezado ─────────────────────────────────────────────────────── -->
       <div class="top-bar">
         <button class="back-btn" on:click={() => navigate('/dashboard')}>
           <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -134,7 +135,6 @@
           </div>
         </div>
 
-        <!-- Datos personales ───────────────────────────────────────────────── -->
         <div class="preview-section">
           <h3 class="preview-section-title">Datos Personales</h3>
           <div class="preview-grid">
@@ -156,7 +156,6 @@
           </div>
         </div>
 
-        <!-- Beca ──────────────────────────────────────────────────────────── -->
         <div class="preview-section">
           <h3 class="preview-section-title">Beca Solicitada</h3>
           <div class="preview-grid">
@@ -175,7 +174,6 @@
           </div>
         </div>
 
-        <!-- Info general ───────────────────────────────────────────────────── -->
         <div class="preview-section">
           <h3 class="preview-section-title">Información General</h3>
           <div class="preview-grid">
@@ -186,7 +184,6 @@
           </div>
         </div>
 
-        <!-- Ingreso ────────────────────────────────────────────────────────── -->
         <div class="preview-section">
           <h3 class="preview-section-title">Ingreso Mensual</h3>
           <div class="preview-grid">
@@ -195,7 +192,6 @@
           </div>
         </div>
 
-        <!-- Egreso ─────────────────────────────────────────────────────────── -->
         <div class="preview-section">
           <h3 class="preview-section-title">Egreso Mensual</h3>
           <div class="preview-grid">
@@ -211,7 +207,6 @@
           </div>
         </div>
 
-        <!-- Documentos ─────────────────────────────────────────────────────── -->
         <div class="preview-section">
           <h3 class="preview-section-title">Documentos Adjuntos</h3>
           <div class="docs-grid">
@@ -257,17 +252,12 @@
 </div>
 
 <style>
-  .page {
-    max-width: 900px; margin: 0 auto;
-    padding: 32px 16px 64px;
-    display: flex; flex-direction: column; gap: 16px;
-  }
+  .page { max-width: 900px; margin: 0 auto; padding: 32px 16px 64px; display: flex; flex-direction: column; gap: 16px; }
 
   .loading-wrap { display: flex; justify-content: center; padding: 60px; }
   .spinner-lg {
     width: 36px; height: 36px;
-    border: 3px solid var(--border);
-    border-top-color: var(--orange);
+    border: 3px solid var(--border); border-top-color: var(--orange);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
   }
@@ -310,8 +300,7 @@
 
   .docs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .doc-item {
-    display: flex; flex-direction: column; gap: 8px;
-    padding: 10px 14px;
+    display: flex; flex-direction: column; gap: 8px; padding: 10px 14px;
     border: 1.5px solid var(--border); border-radius: var(--radius-input);
     background: var(--bg-page);
   }

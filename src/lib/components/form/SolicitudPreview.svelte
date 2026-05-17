@@ -1,4 +1,6 @@
+// src/lib/components/form/SolicitudPreview.svelte
 <script>
+  // Exportación de propiedades
   export let form
   export let archivos
   export let total_egresos
@@ -7,8 +9,10 @@
   export let onRegresar
   export let onEnviar
 
+  // Variable de estado para la confirmación
   let confirmado = false
 
+  // Catálogos
   const tiposBeca = [
     { key: 'academica',     label: 'A. Académica' },
     { key: 'deportiva',     label: 'B. Deportiva' },
@@ -39,7 +43,6 @@
     <div class="error-msg">{errorGeneral}</div>
   {/if}
 
-  <!-- Datos personales -->
   <div class="preview-section">
     <h3 class="preview-section-title">Datos Personales</h3>
     <div class="preview-grid">
@@ -61,7 +64,6 @@
     </div>
   </div>
 
-  <!-- Beca -->
   <div class="preview-section">
     <h3 class="preview-section-title">Beca Solicitada</h3>
     <div class="preview-grid">
@@ -78,7 +80,6 @@
     </div>
   </div>
 
-  <!-- Info general -->
   <div class="preview-section">
     <h3 class="preview-section-title">Información General</h3>
     <div class="preview-grid">
@@ -89,7 +90,6 @@
     </div>
   </div>
 
-  <!-- Ingreso -->
   <div class="preview-section">
     <h3 class="preview-section-title">Ingreso Mensual</h3>
     <div class="preview-grid">
@@ -98,7 +98,6 @@
     </div>
   </div>
 
-  <!-- Egreso -->
   <div class="preview-section">
     <h3 class="preview-section-title">Egreso Mensual</h3>
     <div class="preview-grid">
@@ -111,7 +110,6 @@
     </div>
   </div>
 
-  <!-- Documentos -->
   <div class="preview-section">
     <h3 class="preview-section-title">Documentos Adjuntos</h3>
     <div class="docs-grid">
@@ -130,7 +128,6 @@
     </div>
   </div>
 
-  <!-- Confirmación y acciones -->
   <label class="confirm-check">
     <input type="checkbox" bind:checked={confirmado} />
     <span>Confirmo que mi información y datos son correctos. Entiendo que proporcionar información falsa puede resultar en la cancelación de mi solicitud.</span>
@@ -155,7 +152,8 @@
   .preview-header { display: flex; align-items: center; gap: 16px; }
   .preview-icon {
     width: 48px; height: 48px; border-radius: 50%;
-    background: var(--orange-light); color: var(--orange);
+    background: var(--orange-light);
+    color: var(--orange);
     display: flex; align-items: center; justify-content: center;
     font-size: 22px; font-weight: 700; flex-shrink: 0;
   }
@@ -164,7 +162,8 @@
   .preview-section { display: flex; flex-direction: column; gap: 12px; }
   .preview-section-title {
     font-size: 15px; font-weight: 600; color: var(--text-primary);
-    padding-bottom: 8px; border-bottom: 1.5px solid var(--border);
+    padding-bottom: 8px;
+    border-bottom: 1.5px solid var(--border);
   }
   .preview-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 24px; }
   .preview-field { display: flex; flex-direction: column; gap: 2px; }
@@ -184,7 +183,8 @@
   .confirm-check {
     display: flex; align-items: flex-start; gap: 10px;
     font-size: 13px; color: var(--text-primary);
-    cursor: pointer; accent-color: var(--orange); line-height: 1.5;
+    cursor: pointer;
+    accent-color: var(--orange); line-height: 1.5;
   }
   .form-actions {
     display: grid; grid-template-columns: 1fr 1fr; gap: 12px;

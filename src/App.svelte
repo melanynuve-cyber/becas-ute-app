@@ -1,4 +1,6 @@
+// src/App.svelte
 <script>
+  // Importaciones
   import { onMount } from 'svelte'
   import { Router, Route, navigate } from 'svelte-routing'
   import { get } from 'svelte/store'
@@ -6,27 +8,23 @@
     isAuthenticated,
     isAdmin,
     isAlumnoDual,
-    isAgenteDual,
-    isTutor,
-    isDirectivo,
+    isCoordinadorDual,
+    isCoordinadorCarrera,
   } from './lib/stores/auth.js'
 
-  import Login           from './routes/login/Login.svelte'
-  import Register        from './routes/register/Register.svelte'
-  import Verificar       from './routes/verificar/Verificar.svelte'
-  import Dashboard       from './routes/dashboard/Dashboard.svelte'
-  import NuevaSolicitud  from './routes/solicitud/NuevaSolicitud.svelte'
-  import DetalleSolicitud from './routes/solicitud/DetalleSolicitud.svelte'
-  import AdminSolicitudes from './routes/admin/solicitudes/AdminSolicitudes.svelte'
-  import AdminDetalle    from './routes/admin/solicitudes/AdminDetalle.svelte'
-  import ReportesDual    from './routes/dual/ReportesDual.svelte'
-  import AgenteDual      from './routes/dual/AgenteDual.svelte'
-  import TutorDual    from './routes/dual/TutorDual.svelte'
+  import Login              from './routes/Login.svelte'
+  import Register           from './routes/Register.svelte'
+  import Verificar          from './routes/Verificar.svelte'
+  import Dashboard          from './routes/dashboard/Dashboard.svelte'
+  import NuevaSolicitud     from './routes/solicitud/NuevaSolicitud.svelte'
+  import DetalleSolicitud   from './routes/solicitud/DetalleSolicitud.svelte'
+  import AdminSolicitudes   from './routes/admin/AdminSolicitudes.svelte'
+  import AdminDetalle       from './routes/admin/AdminDetalle.svelte'
+  import ReportesDual       from './routes/dual/ReportesDual.svelte'
+  import CoordinadorDual    from './routes/dual/CoordinadorDual.svelte'
+  import CoordinadorCarrera from './routes/dual/CoordinadorCarrera.svelte'
 
-  // ── Guard único para rutas protegidas ──────────────────────────────────────
-  // Cada componente de ruta llama a requireAuth() en su propio onMount;
-  // aquí sólo gestionamos la redirección inicial desde "/".
-  // Los guards específicos por rol viven en cada componente.
+  // Redirección principal del sistema
   onMount(() => {
     if (window.location.pathname === '/') {
       if (get(isAuthenticated)) {
@@ -37,40 +35,34 @@
     }
   })
 
+  // Enrutamiento basado en roles de usuario
   function redirectByRole() {
-    if (get(isAdmin))       return navigate('/admin/solicitudes', { replace: true })
-    if (get(isAgenteDual))  return navigate('/dual/agente',       { replace: true })
-    if (get(isTutor) || get(isDirectivo)) return navigate('/dual/tutor', { replace: true })
+    if (get(isAdmin))               return navigate('/admin/solicitudes', { replace: true })
+    if (get(isCoordinadorDual))     return navigate('/dual/coordinador',  { replace: true })
+    if (get(isCoordinadorCarrera))  return navigate('/dual/carrera',      { replace: true })
     navigate('/dashboard', { replace: true })
   }
 </script>
 
 <Router url={window.location.pathname}>
-  <!-- ── Públicas ─────────────────────────────────────────────────────────── -->
-  <Route path="/login"    component={Login} />
+  <Route path="/login" component={Login} />
   <Route path="/register" component={Register} />
   <Route path="/verificar" component={Verificar} />
 
-  <!-- ── Alumno ───────────────────────────────────────────────────────────── -->
-  <Route path="/dashboard"        component={Dashboard} />
-  <Route path="/solicitud/nueva"  component={NuevaSolicitud} />
-  <Route path="/solicitud/:id"    component={DetalleSolicitud} />
+  <Route path="/dashboard" component={Dashboard} />
+  <Route path="/solicitud/nueva" component={NuevaSolicitud} />
+  <Route path="/solicitud/:id" component={DetalleSolicitud} />
 
-  <!-- ── Alumno Dual ──────────────────────────────────────────────────────── -->
-  <Route path="/dual/reportes"    component={ReportesDual} />
+  <Route path="/dual/reportes" component={ReportesDual} />
+  <Route path="/dual/coordinador" component={CoordinadorDual} />
+  <Route path="/dual/carrera" component={CoordinadorCarrera} />
 
-  <!-- ── Agente Dual ──────────────────────────────────────────────────────── -->
-  <Route path="/dual/agente"      component={AgenteDual} />
-
-  <!-- ── Tutor / Directivo ─────────────────────────────────────────────────-->
-  <Route path="/dual/tutor"       component={TutorDual} />
-
-  <!-- ── Admin Becas ──────────────────────────────────────────────────────── -->
-  <Route path="/admin/solicitudes"      component={AdminSolicitudes} />
-  <Route path="/admin/solicitudes/:id"  component={AdminDetalle} />
+  <Route path="/admin/solicitudes" component={AdminSolicitudes} />
+  <Route path="/admin/solicitudes/:id" component={AdminDetalle} />
 </Router>
 
 <style>
+  /* Variables y reseteo CSS */
   :global(*) {
     box-sizing: border-box;
     margin: 0;
@@ -99,6 +91,7 @@
     --font:          'DM Sans', system-ui, sans-serif;
   }
 
+  /* Modo oscuro */
   :global([data-theme="dark"]) {
     --bg-page:        #111827;
     --bg-card:        #1F2937;
@@ -125,7 +118,7 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  /* ── Botones globales ────────────────────────────────────────────────────── */
+  /* Botones primarios */
   :global(.btn-primary) {
     display: flex;
     align-items: center;
@@ -156,6 +149,7 @@
     cursor: not-allowed;
   }
 
+  /* Botones outline */
   :global(.btn-outline) {
     display: flex;
     align-items: center;
@@ -178,7 +172,7 @@
     background: var(--orange-light);
   }
 
-  /* ── Inputs globales ─────────────────────────────────────────────────────── */
+  /* Campos de entrada con icono */
   :global(.input-group) {
     display: flex;
     flex-direction: column;
@@ -221,6 +215,7 @@
     cursor: not-allowed;
   }
 
+  /* Campos de entrada estándar */
   :global(.input-plain) {
     width: 100%;
     padding: 11px 14px;
@@ -240,7 +235,7 @@
     cursor: not-allowed;
   }
 
-  /* ── Error message ───────────────────────────────────────────────────────── */
+  /* Mensajes de error */
   :global(.error-msg) {
     background: #FEF2F2;
     border: 1px solid #FECACA;
@@ -251,7 +246,7 @@
     font-weight: 500;
   }
 
-  /* ── Link naranja ────────────────────────────────────────────────────────── */
+  /* Enlaces de sistema */
   :global(.link-orange) {
     color: var(--orange);
     font-weight: 600;
@@ -260,7 +255,7 @@
   }
   :global(.link-orange:hover) { text-decoration: underline; }
 
-  /* ── Badges de estado ────────────────────────────────────────────────────── */
+  /* Etiquetas de estado */
   :global(.badge) {
     display: inline-block;
     padding: 3px 10px;
