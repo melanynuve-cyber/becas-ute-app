@@ -1,5 +1,5 @@
-// src/lib/components/form/StepBecaSolicitada.svelte
 <script>
+  // src/lib/components/form/StepBecaSolicitada.svelte
   // Exportación del formulario
   export let form
 

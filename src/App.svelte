@@ -1,5 +1,5 @@
-// src/App.svelte
 <script>
+  // src/App.svelte
   // Importaciones
   import { onMount } from 'svelte'
   import { Router, Route, navigate } from 'svelte-routing'
@@ -105,9 +105,9 @@
   }
   :global([data-theme="dark"] .input-plain),
   :global([data-theme="dark"] .input-wrap input) {
-    background: #374151;
-    color: var(--text-primary);
-    border-color: #4B5563;
+    background: #374151 !important;
+    color: var(--text-primary) !important;
+    border-color: #4B5563 !important;
   }
 
   :global(body) {

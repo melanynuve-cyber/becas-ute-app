@@ -1,5 +1,5 @@
-// src/routes/Login.svelte
 <script>
+  // src/routes/Login.svelte
   // Importaciones
   import { navigate, link } from 'svelte-routing'
   import { fade } from 'svelte/transition'

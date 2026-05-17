@@ -1,5 +1,5 @@
-// src/routes/admin/AdminDetalle.svelte
 <script>
+  // src/routes/admin/AdminDetalle.svelte
   // Importación de dependencias y componentes de navegación globales
   import { onMount } from 'svelte'
   import { navigate } from 'svelte-routing'

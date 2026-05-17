@@ -1,5 +1,5 @@
-// src/lib/components/form/StepDocumentos.svelte
 <script>
+  // src/lib/components/form/StepDocumentos.svelte
   // Exportaciones
   export let archivos
   export let erroresArchivos = {}

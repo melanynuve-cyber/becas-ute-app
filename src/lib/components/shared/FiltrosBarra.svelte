@@ -1,29 +1,34 @@
-// src/lib/components/shared/FiltrosBarra.svelte
 <script>
+  // src/lib/components/shared/FiltrosBarra.svelte
+
   // Importaciones
   import { createEventDispatcher } from 'svelte'
   const dispatch = createEventDispatcher()
 
-  // Props de visibilidad
+  // Props de visibilidad y selectores dinámicos
   export let mostrarEstado = true
   export let mostrarCarrera = true
   export let mostrarGrupo = true
+  export let grupos = [] 
+  export let carreras = [] // Recibe un arreglo de strings directo de la BD
 
-  // Props de filtros
+  // Props de filtros vinculados
   export let filtroBusqueda = ''
   export let filtroGrupo = ''
   export let filtroCarrera = ''
   export let filtroEstado = ''
   
-  // Datos de selectores
-  export let grupos = []
-  export let carreras = [
-    { id: 'TII', nombre: 'Ingeniería en Tecnologías de la Información e Innovación Digital' }
-  ]
-
-  // Filtrado reactivo
+  // Filtrado inteligente de grupos por palabras clave de la carrera
   $: gruposFiltrados = filtroCarrera
-    ? grupos.filter(g => g.toLowerCase().includes(filtroCarrera.toLowerCase()))
+    ? grupos.filter(g => {
+        const gUpper = g.toUpperCase()
+        const cUpper = filtroCarrera.toUpperCase()
+        
+        if (gUpper.includes('TII') && cUpper.includes('INFORMACIÓN')) return true
+        if (gUpper.includes('LOG') && cUpper.includes('LOGISTICA')) return true
+        if (gUpper.includes('EDU') && cUpper.includes('EDUCACIÓN')) return true
+        return false
+      })
     : []
 
   // Manejo de eventos
@@ -49,8 +54,8 @@
   {#if mostrarCarrera}
     <select bind:value={filtroCarrera} class="input-plain select-field select-carrera" on:change={handleCarreraChange}>
       <option value="">Todas las carreras</option>
-      {#each carreras as car}
-        <option value={car.id}>{car.nombre}</option>
+      {#each carreras as carrera}
+        <option value={carrera}>{carrera}</option>
       {/each}
     </select>
   {/if}

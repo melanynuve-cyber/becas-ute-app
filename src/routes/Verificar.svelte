@@ -1,5 +1,5 @@
-// src/routes/Verificar.svelte
 <script>
+  // src/routes/Verificar.svelte
   // Importaciones
   import { navigate } from 'svelte-routing'
   import { onMount } from 'svelte'

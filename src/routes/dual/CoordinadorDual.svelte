@@ -1,5 +1,5 @@
-//src/routes/dual/CoordinadorDual.svelte
 <script>
+//src/routes/dual/CoordinadorDual.svelte
   import { onMount } from 'svelte'
   import { navigate, useLocation } from 'svelte-routing'
   import { get } from 'svelte/store'
@@ -99,6 +99,8 @@
       loading = false
     }
   }
+
+  $: carreras = [...new Set(reportes.map(r => r.carrera).filter(Boolean))].sort();
 
   function abrirRevision(reporte) {
     seleccionado = reporte
@@ -246,6 +248,7 @@
         mostrarGrupo={true}
         mostrarEstado={true}
         {grupos}
+        {carreras}
         bind:filtroEstado
         bind:filtroBusqueda
         bind:filtroCarrera

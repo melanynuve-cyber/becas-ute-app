@@ -1,5 +1,5 @@
-// src/lib/components/form/StepInfoGeneral.svelte
 <script>
+  // src/lib/components/form/StepInfoGeneral.svelte
   // Exportaciones de props y variables dependientes
   export let info
   export let tipoSolicitud 

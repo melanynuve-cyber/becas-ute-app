@@ -1,5 +1,5 @@
-// src/routes/Register.svelte
 <script>
+  // src/routes/Register.svelte
   // Importaciones
   import { navigate, link } from 'svelte-routing'
   import { onMount } from 'svelte'

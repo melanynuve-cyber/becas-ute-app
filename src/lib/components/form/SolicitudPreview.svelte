@@ -1,5 +1,5 @@
-// src/lib/components/form/SolicitudPreview.svelte
 <script>
+  // src/lib/components/form/SolicitudPreview.svelte
   // Exportación de propiedades
   export let form
   export let archivos

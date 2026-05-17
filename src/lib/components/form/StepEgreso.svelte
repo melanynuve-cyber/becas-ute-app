@@ -1,5 +1,5 @@
-// src/lib/components/form/StepEgreso.svelte
 <script>
+  // src/lib/components/form/StepEgreso.svelte
   // Exportación del objeto de egresos
   export let egreso
 

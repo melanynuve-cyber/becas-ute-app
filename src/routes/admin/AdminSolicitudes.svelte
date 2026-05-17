@@ -1,5 +1,5 @@
-// src/routes/admin/AdminSolicitudes.svelte
 <script>
+  // src/routes/admin/AdminSolicitudes.svelte
   // Importación de librerías globales y componentes comunes de la app
   import { onMount } from 'svelte'
   import { navigate } from 'svelte-routing'
@@ -62,6 +62,9 @@
       loading = false
     }
   }
+
+  $: carreras = [...new Set(solicitudes.map(s => s.carrera || s.payload?.datos_personales?.programa_educativo).filter(Boolean))].sort();
+
 </script>
 
 <Navbar />
@@ -79,6 +82,7 @@
       mostrarGrupo={true}
       mostrarEstado={true}
       {grupos}
+      {carreras}
       bind:filtroEstado={filtro}
       bind:filtroBusqueda
       bind:filtroCarrera

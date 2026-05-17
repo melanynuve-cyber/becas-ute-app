@@ -1,5 +1,5 @@
-// src/lib/components/layout/PerfilModal.svelte
 <script>
+  // src/lib/components/layout/PerfilModal.svelte
   // Exportaciones de props
   export let alumno
   export let show = false
@@ -106,13 +106,22 @@
     background: var(--orange); border-radius: 50%; display: flex; align-items: center; justify-content: center;
     flex-shrink: 0;
   }
-  .modal-title    { font-size: 17px; font-weight: 700; }
+  .modal-title { 
+    font-size: 17px; 
+    font-weight: 700; 
+    color: var(--text-primary);
+  }
   .modal-subtitle { font-size: 13px; color: var(--text-secondary); }
   .modal-fields   { display: flex; flex-direction: column; gap: 10px; }
   .field-card {
-    background: var(--bg-page); border-radius: 10px;
+    background: var(--bg-page); 
+    border-radius: 10px;
     padding: 12px 14px;
-    display: flex; flex-direction: column; gap: 3px; }
+    display: flex; 
+    flex-direction: column; 
+    gap: 3px; 
+    color: var(--text-primary);
+  }
   .field-card.two-col {
     display: grid; grid-template-columns: 1fr 1fr;
   }
@@ -120,25 +129,60 @@
   .field-label { font-size: 11px; color: var(--text-secondary); font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; }
   .field-value  { font-size: 14px; font-weight: 600; color: var(--text-primary); }
 
-  .dual-card { background: var(--bg-page); }
-  .dual-activo { background: #FFF7ED; border: 1px solid #FED7AA; }
+  /* Ajustes de la sección dual */
+  .dual-card { 
+    background: var(--bg-page); 
+  }
+  .dual-activo { 
+    background: #FFF7ED; 
+    border: 1px solid #FED7AA; 
+  }
   .dual-row { display: flex; gap: 24px; }
   .dual-row > div { display: flex; flex-direction: column; gap: 3px; }
+  
   .dual-badge {
     display: inline-block; font-size: 12px; font-weight: 700;
     color: var(--orange); background: #FFF7ED;
     border: 1px solid #FED7AA; border-radius: 6px;
-    padding: 2px 8px; margin-top: 2px; }
+    padding: 2px 8px; margin-top: 2px; 
+  }
   .nodual-badge {
-    display: inline-block; font-size: 12px; font-weight: 600;
-    color: var(--text-secondary); }
+    display: inline-block; 
+    font-size: 12px; 
+    font-weight: 600;
+    color: var(--text-secondary); 
+  }
   .empresa-val { color: var(--text-primary); }
 
+  /* Control de modo oscuro unificado */
+  :global([data-theme="dark"]) .dual-activo {
+    background: var(--bg-page) !important;
+    border: none !important;
+  }
+  :global([data-theme="dark"]) .empresa-val {
+    color: var(--text-primary) !important;
+  }
+  :global([data-theme="dark"]) .dual-badge {
+    background: rgba(249, 115, 22, 0.2) !important;
+    border-color: var(--orange) !important;
+  }
+
+  /* Botón de cierre */
   .modal-close {
-    position: absolute; top: 16px; right: 16px; background: var(--bg-page); border: none; border-radius: 8px;
-    width: 32px; height: 32px;
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer; color: var(--text-secondary); transition: background 0.15s;
+    position: absolute; 
+    top: 16px; 
+    right: 16px; 
+    background: var(--bg-page); 
+    border: none; 
+    border-radius: 8px;
+    width: 32px; 
+    height: 32px;
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+    cursor: pointer; 
+    color: var(--text-secondary); 
+    transition: background 0.15s;
   }
   .modal-close:hover { background: var(--border); }
 </style>

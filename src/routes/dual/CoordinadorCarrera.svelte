@@ -1,5 +1,5 @@
-// src/routes/dual/CoordinadorCarrera.svelte
 <script>
+  // src/routes/dual/CoordinadorCarrera.svelte
   import { onMount } from 'svelte'
   import { navigate } from 'svelte-routing'
   import { get } from 'svelte/store'
@@ -53,8 +53,9 @@
     }
   }
 
-  // Lista de grupos únicos para el select de filtro
-  $: grupos = [...new Set(alumnos.map(a => a.nomenclatura).filter(Boolean))].sort()
+  // Extracción dinámica de catálogos desde la lista de alumnos
+  $: carreras = [...new Set(alumnos.map(a => a.carrera).filter(Boolean))].sort()
+  $: grupos = [...new Set(alumnos.map(a => a.nomenclatura || a.grupo).filter(Boolean))].sort()
 
   // Filtrado combinado del lado del cliente (Búsqueda + Carrera)
   $: alumnosFiltrados = alumnos.filter(a => {
@@ -122,6 +123,7 @@
         mostrarCarrera={true}
         mostrarGrupo={true}
         {grupos}
+        {carreras}
         bind:filtroBusqueda
         bind:filtroGrupo
         bind:filtroCarrera

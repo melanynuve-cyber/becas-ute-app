@@ -1,5 +1,5 @@
-// src/routes/solicitud/DetalleSolicitud.svelte
 <script>
+  // src/routes/solicitud/DetalleSolicitud.svelte
   // Importaciones
   import { onMount } from 'svelte'
   import { navigate } from 'svelte-routing'

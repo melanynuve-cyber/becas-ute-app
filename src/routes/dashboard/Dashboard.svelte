@@ -1,5 +1,5 @@
-// src/routes/dashboard/Dashboard.svelte
 <script>
+  // src/routes/dashboard/Dashboard.svelte
   // Importaciones
   import { onMount } from 'svelte'
   import { navigate } from 'svelte-routing'

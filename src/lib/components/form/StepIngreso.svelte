@@ -1,5 +1,5 @@
-// src/lib/components/form/StepIngreso.svelte
 <script>
+  // src/lib/components/form/StepIngreso.svelte
   // Exportación del objeto de ingresos
   export let ingreso
 </script>
