@@ -56,19 +56,19 @@
             <span class="field-value">{alumno.nomenclatura || '—'}</span>
           </div>
         </div>
-        <div class="field-card dual-card" class:dual-activo={alumno.es_alumno_dual}>
+        <div class="field-card dual-card" class:dual-activo={alumno.es_alumno_dual || alumno.activo || alumno.empresa_id || alumno.empresa}>
           <div class="dual-row">
             <div>
               <span class="field-label">Modalidad Dual</span>
               <span class="field-value">
-                {#if alumno.es_alumno_dual}
+                {#if alumno.es_alumno_dual || alumno.activo || alumno.empresa_id || alumno.empresa}
                   <span class="dual-badge">✦ Activo</span>
                 {:else}
                   <span class="nodual-badge">No inscrito</span>
                 {/if}
               </span>
             </div>
-            {#if alumno.es_alumno_dual && alumno.empresa}
+            {#if (alumno.es_alumno_dual || alumno.activo || alumno.empresa_id || alumno.empresa) && alumno.empresa}
               <div>
                 <span class="field-label">Empresa</span>
                 <span class="field-value empresa-val">{alumno.empresa}</span>

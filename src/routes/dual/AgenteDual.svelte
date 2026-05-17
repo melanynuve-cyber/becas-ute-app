@@ -24,6 +24,14 @@
     }
   }
 
+  // Diccionario para mapear el nombre largo de la carrera
+  const nombresCarreras = {
+    "TII": "Ingeniería en Tecnologías de la Información e Innovación Digital"
+  };
+
+  $: carreraCompletaRevision = seleccionado ? (nombresCarreras[seleccionado.carrera] || seleccionado.carrera) : '—';
+  $: carreraCompletaPreview = alumnoPreview ? (nombresCarreras[alumnoPreview.carrera] || alumnoPreview.carrera) : '—';
+
   // ── Bandeja ────────────────────────────────────────────────────────────────
   let reportes           = []
   let loading            = true
@@ -325,7 +333,7 @@
               <span class="ficha-key">Matrícula</span>
               <span class="ficha-val ficha-mono">{seleccionado.matricula}</span>
               <span class="ficha-key">Carrera</span>
-              <span class="ficha-val">{seleccionado.carrera || '—'}</span>
+              <span class="ficha-val">{carreraCompletaRevision}</span>
               <span class="ficha-key">Empresa</span>
               <span class="ficha-val">{seleccionado.empresa || 'Sin asignar'}</span>
               <span class="ficha-key">Grupo</span>
@@ -455,7 +463,7 @@
                   <span class="ficha-key">Nombre</span>
                   <span class="ficha-val">{alumnoPreview.nombre}</span>
                   <span class="ficha-key">Carrera</span>
-                  <span class="ficha-val">{alumnoPreview.carrera || '—'}</span>
+                  <span class="ficha-val">{carreraCompletaPreview}</span>
                   <span class="ficha-key">Grupo</span>
                   <span class="ficha-val">{alumnoPreview.nomenclatura || '—'}</span>
                   <span class="ficha-key">Es dual</span>

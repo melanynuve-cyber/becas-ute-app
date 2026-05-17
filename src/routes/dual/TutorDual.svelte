@@ -90,10 +90,18 @@
     window.open(url, '_blank')
   }
 
-  // ── Promedio visual ────────────────────────────────────────────────────────
+// ── Promedio visual ────────────────────────────────────────────────────────
   $: promedioExpediente = reportes.length
     ? (reportes.reduce((s, r) => s + Number(r.calificacion_alumno), 0) / reportes.length).toFixed(2)
     : null
+
+// Diccionario para mapear el nombre largo de la carrera
+  const nombresCarreras = {
+    "TII": "Ingeniería en Tecnologías de la Información e Innovación Digital"
+  };
+
+  $: carreraCompletaExpediente = alumnoSeleccionado ? (nombresCarreras[alumnoSeleccionado.carrera] || alumnoSeleccionado.carrera) : '—';
+
 </script>
 
 <Navbar />
@@ -207,7 +215,7 @@
             <span class="ficha-key">Matrícula</span>
             <span class="ficha-val ficha-mono">{alumnoSeleccionado.matricula}</span>
             <span class="ficha-key">Carrera</span>
-            <span class="ficha-val">{alumnoSeleccionado.carrera || '—'}</span>
+            <span class="ficha-val">{carreraCompletaExpediente}</span>
             <span class="ficha-key">Grupo</span>
             <span class="ficha-val">{alumnoSeleccionado.nomenclatura || '—'}</span>
             <span class="ficha-key">Empresa</span>

@@ -19,16 +19,16 @@
   // Formulario
   let semana       = ''
   let calificacion = ''
-  let archivo      = null
+  let archivo       = null
   let errorForm    = ''
 
   const SEMANAS = Array.from({ length: 14 }, (_, i) => i + 1)
 
-  // TODO: conectar con archivos reales cuando estén disponibles en el servidor
+  // Rutas conectadas directamente a la carpeta física public/plantillas/
   const PLANTILLAS = [
-    { label: 'Plantilla Word',  ext: 'DOCX', icon: '📄', color: '#2B579A', url: null },
-    { label: 'Plantilla Excel', ext: 'XLSX', icon: '📊', color: '#217346', url: null },
-    { label: 'Plantilla PDF',   ext: 'PDF',  icon: '📋', color: '#DC2626', url: null },
+    { label: 'Plantilla Word',  ext: 'DOCX', icon: '📄', color: '#2B579A', url: '/plantillas/plantilla_word.docx', filename: 'Plantilla_Semanal_Dual.docx' },
+    { label: 'Plantilla Excel', ext: 'XLSX', icon: '📊', color: '#217346', url: '/plantillas/plantilla_excel.xlsx', filename: 'Plantilla_Asistencia_Dual.xlsx' },
+    { label: 'Plantilla PDF',   ext: 'PDF',  icon: '📋', color: '#DC2626', url: '/plantillas/plantilla_pdf.pdf',  filename: 'Guia_Reporte_Dual.pdf' },
   ]
 
   onMount(async () => {
@@ -96,13 +96,12 @@
 
       <h1 class="page-title">Reportes Dual</h1>
 
-      <!-- Descargas -->
       <div class="card">
         <h2 class="card-title">Plantillas de Reporte</h2>
         <div class="plantillas-grid">
           {#each PLANTILLAS as p}
             {#if p.url}
-              <a href={p.url} download class="plantilla-btn" style="--color: {p.color}">
+              <a href={p.url} download={p.filename} class="plantilla-btn" style="--color: {p.color}">
                 <span class="plantilla-icon">{p.icon}</span>
                 <div>
                   <div class="plantilla-label">{p.label}</div>
@@ -122,7 +121,6 @@
         </div>
       </div>
 
-      <!-- Formulario de entrega -->
       <div class="card">
         <h2 class="card-title">Entregar Reporte Semanal</h2>
 
@@ -187,7 +185,6 @@
         </div>
       </div>
 
-      <!-- Historial -->
       <div class="card">
         <h2 class="card-title">Historial de Reportes</h2>
 
