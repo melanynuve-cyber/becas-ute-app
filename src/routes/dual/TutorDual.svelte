@@ -5,6 +5,7 @@
   import { isAuthenticated, isTutor } from '../../lib/stores/auth.js'
   import { api } from '../../lib/services/api.js'
   import Navbar from '../../lib/components/Navbar.svelte'
+  import FiltrosBarra from '../../lib/components/FiltrosBarra.svelte'
   import { formatFecha } from '../../lib/utils.js'
 
   // ── Vistas ─────────────────────────────────────────────────────────────────
@@ -17,6 +18,8 @@
   let filtroCuatrimestre = ''
   let filtroGrupo        = ''
   let filtroBusqueda     = ''
+  let filtroCarrera      = ''
+  let filtroEstado       = ''
 
   // ── Expediente ─────────────────────────────────────────────────────────────
   let alumnoSeleccionado  = null
@@ -52,13 +55,16 @@
   // Lista de grupos únicos para el select de filtro
   $: grupos = [...new Set(alumnos.map(a => a.nomenclatura).filter(Boolean))].sort()
 
-  // Filtro de búsqueda por matrícula o nombre (client-side)
-  $: alumnosFiltrados = filtroBusqueda.trim()
-    ? alumnos.filter(a =>
-        a.matricula.toLowerCase().includes(filtroBusqueda.toLowerCase()) ||
-        a.nombre.toLowerCase().includes(filtroBusqueda.toLowerCase())
-      )
-    : alumnos
+  // Filtrado combinado del lado del cliente (Búsqueda + Carrera)
+  $: alumnosFiltrados = alumnos.filter(a => {
+    const matchBusqueda = filtroBusqueda.trim()
+      ? a.matricula.toLowerCase().includes(filtroBusqueda.toLowerCase()) || a.nombre.toLowerCase().includes(filtroBusqueda.toLowerCase())
+      : true;
+    const matchCarrera = filtroCarrera
+      ? (a.carrera && a.carrera.toLowerCase() === filtroCarrera.toLowerCase()) || (a.nomenclatura && a.nomenclatura.toLowerCase().includes(filtroCarrera.toLowerCase()))
+      : true;
+    return matchBusqueda && matchCarrera;
+  });
 
   // ── Expediente ─────────────────────────────────────────────────────────────
   async function abrirExpediente(alumno) {
@@ -90,18 +96,16 @@
     window.open(url, '_blank')
   }
 
-// ── Promedio visual ────────────────────────────────────────────────────────
+  // ── Promedio visual ────────────────────────────────────────────────────────
   $: promedioExpediente = reportes.length
     ? (reportes.reduce((s, r) => s + Number(r.calificacion_alumno), 0) / reportes.length).toFixed(2)
     : null
 
-// Diccionario para mapear el nombre largo de la carrera
+  // Diccionario para mapear el nombre largo de la carrera
   const nombresCarreras = {
     "TII": "Ingeniería en Tecnologías de la Información e Innovación Digital"
   };
-
   $: carreraCompletaExpediente = alumnoSeleccionado ? (nombresCarreras[alumnoSeleccionado.carrera] || alumnoSeleccionado.carrera) : '—';
-
 </script>
 
 <Navbar />
@@ -115,32 +119,17 @@
         <p class="page-sub">Directorio del cuatrimestre en curso</p>
       </div>
 
-      <div class="filters-row">
-        <input
-          class="input-plain input-busqueda"
-          placeholder="Buscar por nombre o matrícula…"
-          bind:value={filtroBusqueda}
-        />
-        <input
-          class="input-plain"
-          placeholder="Cuatrimestre (ej. 5)"
-          bind:value={filtroCuatrimestre}
-          style="max-width:180px"
-          on:keydown={(e) => e.key === 'Enter' && cargarAlumnos()}
-        />
-        <select
-          bind:value={filtroGrupo}
-          class="input-plain"
-          style="min-width:180px"
-          on:change={cargarAlumnos}
-        >
-          <option value="">Todos los grupos</option>
-          {#each grupos as g}
-            <option value={g}>{g}</option>
-          {/each}
-        </select>
-        <button class="btn-outline" on:click={cargarAlumnos}>Buscar</button>
-      </div>
+      <FiltrosBarra
+        mostrarEstado={false}
+        mostrarCarrera={true}
+        mostrarGrupo={true}
+        {grupos}
+        bind:filtroBusqueda
+        bind:filtroGrupo
+        bind:filtroCarrera
+        bind:filtroEstado
+        on:buscar={cargarAlumnos}
+      />
 
       {#if loading}
         <div class="state-msg"><div class="spinner"></div></div>
@@ -315,11 +304,7 @@
   .page-title   { font-size: 1.5rem; font-weight: 700; color: var(--text-primary); margin: 0 0 4px; }
   .page-sub     { font-size: 0.875rem; color: var(--text-secondary); margin: 0; }
 
-  /* ── Filtros ─────────────────────────────────────────────────────────────── */
-  .filters-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 1.5rem; }
-  .input-busqueda { flex: 1; min-width: 200px; }
-
-  /* ── Tabla ───────────────────────────────────────────────────────────────── */
+  /* Tabla */
   .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius-card); background: var(--bg-card); }
   .tabla { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
   .tabla thead { background: var(--bg-page); }

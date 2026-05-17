@@ -5,6 +5,7 @@
   import { isAuthenticated, isAgenteDual } from '../../lib/stores/auth.js'
   import { api } from '../../lib/services/api.js'
   import Navbar from '../../lib/components/Navbar.svelte'
+  import FiltrosBarra from '../../lib/components/FiltrosBarra.svelte'
   import { formatFecha, estadoBadgeClass } from '../../lib/utils.js'
 
   const location = useLocation()
@@ -24,21 +25,27 @@
     }
   }
 
-  // Diccionario para mapear el nombre largo de la carrera
-  const nombresCarreras = {
-    "TII": "Ingeniería en Tecnologías de la Información e Innovación Digital"
-  };
-
-  $: carreraCompletaRevision = seleccionado ? (nombresCarreras[seleccionado.carrera] || seleccionado.carrera) : '—';
-  $: carreraCompletaPreview = alumnoPreview ? (nombresCarreras[alumnoPreview.carrera] || alumnoPreview.carrera) : '—';
-
   // ── Bandeja ────────────────────────────────────────────────────────────────
   let reportes           = []
   let loading            = true
   let error              = ''
   let filtroEstado       = 'Pendiente'
-  let filtroCuatrimestre = ''
-  let cuatrimestres      = []
+  let filtroBusqueda     = ''
+  let filtroCarrera      = ''
+  let filtroGrupo        = ''
+
+  // Generamos la lista de grupos dinámicamente basados en los reportes cargados
+  $: grupos = [...new Set(reportes.map(r => r.nomenclatura).filter(Boolean))].sort();
+
+  $: reportesFiltrados = reportes.filter(r => {
+    const matchBusqueda = filtroBusqueda.trim()
+      ? r.matricula.toLowerCase().includes(filtroBusqueda.toLowerCase()) || (r.nombre && r.nombre.toLowerCase().includes(filtroBusqueda.toLowerCase()))
+      : true;
+    const matchCarrera = filtroCarrera ? (r.carrera && r.carrera.toLowerCase() === filtroCarrera.toLowerCase()) : true;
+    const matchGrupo = filtroGrupo ? (r.nomenclatura && r.nomenclatura.toLowerCase() === filtroGrupo.toLowerCase()) : true;
+    const matchEstado = filtroEstado ? r.estado === filtroEstado : true;
+    return matchBusqueda && matchCarrera && matchGrupo && matchEstado;
+  });
 
   // ── Revisión ───────────────────────────────────────────────────────────────
   let seleccionado = null
@@ -79,12 +86,9 @@
     try {
       const params = new URLSearchParams()
       if (filtroEstado)       params.append('estado',       filtroEstado)
-      if (filtroCuatrimestre) params.append('cuatrimestre', filtroCuatrimestre)
     
       const data    = await api.dual.listarReportes(params.toString())
       reportes      = data
-      const set     = new Set(data.map(r => r.cuatrimestre))
-      cuatrimestres = [...set].sort().reverse()
     } catch (e) {
       error = e.message || 'Error al cargar reportes.'
     } finally {
@@ -214,6 +218,14 @@
       guardandoAsignacion = false
     }
   }
+
+  // Diccionario para mapear el nombre largo de la carrera
+  const nombresCarreras = {
+    "TII": "Ingeniería en Tecnologías de la Información e Innovación Digital"
+  };
+
+  $: carreraCompletaRevision = seleccionado ? (nombresCarreras[seleccionado.carrera] || seleccionado.carrera) : '—';
+  $: carreraCompletaPreview = alumnoPreview ? (nombresCarreras[alumnoPreview.carrera] || alumnoPreview.carrera) : '—';
 </script>
 
 <Navbar />
@@ -227,29 +239,23 @@
         <p class="page-sub">Revisión semanal de entregas de alumnos DUAL</p>
       </div>
 
-      <div class="filters-row">
-        <select bind:value={filtroEstado} on:change={cargarReportes} class="input-plain" style="min-width:160px">
-          <option value="">Todos los estados</option>
-          <option value="Pendiente">Pendiente</option>
-          <option value="Aprobada">Aprobada</option>
-          <option value="Rechazada">Rechazada</option>
-        </select>
-        <select bind:value={filtroCuatrimestre} on:change={cargarReportes} class="input-plain" style="min-width:180px">
-         
-          <option value="">Todos los cuatrimestres</option>
-          {#each cuatrimestres as c}
-            <option value={c}>{c}</option>
-          {/each}
-        </select>
-        <button class="btn-outline" on:click={cargarReportes}>Actualizar</button>
-      </div>
+      <FiltrosBarra
+        mostrarCarrera={true}
+        mostrarGrupo={true}
+        mostrarEstado={true}
+        {grupos}
+        bind:filtroEstado
+        bind:filtroBusqueda
+        bind:filtroCarrera
+        bind:filtroGrupo
+        on:buscar={cargarReportes}
+      />
 
       {#if loading}
         <div class="state-msg">Cargando reportes…</div>
       {:else if error}
         <p class="error-msg">{error}</p>
-  
-      {:else if reportes.length === 0}
+      {:else if reportesFiltrados.length === 0}
         <div class="state-msg empty">
           <span class="empty-icon">📭</span>
           <p>No hay reportes con los filtros seleccionados.</p>
@@ -258,29 +264,25 @@
         <div class="table-wrap">
           <table class="reporte-table">
             <thead>
-         
               <tr>
                 <th>Matrícula</th>
                 <th>Nombre</th>
                 <th>Calificación</th>
                 <th>Estado</th>
                 <th>Entregado</th>
-               
                 <th></th>
               </tr>
             </thead>
             <tbody>
-              {#each reportes as r}
+              {#each reportesFiltrados as r}
                 <tr class:row-pendiente={r.estado === 'Pendiente'}>
                   <td class="td-matricula">{r.matricula}</td>
-          
                   <td class="td-nombre">{r.nombre || '—'}</td>
                   <td class="td-cal">{r.calificacion_alumno}</td>
                   <td><span class={estadoBadgeClass(r.estado)}>{r.estado}</span></td>
                   <td class="td-fecha">{formatFecha(r.created_at)}</td>
                   <td>
                     <button class="btn-revisar" on:click={() => abrirRevision(r)}>
- 
                       {r.estado === 'Pendiente' ? 'Revisar →' : 'Ver →'}
                     </button>
                   </td>
@@ -288,9 +290,8 @@
               {/each}
             </tbody>
           </table>
-      
         </div>
-        <p class="count-label">{reportes.length} reporte{reportes.length !== 1 ? 's' : ''}</p>
+        <p class="count-label">{reportesFiltrados.length} reporte{reportesFiltrados.length !== 1 ? 's' : ''}</p>
       {/if}
     </div>
 
@@ -303,7 +304,6 @@
 
       <div class="split-layout">
         <div class="panel-pdf">
-        
           <div class="panel-label">Reporte entregado</div>
           {#if seleccionado.archivo_pdf_url}
             <iframe src={seleccionado.archivo_pdf_url} title="Reporte PDF" class="pdf-iframe"></iframe>
@@ -311,7 +311,6 @@
               Abrir en nueva pestaña ↗
             </a>
           {:else}
-            
             <div class="no-pdf">No hay PDF disponible.</div>
           {/if}
         </div>
@@ -322,7 +321,6 @@
           <div class="dato-cal">
             <p class="dato-label">Calificación declarada</p>
             <p class="dato-valor">{seleccionado.calificacion_alumno}</p>
-       
           </div>
 
           <div class="ficha-alumno">
@@ -346,7 +344,6 @@
           </div>
 
           {#if seleccionado.nota_agente}
-    
             <div class="nota-previa">
               <p class="dato-label">Nota del agente</p>
               <p class="nota-texto">{seleccionado.nota_agente}</p>
@@ -355,7 +352,6 @@
 
           {#if seleccionado.estado === 'Pendiente'}
             <div class="acciones-grupo">
-           
               <div class="btn-decision-row">
                 <button
                   class="btn-decision btn-aprobar"
@@ -366,7 +362,6 @@
                   class="btn-decision btn-rechazar"
                   class:activo={accion === 'rechazar'}
                   on:click={() => accion = 'rechazar'}
-   
                 >❌ Rechazar</button>
               </div>
 
@@ -375,13 +370,11 @@
                   <textarea
                     class="input-plain textarea-nota"
                     placeholder={accion === 'rechazar'
-                    
                       ? 'Razón del rechazo (obligatorio)…'
                       : 'Nota opcional para el alumno…'}
                     rows="3"
                     bind:value={nota}
                   ></textarea>
-         
                 </div>
               {/if}
 
@@ -390,7 +383,6 @@
 
               {#if !exito}
                 <button
-               
                   class="btn-primary"
                   style="width:100%;margin-top:14px"
                   on:click={enviarDecision}
@@ -402,7 +394,6 @@
                 <button class="btn-outline" style="width:100%;margin-top:10px" on:click={volverBandeja}>
                   ← Volver a la bandeja
                 </button>
-          
               {/if}
             </div>
           {:else}
@@ -410,7 +401,6 @@
               <p>Este reporte ya fue
                 <strong
                   class:text-verde={seleccionado.estado === 'Aprobada'}
-        
                   class:text-rojo={seleccionado.estado === 'Rechazada'}
                 >{seleccionado.estado.toLowerCase()}</strong>.
               </p>
@@ -434,9 +424,7 @@
         <div class="state-msg">Cargando...</div>
       {:else}
         <div class="empresas-layout">
-
           <div class="card-seccion">
-          
             <h2 class="seccion-title">Buscar alumno</h2>
 
             {#if errorAsignacion}<div class="error-msg">{errorAsignacion}</div>{/if}
@@ -446,7 +434,6 @@
               <input
                 class="input-plain"
                 placeholder="Matrícula del alumno"
-       
                 bind:value={matriculaBusqueda}
                 on:keydown={(e) => e.key === 'Enter' && buscarAlumno()}
               />
@@ -459,7 +446,6 @@
               <div class="ficha-alumno" style="margin:0">
                 <p class="ficha-titulo">Datos del alumno</p>
                 <div class="ficha-grid">
-       
                   <span class="ficha-key">Nombre</span>
                   <span class="ficha-val">{alumnoPreview.nombre}</span>
                   <span class="ficha-key">Carrera</span>
@@ -483,7 +469,6 @@
                 </select>
               </div>
 
-         
               <div class="nueva-empresa-row">
                 <input
                   class="input-plain"
@@ -496,7 +481,6 @@
                 </button>
               </div>
 
-           
               <div style="display:flex;gap:8px;margin-top:4px">
                 <button
                   class="btn-primary"
@@ -509,14 +493,12 @@
                 {#if alumnoPreview.es_alumno_dual}
                   <button
                     class="btn-outline btn-danger"
-                   
                     style="flex:1"
                     on:click={quitarDual}
                     disabled={guardandoAsignacion}
                   >
                     Quitar dual
                   </button>
-  
                 {/if}
               </div>
             {/if}
@@ -525,57 +507,36 @@
           <div class="card-seccion">
             <h2 class="seccion-title">Empresas registradas</h2>
             {#if empresas.length === 0}
-          
               <p class="empty-msg">No hay empresas registradas aún.</p>
             {:else}
               <ul class="empresa-list">
                 {#each empresas as emp}
                   <li class="empresa-item">
                     <span class="empresa-nombre">{emp.nombre}</span>
-     
                   </li>
                 {/each}
               </ul>
             {/if}
           </div>
-
         </div>
       {/if}
     </div>
   {/if}
-
 </div>
 
 <style>
-  /* ── Layout general ──────────────────────────────────────────────────────── */
-  .main-content { padding-top: 56px; } /* Ajuste del Navbar superior */
+  .main-content { padding-top: 56px; }
   .page-wrap    { padding: 2rem 1.5rem; max-width: 900px; margin: 0 auto; }
   .page-header  { margin-bottom: 1.5rem; }
   .page-title   { font-size: 1.5rem; font-weight: 700; color: var(--text-primary); margin: 0 0 4px; }
   .page-sub     { font-size: 0.875rem; color: var(--text-secondary); margin: 0; }
 
-  /* ── Filtros ─────────────────────────────────────────────────────────────── */
-  .filters-row {
-    display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 1.5rem;
-  }
-
-  /* ── Tabla ───────────────────────────────────────────────────────────────── */
-  .table-wrap {
-    overflow-x: auto; border: 1px solid var(--border);
-    border-radius: var(--radius-card); background: var(--bg-card);
-  }
+  /* Tabla */
+  .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius-card); background: var(--bg-card); }
   .reporte-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
   .reporte-table thead { background: var(--bg-page); }
-  .reporte-table th {
-    text-align: left; padding: 10px 16px; font-weight: 600;
-    color: var(--text-secondary); font-size: 0.78rem;
-    text-transform: uppercase; letter-spacing: 0.05em;
-    border-bottom: 1px solid var(--border); white-space: nowrap;
-  }
-  .reporte-table td {
-    padding: 13px 16px; color: var(--text-primary);
-    border-bottom: 1px solid var(--border);
-  }
+  .reporte-table th { text-align: left; padding: 10px 16px; font-weight: 600; color: var(--text-secondary); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  .reporte-table td { padding: 13px 16px; color: var(--text-primary); border-bottom: 1px solid var(--border); }
   .reporte-table tbody tr:last-child td { border-bottom: none; }
   .reporte-table tbody tr:hover         { background: var(--orange-light); }
   .row-pendiente { border-left: 3px solid var(--orange); }
@@ -585,12 +546,7 @@
   .td-cal       { font-weight: 700; color: var(--orange); font-size: 1rem; }
   .td-fecha     { color: var(--text-secondary); font-size: 0.82rem; white-space: nowrap; }
 
-  .btn-revisar {
-    background: none; border: 1px solid var(--border); border-radius: 8px;
-    padding: 5px 14px; font-size: 0.82rem; font-weight: 600;
-    color: var(--orange); cursor: pointer; white-space: nowrap;
-    transition: background 0.15s, border-color 0.15s;
-  }
+  .btn-revisar { background: none; border: 1px solid var(--border); border-radius: 8px; padding: 5px 14px; font-size: 0.82rem; font-weight: 600; color: var(--orange); cursor: pointer; white-space: nowrap; transition: background 0.15s, border-color 0.15s; }
   .btn-revisar:hover { background: var(--orange-light); border-color: var(--orange); }
 
   .count-label { font-size: 0.8rem; color: var(--text-secondary); margin: 10px 0 0; text-align: right; }
@@ -598,117 +554,58 @@
   .empty       { display: flex; flex-direction: column; align-items: center; gap: 8px; }
   .empty-icon  { font-size: 2rem; }
 
-  /* ── Vista revisión ──────────────────────────────────────────────────────── */
+  /* Vista revisión */
   .revision-wrap   { display: flex; flex-direction: column; height: calc(100vh - 56px); overflow: hidden; }
-  .revision-topbar {
-    display: flex; align-items: center; gap: 12px; padding: 10px 20px;
-    background: var(--bg-card); border-bottom: 1px solid var(--border);
-  }
-  .btn-back {
-    background: none; border: none; cursor: pointer;
-    font-size: 0.875rem; font-weight: 600; color: var(--orange); padding: 0;
-  }
+  .revision-topbar { display: flex; align-items: center; gap: 12px; padding: 10px 20px; background: var(--bg-card); border-bottom: 1px solid var(--border); }
+  .btn-back { background: none; border: none; cursor: pointer; font-size: 0.875rem; font-weight: 600; color: var(--orange); padding: 0; }
   .btn-back:hover { text-decoration: underline; }
-
-  .split-layout {
-    display: grid; grid-template-columns: 1fr 340px;
-    flex: 1; overflow: hidden;
-  }
-  .panel-pdf {
-    display: flex; flex-direction: column;
-    border-right: 1px solid var(--border); overflow: hidden;
-  }
-  .panel-label {
-    font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
-    letter-spacing: 0.07em; color: var(--text-secondary); padding: 9px 16px;
-    border-bottom: 1px solid var(--border); background: var(--bg-page);
-  }
+  .split-layout { display: grid; grid-template-columns: 1fr 340px; flex: 1; overflow: hidden; }
+  .panel-pdf { display: flex; flex-direction: column; border-right: 1px solid var(--border); overflow: hidden; }
+  .panel-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-secondary); padding: 9px 16px; border-bottom: 1px solid var(--border); background: var(--bg-page); }
   .pdf-iframe  { flex: 1; width: 100%; border: none; background: #fff; }
-  .link-externo {
-    display: block; padding: 7px 16px; font-size: 0.78rem;
-    color: var(--orange); text-decoration: none;
-    border-top: 1px solid var(--border); background: var(--bg-card);
-  }
+  .link-externo { display: block; padding: 7px 16px; font-size: 0.78rem; color: var(--orange); text-decoration: none; border-top: 1px solid var(--border); background: var(--bg-card); }
   .link-externo:hover { text-decoration: underline; }
-  .no-pdf {
-    display: flex; align-items: center; justify-content: center;
-    flex: 1; color: var(--text-secondary); font-size: 0.875rem;
-  }
+  .no-pdf { display: flex; align-items: center; justify-content: center; flex: 1; color: var(--text-secondary); font-size: 0.875rem; }
   .panel-acciones { display: flex; flex-direction: column; overflow-y: auto; background: var(--bg-card); }
-  .panel-acciones .panel-label { background: var(--bg-page); }
 
-  .dato-cal {
-    margin: 16px 16px 0; padding: 14px 16px;
-    background: var(--orange-light); border: 1px solid #FED7AA; border-radius: 10px;
-  }
-  .dato-label {
-    font-size: 0.72rem; font-weight: 700; color: var(--text-secondary);
-    margin: 0 0 4px; text-transform: uppercase; letter-spacing: 0.05em;
-  }
+  .dato-cal { margin: 16px 16px 0; padding: 14px 16px; background: var(--orange-light); border: 1px solid #FED7AA; border-radius: 10px; }
+  .dato-label { font-size: 0.72rem; font-weight: 700; color: var(--text-secondary); margin: 0 0 4px; text-transform: uppercase; letter-spacing: 0.05em; }
   .dato-valor { font-size: 2.25rem; font-weight: 800; color: var(--orange); margin: 0; line-height: 1; }
 
-  .ficha-alumno {
-    margin: 12px 16px 0; padding: 14px 16px;
-    border: 1px solid var(--border); border-radius: 10px; background: var(--bg-page);
-  }
+  .ficha-alumno { margin: 12px 16px 0; padding: 14px 16px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-page); }
   .ficha-titulo { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin: 0 0 10px; }
   .ficha-grid   { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; align-items: baseline; }
   .ficha-key    { font-size: 0.78rem; color: var(--text-secondary); white-space: nowrap; }
   .ficha-val    { font-size: 0.85rem; font-weight: 500; color: var(--text-primary); }
   .ficha-mono   { font-family: monospace; letter-spacing: 0.03em; }
 
-  .nota-previa {
-    margin: 12px 16px 0; padding: 12px 14px;
-    background: var(--orange-light); border: 1px solid #FED7AA; border-radius: 10px;
-  }
+  .nota-previa { margin: 12px 16px 0; padding: 12px 14px; background: var(--orange-light); border: 1px solid #FED7AA; border-radius: 10px; }
   .nota-texto { font-size: 0.85rem; color: var(--text-primary); margin: 4px 0 0; line-height: 1.5; }
 
   .acciones-grupo { padding: 14px 16px 20px; }
   .btn-decision-row { display: flex; gap: 8px; }
-  .btn-decision {
-    flex: 1; padding: 11px 8px; border-radius: 10px;
-    font-size: 0.875rem; font-weight: 600; cursor: pointer;
-    transition: all 0.15s; border: 2px solid transparent; text-align: center;
-  }
+  .btn-decision { flex: 1; padding: 11px 8px; border-radius: 10px; font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: all 0.15s; border: 2px solid transparent; text-align: center; }
   .btn-aprobar         { background: #F0FDF4; color: #15803D; border-color: #BBF7D0; }
-  .btn-aprobar:hover,
-  .btn-aprobar.activo  { background: #DCFCE7; border-color: #4ADE80; }
+  .btn-aprobar:hover, .btn-aprobar.activo  { background: #DCFCE7; border-color: #4ADE80; }
   .btn-rechazar        { background: #FEF2F2; color: #B91C1C; border-color: #FECACA; }
-  .btn-rechazar:hover,
-  .btn-rechazar.activo { background: #FEE2E2; border-color: #F87171; }
+  .btn-rechazar:hover, .btn-rechazar.activo { background: #FEE2E2; border-color: #F87171; }
   .textarea-nota { width: 100%; min-height: 80px; resize: vertical; box-sizing: border-box; }
 
-  .exito-msg {
-    color: #15803D; background: #F0FDF4; border: 1px solid #BBF7D0;
-    border-radius: 8px; padding: 10px 14px; font-size: 0.875rem; margin-top: 12px;
-  }
+  .exito-msg { color: #15803D; background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 8px; padding: 10px 14px; font-size: 0.875rem; margin-top: 12px; }
   .ya-revisado { padding: 16px; font-size: 0.9rem; color: var(--text-secondary); }
   .text-verde  { color: #15803D; }
   .text-rojo   { color: #B91C1C; }
-
   .btn-danger { color: #B91C1C; border-color: #FECACA; }
   .btn-danger:hover { background: #FEF2F2; border-color: #F87171; }
 
-  /* ── Empresas ────────────────────────────────────────────────────────────── */
-  .empresas-layout {
-    display: grid; grid-template-columns: 1fr 1fr;
-    gap: 20px; margin-top: 8px;
-  }
-  .card-seccion {
-    background: var(--bg-card); border-radius: var(--radius-card);
-    box-shadow: var(--shadow-card); padding: 24px 28px;
-    display: flex; flex-direction: column; gap: 14px;
-    border: 1px solid var(--border);
-  }
+  /* Empresas */
+  .empresas-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 8px; }
+  .card-seccion { background: var(--bg-card); border-radius: var(--radius-card); box-shadow: var(--shadow-card); padding: 24px 28px; display: flex; flex-direction: column; gap: 14px; border: 1px solid var(--border); }
   .seccion-title { font-size: 15px; font-weight: 700; color: var(--text-primary); margin: 0; }
   .field         { display: flex; flex-direction: column; gap: 6px; }
   .field label   { font-size: 13px; font-weight: 600; color: var(--text-primary); }
   .nueva-empresa-row { display: flex; gap: 8px; align-items: center; }
-  .empresa-list {
-    list-style: none; padding: 0; margin: 0;
-    display: flex; flex-direction: column; gap: 8px;
-    overflow-y: auto; max-height: 400px;
-  }
+  .empresa-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; max-height: 400px; }
   .empresa-item   { padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-page); }
   .empresa-nombre { font-size: 14px; font-weight: 500; color: var(--text-primary); }
   .empty-msg      { font-size: 0.9rem; color: var(--text-secondary); margin: 0; }

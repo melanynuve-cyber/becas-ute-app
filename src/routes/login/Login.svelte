@@ -11,6 +11,7 @@
   let loading = false
   let error = ''
   let showPassword = false
+  let passwordEl
 
   onMount(() => {
     if (get(isAuthenticated)) {
@@ -21,20 +22,26 @@
     }
   })
 
-  async function handleSubmit() {
+  async function handleSubmit(e) {
+    if (e) e.preventDefault(); // 1. Frena de golpe cualquier intento del navegador de recargar la página
+
     if (!email.endsWith('@ute.edu.mx')) {
       error = 'Debes usar tu correo institucional (@ute.edu.mx)'
       return
     }
-    error = ''
     loading = true
     try {
       const res = await api.auth.login({ email, password })
+      
+      // 2. Candado de seguridad por si las credenciales fallan y la respuesta viene vacía
+      if (!res || !res.access_token) {
+        throw new Error('Contraseña incorrecta o usuario no encontrado.')
+      }
+
       const payload = JSON.parse(atob(res.access_token.split('.')[1]))
       const userData = { roles: payload.roles, matricula: payload.matricula, email: payload.sub }
       login(res.access_token, userData)
       
-      // Redirección inteligente por rol exacto post-login
       if (payload.roles?.agente_becas || payload.roles?.root) {
         navigate('/admin/solicitudes', { replace: true })
       } else if (payload.roles?.agente_dual) {
@@ -45,15 +52,19 @@
         navigate('/dashboard', { replace: true })
       }
     } catch (e) {
-      error = e.message
+      // Traduce el error feo de JS a un mensaje amigable para el alumno
+      error = e.message === "Cannot read properties of undefined (reading 'access_token')"
+        ? 'Contraseña incorrecta o usuario no encontrado.'
+        : (e.message || 'Error al conectar con el servidor.');
     } finally {
       loading = false
     }
   }
 
   function handleKeydown(e) {
-    if (e.key === 'Enter') handleSubmit()
+    if (e.key === 'Enter') handleSubmit(e) // Pasa el contexto del evento para bloquear la recarga
   }
+
 </script>
 
 <div class="page">
@@ -83,6 +94,7 @@
             bind:value={email}
             placeholder="usuario@ute.edu.mx"
             on:keydown={handleKeydown}
+            on:input={() => error = ''}
             autocomplete="email"
           />
         </div>
@@ -99,25 +111,20 @@
           <input
             id="password"
             type="password"
+            bind:this={passwordEl}
             bind:value={password}
             placeholder="••••••••"
             on:keydown={handleKeydown}
+            on:input={() => error = ''}
             autocomplete="current-password"
-            style={showPassword ? 'display:none' : ''}
-          />
-          <input
-            id="password-text"
-            type="text"
-            bind:value={password}
-            placeholder="••••••••"
-            on:keydown={handleKeydown}
-            autocomplete="current-password"
-            style={showPassword ? '' : 'display:none'}
           />
           <button
             type="button"
             class="eye-btn"
-            on:click={() => showPassword = !showPassword}
+            on:click={() => {
+              showPassword = !showPassword;
+              passwordEl.type = showPassword ? 'text' : 'password';
+            }}
             aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
           >
             {#if showPassword}

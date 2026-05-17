@@ -18,7 +18,7 @@ async function request(method, path, body = null, isMultipart = false) {
 
   const res = await fetch(`${BASE_URL}${path}`, config)
 
-  if (res.status === 401) {
+  if (res.status === 401 && path !== '/auth/login') {
     logout()
     window.location.href = '/login'
     return

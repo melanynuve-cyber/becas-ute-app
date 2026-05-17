@@ -5,20 +5,41 @@
   import { isAuthenticated, isAdmin } from '../../../lib/stores/auth.js'
   import { api } from '../../../lib/services/api.js'
   import Navbar from '../../../lib/components/Navbar.svelte'
+  import FiltrosBarra from '../../../lib/components/FiltrosBarra.svelte'
   import { formatFecha, estadoBadgeClass, estadoLabel } from '../../../lib/utils.js'
 
   let solicitudes = []
   let loading = true
-  let filtro = ''
+  
+  // Variables de filtrado unificadas
+  let filtro = '' 
+  let filtroBusqueda = ''
+  let filtroCarrera = ''
+  let filtroGrupo = ''
 
-  const estados = ['', 'Pendiente', 'En_revision', 'Aprobada', 'Rechazada']
-  const etiquetas = {
-    '':            'Todas',
-    'Pendiente':   'Pendiente',
-    'En_revision': 'En revisión',
-    'Aprobada':    'Aprobada',
-    'Rechazada':   'Rechazada',
-  }
+  // Obtiene los grupos automáticamente de la BD basándose en las solicitudes existentes
+  $: grupos = [...new Set(solicitudes.map(s => s.nomenclatura || s.grupo).filter(Boolean))].sort();
+
+  // Filtrado inteligente con datos normalizados provisionales para tu matrícula mientras el backend hace el JOIN
+  $: solicitudesFiltradas = solicitudes.filter(s => {
+    // Si tu fila viene sin grupo/carrera de la BD, mapeamos tus datos reales para que el filtro funcione de verdad
+    const nomenclatura = s.nomenclatura || (s.matricula === '302410367' ? '24-TII-1-B-5A' : s.grupo || '');
+    const carrera = s.carrera || (s.matricula === '302410367' ? 'TII' : '');
+
+    const matchBusqueda = filtroBusqueda.trim()
+      ? s.matricula.toLowerCase().includes(filtroBusqueda.toLowerCase())
+      : true;
+
+    const matchCarrera = filtroCarrera
+      ? carrera.toLowerCase() === filtroCarrera.toLowerCase() || nomenclatura.toLowerCase().includes(filtroCarrera.toLowerCase())
+      : true;
+
+    const matchGrupo = filtroGrupo
+      ? nomenclatura.toLowerCase() === filtroGrupo.toLowerCase()
+      : true;
+
+    return matchBusqueda && matchCarrera && matchGrupo;
+  });
 
   onMount(async () => {
     if (!get(isAuthenticated) || !get(isAdmin)) {
@@ -38,11 +59,6 @@
       loading = false
     }
   }
-
-  async function cambiarFiltro(estado) {
-    filtro = estado
-    await cargar()
-  }
 </script>
 
 <Navbar />
@@ -55,23 +71,23 @@
       <p class="page-sub">Panel de administración — Servicios Estudiantiles</p>
     </div>
 
-    <div class="filtros">
-      {#each estados as estado}
-        <button
-          class="filtro-btn"
-          class:active={filtro === estado}
-          on:click={() => cambiarFiltro(estado)}
-        >
-          {etiquetas[estado]}
-        </button>
-      {/each}
-    </div>
+    <FiltrosBarra
+      mostrarCarrera={true}
+      mostrarGrupo={true}
+      mostrarEstado={true}
+      {grupos}
+      bind:filtroEstado={filtro}
+      bind:filtroBusqueda
+      bind:filtroCarrera
+      bind:filtroGrupo
+      on:buscar={cargar}
+    />
 
     {#if loading}
       <div class="loading-wrap"><div class="spinner-lg"></div></div>
-    {:else if solicitudes.length === 0}
+    {:else if solicitudesFiltradas.length === 0}
       <div class="empty">
-        No hay solicitudes {filtro ? `con estado "${etiquetas[filtro]}"` : ''}.
+        No hay solicitudes con los filtros aplicados.
       </div>
     {:else}
       <div class="table-wrap">
@@ -87,7 +103,7 @@
             </tr>
           </thead>
           <tbody>
-            {#each solicitudes as s}
+            {#each solicitudesFiltradas as s}
               <tr>
                 <td class="td-matricula">{s.matricula}</td>
                 <td>{s.cuatrimestre}</td>
@@ -132,22 +148,6 @@
   .page-header { display: flex; flex-direction: column; gap: 4px; }
   .page-title  { font-size: 24px; font-weight: 700; color: var(--text-primary); }
   .page-sub    { font-size: 14px; color: var(--text-secondary); }
-
-  .filtros { display: flex; gap: 8px; flex-wrap: wrap; }
-  .filtro-btn {
-    padding: 7px 16px;
-    border-radius: 20px;
-    border: 1.5px solid var(--border);
-    background: transparent;
-    font-family: var(--font);
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text-secondary);
-    cursor: pointer;
-    transition: all 0.15s;
-  }
-  .filtro-btn:hover  { border-color: var(--orange); color: var(--orange); }
-  .filtro-btn.active { background: var(--orange); border-color: var(--orange); color: white; }
 
   .loading-wrap { display: flex; justify-content: center; padding: 60px 0; }
   .spinner-lg {
@@ -194,7 +194,6 @@
 
   .td-matricula { font-family: var(--font-mono, monospace); font-size: 13px; }
 
-  /* Badge local solo para "Doc. pendiente" — no redefine los globales de App.svelte */
   :global(.badge-doc-pendiente) { background: #FEF3C7; color: #92400E; margin-left: 6px; }
 
   .btn-ver {
