@@ -43,7 +43,7 @@
       }
 
       const payload = JSON.parse(atob(res.access_token.split('.')[1]))
-      const userData = { roles: payload.roles, matricula: payload.matricula, email: payload.sub }
+      const userData = { roles: payload.roles, matricula: payload.matricula, email: payload.sub, dual_activo: payload.dual_activo }
       login(res.access_token, userData)
       
       // Enrutamiento basado en roles
