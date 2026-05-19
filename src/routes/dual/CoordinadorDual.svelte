@@ -86,6 +86,11 @@
   let enviando = false
   let exito = ''
   let errorAccion = ''
+  
+  // Buffers locales para edicion rapida
+  let editCalificacion = ''
+  let editFechaInicio = ''
+  let editFechaFin = ''
 
   // Variables de control de catálogo de empresas y asignaciones
   let empresas = []
@@ -145,10 +150,13 @@
     nota = ''
     exito = ''
     errorAccion = ''
+    editCalificacion = reporte.calificacion_alumno || ''
+    editFechaInicio = reporte.fecha_inicio || ''
+    editFechaFin = reporte.fecha_fin || ''
     vista = 'revision'
   }
 
-  // Cierre del visor de dictamen
+  // Regreso a la bandeja principal desde cualquier subvista
   function volverBandeja() {
     seleccionado = null
     vista = 'bandeja'
@@ -172,9 +180,10 @@
       const body = { 
         estado: accion === 'aprobar' ? 'Aprobada' : 'Rechazada' 
       }
-      if (nota.trim()) {
-        body.nota_agente = nota.trim()
-      }
+      if (nota.trim()) body.nota_agente = nota.trim()
+      if (editCalificacion) body.calificacion_alumno = Number(editCalificacion)
+      if (editFechaInicio) body.fecha_inicio = editFechaInicio
+      if (editFechaFin) body.fecha_fin = editFechaFin
       
       await api.dual.revisarReporte(seleccionado.id, body)
       
@@ -185,7 +194,10 @@
       seleccionado = {
         ...seleccionado,
         estado: accion === 'aprobar' ? 'Aprobada' : 'Rechazada',
-        nota_agente: nota.trim() || seleccionado.nota_agente
+        nota_agente: nota.trim() || seleccionado.nota_agente,
+        calificacion_alumno: editCalificacion || seleccionado.calificacion_alumno,
+        fecha_inicio: editFechaInicio || seleccionado.fecha_inicio,
+        fecha_fin: editFechaFin || seleccionado.fecha_fin
       }
     } catch (e) {
       errorAccion = e.message || 'Error al enviar la decisión.'
@@ -470,7 +482,17 @@
 
           <div class="dato-cal">
             <p class="dato-label">Nota de la Empresa</p>
-            <p class="dato-valor">{seleccionado.calificacion_alumno}</p>
+            {#if seleccionado.estado === 'Pendiente'}
+              <input 
+                type="number" 
+                class="input-plain" 
+                style="font-size: 28px; font-weight: 800; color: var(--orange); text-align: center; margin-top: 8px; width: 100%;"
+                min="1" max="10" step="0.1"
+                bind:value={editCalificacion}
+              />
+            {:else}
+              <p class="dato-valor">{seleccionado.calificacion_alumno}</p>
+            {/if}
           </div>
 
           <div class="ficha-alumno">
@@ -478,22 +500,43 @@
             <div class="ficha-grid">
               <span class="ficha-key">Nombre</span>
               <span class="ficha-val">{seleccionado.nombre || '—'}</span>
+              
               <span class="ficha-key">Matrícula</span>
               <span class="ficha-val ficha-mono">{seleccionado.matricula}</span>
+              
               <span class="ficha-key">Carrera</span>
               <span class="ficha-val">{carreraCompletaRevision}</span>
+              
               <span class="ficha-key">Empresa</span>
               <span class="ficha-val" style="font-weight:600; color:var(--text-primary);">
                 {seleccionado.empresa || 'Sin asignar'}
               </span>
+              
               <span class="ficha-key">Grupo</span>
               <span class="ficha-val ficha-mono">
                 {seleccionado.nomenclatura || seleccionado.cuatrimestre || '—'}
               </span>
+              
               <span class="ficha-key">Periodo</span>
-              <span class="ficha-val" style="font-weight:600;">
-                Semana {seleccionado.semana}
-              </span>
+              {#if seleccionado.estado === 'Pendiente'}
+                <div style="display:flex; gap:8px; flex-direction:column;">
+                  <span class="ficha-val" style="font-weight:600;">Semana {seleccionado.semana}</span>
+                  <div style="display:flex; gap:4px; align-items:center;">
+                    <input type="date" class="input-plain" style="padding: 4px 8px; font-size:12px;" bind:value={editFechaInicio} />
+                    <span style="color:var(--text-disabled)">al</span>
+                    <input type="date" class="input-plain" style="padding: 4px 8px; font-size:12px;" bind:value={editFechaFin} />
+                  </div>
+                </div>
+              {:else}
+                <span class="ficha-val ficha-periodo">
+                  {#if seleccionado.fecha_inicio && seleccionado.fecha_fin}
+                    {formatFecha(seleccionado.fecha_inicio)} al {formatFecha(seleccionado.fecha_fin)}
+                  {:else}
+                    Semana {seleccionado.semana}
+                  {/if}
+                </span>
+              {/if}
+              
               <span class="ficha-key">Entregado</span>
               <span class="ficha-val">{formatFecha(seleccionado.created_at)}</span>
             </div>
@@ -550,7 +593,7 @@
                   on:click={enviarDecision}
                   disabled={enviando || !accion}
                 >
-                  {enviando ? 'Procesando…' : 'Emitir Dictamen'}
+                  {enviando ? 'Procesando…' : 'Enviar'}
                 </button>
               {:else}
                 <button class="btn-outline" style="width:100%; margin-top:12px" on:click={volverBandeja}>
@@ -1018,6 +1061,12 @@
     color: var(--text-primary); 
   }
 
+  .ficha-periodo {
+    font-weight: 600;
+    white-space: normal;
+    line-height: 1.5;
+  }
+
   .nota-previa { 
     margin: 16px 20px 0; 
     padding: 14px; 
@@ -1215,6 +1264,12 @@
     border-top-color: var(--orange); 
     border-radius: 50%; 
     animation: spin 0.8s linear infinite; 
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
   }
 
   @media (max-width: 768px) {

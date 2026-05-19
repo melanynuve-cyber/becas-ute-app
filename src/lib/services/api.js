@@ -246,7 +246,19 @@ export const api = {
     },
     exportarCSV: (matricula) => {
       return `${BASE_URL}/dual/carrera/alumnos/${matricula}/exportar-csv`
-    }
+    },
+    // Operaciones de gestión académica
+    crearGrupo: (body) => {
+      return request('POST', '/dual/carrera/grupos', body)
+    },
+    subirAlumnosCSV: (grupoId, fd) => {
+      return request('POST', `/dual/carrera/grupos/${grupoId}/alumnos`, fd, true)
+    },
+    semanaActual: () => {
+      return request('GET', '/dual/alumno/semana-actual')
+    },
   }
 }
+
+
   

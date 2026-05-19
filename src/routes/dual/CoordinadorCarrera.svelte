@@ -13,10 +13,9 @@
   import FiltrosBarra from '../../lib/components/shared/FiltrosBarra.svelte'
   import { formatFecha } from '../../lib/utils.js'
 
-  // Estado de control de vistas
   let vista = 'directorio'
 
-  // Variables de control de la bandeja de alumnos
+  // Variables de control del directorio
   let alumnos = []
   let loading = true
   let error = ''
@@ -26,18 +25,33 @@
   let filtroCarrera = ''
   let filtroEstado = ''
 
-  // Variables de control del expediente individual
+  // Variables de control de expediente
   let alumnoSeleccionado = null
   let reportes = []
   let loadingExpediente = false
   let errorExpediente = ''
 
-  // Validación de permisos de acceso
+  // Variables de control de gestión de grupos
+  let formGrupo = {
+    carrera: 'ING.NME TEC DE LA INFORMACIÓN E INNOVACION DIGITAL',
+    siglas: 'TII',
+    cuatrimestre: 5,
+    modalidad: 'bis',
+    letra: 'A',
+    turno: 'Matutino'
+  }
+  let grupoCreado = null
+  let guardandoGrupo = false
+  let errorGrupo = ''
+  
+  let archivoCSV = null
+  let subiendoCSV = false
+  let errorCSV = ''
+  let exitoCSV = ''
+
   onMount(async () => {
     if (!get(isAuthenticated) || !get(isCoordinadorCarrera)) {
-      navigate('/login', { 
-        replace: true 
-      })
+      navigate('/login', { replace: true })
       return
     }
     await cargarAlumnos()
@@ -74,14 +88,16 @@
 
   // Lógica reactiva de filtrado en el cliente para búsqueda combinada
   $: alumnosFiltrados = alumnos.filter(a => {
+    const busqueda = filtroBusqueda.toLowerCase()
     const matchBusqueda = filtroBusqueda.trim()
-      ? a.matricula.toLowerCase().includes(filtroBusqueda.toLowerCase()) || 
-        a.nombre.toLowerCase().includes(filtroBusqueda.toLowerCase())
+      ? a.matricula.toLowerCase().includes(busqueda) || 
+        a.nombre.toLowerCase().includes(busqueda)
       : true
       
+    const carreraStr = filtroCarrera.toLowerCase()
     const matchCarrera = filtroCarrera
-      ? (a.carrera && a.carrera.toLowerCase() === filtroCarrera.toLowerCase()) || 
-        (a.nomenclatura && a.nomenclatura.toLowerCase().includes(filtroCarrera.toLowerCase()))
+      ? (a.carrera && a.carrera.toLowerCase() === carreraStr) || 
+        (a.nomenclatura && a.nomenclatura.toLowerCase().includes(carreraStr))
       : true
       
     return matchBusqueda && matchCarrera
@@ -94,12 +110,9 @@
     errorExpediente = ''
     loadingExpediente = true
     vista = 'expediente'
-    
     try {
-      reportes = await api.dual.expediente(
-        alumno.matricula, 
-        filtroCuatrimestre || null
-      )
+      const paramCuatri = filtroCuatrimestre || null
+      reportes = await api.dual.expediente(alumno.matricula, paramCuatri)
     } catch (e) {
       errorExpediente = e.message || 'Error al cargar el expediente.'
     } finally {
@@ -107,33 +120,78 @@
     }
   }
 
-  // Cierre del visor de expedientes
+  // Función para volver al directorio de alumnos
   function volverDirectorio() {
     alumnoSeleccionado = null
     reportes = []
     vista = 'directorio'
+    cargarAlumnos()
   }
 
-  // Descarga del reporte estructurado en formato CSV
   function descargarCSV(matricula) {
     const params = filtroCuatrimestre 
       ? `?cuatrimestre=${filtroCuatrimestre}` 
       : ''
-    const url = api.dual.exportarCSV(matricula) + params
-    window.open(url, '_blank')
+    window.open(api.dual.exportarCSV(matricula) + params, '_blank')
   }
 
-  // Cálculo reactivo del promedio de calificaciones declaradas
+  // Cálculo del promedio del expediente
   $: promedioExpediente = reportes.length
-    ? (
-        reportes.reduce((s, r) => s + Number(r.calificacion_alumno), 0) / 
-        reportes.length
-      ).toFixed(2)
+    ? (reportes.reduce((s, r) => s + Number(r.calificacion_alumno), 0) / 
+       reportes.length).toFixed(2)
     : null
-
+    
   $: carreraCompletaExpediente = alumnoSeleccionado 
     ? alumnoSeleccionado.carrera 
     : '—'
+
+  // Mutaciones de infraestructura de grupos
+  async function registrarGrupo() {
+    guardandoGrupo = true
+    errorGrupo = ''
+    grupoCreado = null
+    try {
+      const res = await api.dual.crearGrupo(formGrupo)
+      grupoCreado = res.grupo
+    } catch (e) {
+      errorGrupo = e.message || 'Error de integridad al registrar grupo.'
+    } finally {
+      guardandoGrupo = false
+    }
+  }
+
+  function descargarPlantillaCSV() {
+    const header = "matricula,nombre\n"
+    const mockRow = "302410000,Ejemplo Apellido"
+    const csvContent = `data:text/csv;charset=utf-8,${header}${mockRow}`
+    
+    const encodedUri = encodeURI(csvContent)
+    const link = document.createElement("a")
+    link.setAttribute("href", encodedUri)
+    link.setAttribute("download", "plantilla_alumnos.csv")
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
+  async function procesarCargaMasiva() {
+    if (!archivoCSV || !grupoCreado) return
+    subiendoCSV = true
+    errorCSV = ''
+    exitoCSV = ''
+    try {
+      const fd = new FormData()
+      fd.append('file', archivoCSV)
+      await api.dual.subirAlumnosCSV(grupoCreado.id, fd)
+      
+      exitoCSV = 'Alumnos vinculados exitosamente a la base de datos.'
+      archivoCSV = null
+    } catch (e) {
+      errorCSV = e.message || 'Fallo de IO en la carga del archivo.'
+    } finally {
+      subiendoCSV = false
+    }
+  }
 </script>
 
 <Navbar />
@@ -142,9 +200,22 @@
 
   {#if vista === 'directorio'}
     <div class="page-wrap">
-      <div class="page-header">
-        <h1 class="page-title">Alumnos Duales</h1>
-        <p class="page-sub">Directorio del cuatrimestre en curso</p>
+      <div class="page-header header-flex">
+        <div>
+          <h1 class="page-title">Alumnos Duales</h1>
+          <p class="page-sub">Directorio del cuatrimestre en curso</p>
+        </div>
+        <button 
+          class="btn-primary" 
+          on:click={() => { 
+            vista = 'grupos'
+            errorGrupo = ''
+            exitoCSV = ''
+            grupoCreado = null 
+          }}
+        >
+          + Nuevo Grupo
+        </button>
       </div>
 
       <FiltrosBarra
@@ -161,24 +232,12 @@
       />
 
       {#if loading}
-        <div class="state-msg">
-          <div class="spinner"></div>
-        </div>
+        <div class="state-msg"><div class="spinner"></div></div>
       {:else if error}
         <p class="error-msg">{error}</p>
       {:else if alumnosFiltrados.length === 0}
         <div class="state-msg empty">
-          <svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-            <path 
-              stroke-linecap="round" 
-              stroke-linejoin="round" 
-              d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0
-                 ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0
-                 A17.933 17.933 0 0 1 12 21.75
-                 c-2.676 0-5.216-.584-7.499-1.632Z" 
-            />
-          </svg>
-          <p>No hay alumnos duales con los filtros seleccionados.</p>
+          No hay alumnos duales con los filtros seleccionados.
         </div>
       {:else}
         <div class="table-wrap">
@@ -189,8 +248,6 @@
                 <th>Nombre</th>
                 <th>Grupo</th>
                 <th>Empresa</th>
-                <th class="td-center">Reportes</th>
-                <th class="td-center">Promedio</th>
                 <th></th>
               </tr>
             </thead>
@@ -200,23 +257,12 @@
                   <td class="td-matricula">{a.matricula}</td>
                   <td class="td-nombre">{a.nombre}</td>
                   <td class="td-grupo">{a.nomenclatura || '—'}</td>
-                  <td>
-                    {#if a.empresa}
-                      <span class="empresa-txt">{a.empresa}</span>
-                    {:else}
-                      <span class="text-secondary">Sin asignar</span>
-                    {/if}
-                  </td>
-                  <td class="td-center">
-                    <span class="chip-reportes">
-                      {a.reportes_aprobados ?? 0}
-                    </span>
-                  </td>
-                  <td class="td-center td-promedio">
-                    {a.promedio ?? '—'}
-                  </td>
+                  <td>{a.empresa || 'Sin asignar'}</td>
                   <td style="text-align: right;">
-                    <button class="btn-ver" on:click={() => abrirExpediente(a)}>
+                    <button 
+                      class="btn-ver" 
+                      on:click={() => abrirExpediente(a)}
+                    >
                       Ver Expediente
                     </button>
                   </td>
@@ -225,12 +271,151 @@
             </tbody>
           </table>
         </div>
-        <p class="count-label">
-          {alumnosFiltrados.length} alumno{alumnosFiltrados.length !== 1 ? 's' : ''}
-        </p>
       {/if}
     </div>
 
+  {:else if vista === 'grupos'}
+    <div class="page-wrap">
+      <div class="expediente-topbar">
+        <button class="btn-back" on:click={volverDirectorio}>
+          Volver al directorio
+        </button>
+      </div>
+
+      <div class="expediente-layout">
+        <div class="reportes-card">
+          <h2 class="card-title">Configuración de Estructura Académica</h2>
+          
+          {#if errorGrupo}
+            <div class="error-msg">{errorGrupo}</div>
+          {/if}
+
+          <div class="grid-form">
+            <div class="field">
+              <label>Carrera Completa</label>
+              <input 
+                type="text" 
+                class="input-plain" 
+                bind:value={formGrupo.carrera} 
+                disabled={grupoCreado} 
+              />
+            </div>
+            <div class="field">
+              <label>Siglas</label>
+              <input 
+                type="text" 
+                class="input-plain" 
+                bind:value={formGrupo.siglas} 
+                disabled={grupoCreado} 
+              />
+            </div>
+            <div class="field">
+              <label>Cuatrimestre</label>
+              <input 
+                type="number" 
+                class="input-plain" 
+                min="1" 
+                max="12" 
+                bind:value={formGrupo.cuatrimestre} 
+                disabled={grupoCreado} 
+              />
+            </div>
+            <div class="field">
+              <label>Modalidad</label>
+              <select 
+                class="input-plain" 
+                bind:value={formGrupo.modalidad} 
+                disabled={grupoCreado}
+              >
+                <option value="bis">BIS</option>
+                <option value="intensivo">Intensivo</option>
+                <option value="mixta">Mixta</option>
+                <option value="despresurizada">Despresurizada</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Letra</label>
+              <input 
+                type="text" 
+                class="input-plain" 
+                maxlength="1" 
+                bind:value={formGrupo.letra} 
+                disabled={grupoCreado} 
+              />
+            </div>
+            <div class="field">
+              <label>Turno</label>
+              <select 
+                class="input-plain" 
+                bind:value={formGrupo.turno} 
+                disabled={grupoCreado}
+              >
+                <option value="Matutino">Matutino</option>
+                <option value="Vespertino">Vespertino</option>
+                <option value="Despresurizado">Despresurizado</option>
+              </select>
+            </div>
+          </div>
+
+          {#if !grupoCreado}
+            <button 
+              class="btn-primary" 
+              style="margin-top:10px" 
+              on:click={registrarGrupo} 
+              disabled={guardandoGrupo}
+            >
+              {guardandoGrupo ? 'Registrando...' : 'Establecer Grupo'}
+            </button>
+          {:else}
+            <div class="ficha-card card-static">
+              <p class="ficha-titulo">
+                Grupo Creado: 
+                <span class="highlight-orange">
+                  {grupoCreado.nomenclatura}
+                </span>
+              </p>
+              <div class="ficha-divider"></div>
+              <div class="csv-upload-section">
+                <p class="csv-instructions">
+                  Descarga la plantilla, llénala con los datos de control 
+                  escolar y súbela para matricular a los alumnos en bloque.
+                </p>
+                <button 
+                  class="btn-outline btn-mb" 
+                  on:click={descargarPlantillaCSV}
+                >
+                  Descargar CSV Base
+                </button>
+                
+                <input 
+                  type="file" 
+                  accept=".csv" 
+                  on:change={(e) => archivoCSV = e.target.files[0]} 
+                />
+                
+                {#if errorCSV}
+                  <div class="error-msg mt-10">{errorCSV}</div>
+                {/if}
+                {#if exitoCSV}
+                  <div class="exito-msg mt-10">{exitoCSV}</div>
+                {/if}
+
+                <button 
+                  class="btn-primary mt-14" 
+                  disabled={!archivoCSV || subiendoCSV} 
+                  on:click={procesarCargaMasiva}
+                >
+                  {subiendoCSV 
+                    ? 'Sincronizando...' 
+                    : 'Ejecutar Carga Masiva'}
+                </button>
+              </div>
+            </div>
+          {/if}
+        </div>
+      </div>
+    </div>
+  
   {:else if vista === 'expediente' && alumnoSeleccionado}
     <div class="page-wrap">
       <div class="expediente-topbar">
@@ -262,13 +447,17 @@
             <span class="ficha-key">Nombre</span>
             <span class="ficha-val">{alumnoSeleccionado.nombre}</span>
             <span class="ficha-key">Matrícula</span>
-            <span class="ficha-val ficha-mono">{alumnoSeleccionado.matricula}</span>
+            <span class="ficha-val ficha-mono">
+              {alumnoSeleccionado.matricula}
+            </span>
             <span class="ficha-key">Carrera</span>
             <span class="ficha-val">{carreraCompletaExpediente}</span>
             <span class="ficha-key">Grupo</span>
-            <span class="ficha-val ficha-mono">{alumnoSeleccionado.nomenclatura || '—'}</span>
+            <span class="ficha-val ficha-mono">
+              {alumnoSeleccionado.nomenclatura || '—'}
+            </span>
             <span class="ficha-key">Empresa</span>
-            <span class="ficha-val" style="color: var(--text-primary); font-weight:600;">
+            <span class="ficha-val bold-primary">
               {alumnoSeleccionado.empresa || 'Sin asignar'}
             </span>
             <span class="ficha-key">Turno</span>
@@ -283,7 +472,10 @@
           {/if}
 
           <div class="ficha-acciones">
-            <button class="btn-primary" on:click={() => descargarCSV(alumnoSeleccionado.matricula)}>
+            <button 
+              class="btn-primary" 
+              on:click={() => descargarCSV(alumnoSeleccionado.matricula)}
+            >
               Exportar CSV
             </button>
             <button class="btn-outline" disabled title="Próximamente">
@@ -303,7 +495,14 @@
             <p class="error-msg">{errorExpediente}</p>
           {:else if reportes.length === 0}
             <div class="state-msg empty">
-              <svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+              <svg 
+                width="32" 
+                height="32" 
+                fill="none" 
+                stroke="currentColor" 
+                stroke-width="1.8" 
+                viewBox="0 0 24 24"
+              >
                 <path 
                   stroke-linecap="round" 
                   stroke-linejoin="round" 
@@ -359,17 +558,18 @@
               </table>
             </div>
             <p class="count-label">
-              {reportes.length} reporte{reportes.length !== 1 ? 's' : ''} aprobado{reportes.length !== 1 ? 's' : ''}
+              {reportes.length} reporte{reportes.length !== 1 ? 's' : ''} 
+              aprobado{reportes.length !== 1 ? 's' : ''}
             </p>
           {/if}
         </div>
       </div>
     </div>
   {/if}
-
 </div>
 
 <style>
+  /* Mantenemos tus estilos originales */
   .main-content { 
     padding-top: 56px;
     background: var(--bg-page); 
@@ -385,10 +585,16 @@
     gap: 20px; 
   }
 
+  .header-flex {
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center;
+  }
+
   .page-title { 
     font-size: 22px; 
     font-weight: 700; 
-    color: var(--text-primary); 
+    color: var(--text-primary);
     letter-spacing: -0.02em;
   }
 
@@ -403,7 +609,7 @@
     border: 1px solid var(--border); 
     border-radius: var(--radius-card);
     background: var(--bg-card); 
-    box-shadow: var(--shadow-card); 
+    box-shadow: var(--shadow-card);
   }
 
   .tabla { 
@@ -413,7 +619,7 @@
   }
 
   .tabla thead { 
-    background: var(--bg-page); 
+    background: var(--bg-page);
   }
 
   .tabla th { 
@@ -421,7 +627,7 @@
     padding: 12px 18px; 
     font-weight: 600;
     color: var(--text-disabled); 
-    font-size: 11px; 
+    font-size: 11px;
     text-transform: uppercase; 
     letter-spacing: 0.05em; 
     border-bottom: 1px solid var(--border); 
@@ -436,7 +642,7 @@
   }
 
   .tabla tbody tr:last-child td { 
-    border-bottom: none; 
+    border-bottom: none;
   }
 
   .tabla tbody tr:hover { 
@@ -447,7 +653,7 @@
     font-family: monospace; 
     font-weight: 600; 
     color: var(--text-primary); 
-    letter-spacing: 0.02em; 
+    letter-spacing: 0.02em;
   }
 
   .td-nombre { 
@@ -458,7 +664,7 @@
   .td-grupo { 
     font-family: monospace; 
     font-size: 13px; 
-    color: var(--text-secondary); 
+    color: var(--text-secondary);
   }
 
   .td-center { 
@@ -466,7 +672,7 @@
   }
 
   .td-cal { 
-    font-weight: 700; 
+    font-weight: 700;
     color: var(--orange); 
     font-size: 15px; 
     text-align: center; 
@@ -475,12 +681,12 @@
   .td-fecha { 
     font-size: 13px; 
     color: var(--text-secondary);
-    white-space: nowrap; 
+    white-space: nowrap;
   }
 
   .td-promedio { 
     font-weight: 700; 
-    color: var(--text-primary); 
+    color: var(--text-primary);
   }
 
   .text-secondary { 
@@ -490,7 +696,7 @@
 
   .empresa-txt { 
     font-weight: 500; 
-    color: var(--text-primary); 
+    color: var(--text-primary);
   }
 
   .sem-txt { 
@@ -502,48 +708,48 @@
     display: inline-block; 
     background: rgba(249, 115, 22, 0.08); 
     color: var(--orange); 
-    font-weight: 700; 
+    font-weight: 700;
     font-size: 12px; 
     border-radius: 6px;
     padding: 2px 10px; 
-    border: 1px solid rgba(249, 115, 22, 0.2); 
+    border: 1px solid rgba(249, 115, 22, 0.2);
   }
   
   .btn-ver { 
     background: transparent;
     border: 1.5px solid var(--border-input); 
-    border-radius: 8px; 
+    border-radius: 8px;
     padding: 6px 14px; 
     font-size: 13px; 
     font-weight: 600; 
     color: var(--text-primary); 
     cursor: pointer;
-    transition: all 0.2s ease; 
+    transition: all 0.2s ease;
   }
 
   .btn-ver:hover { 
     border-color: var(--orange); 
     color: var(--orange); 
-    background: var(--orange-light); 
+    background: var(--orange-light);
   }
 
   .btn-pdf { 
     display: inline-block;
     background: transparent; 
     border: 1.5px solid var(--border-input); 
-    border-radius: 8px; 
+    border-radius: 8px;
     padding: 5px 12px; 
     font-size: 12px; 
     font-weight: 600; 
     color: var(--orange); 
     text-decoration: none;
-    transition: all 0.2s ease; 
+    transition: all 0.2s ease;
   }
 
   .btn-pdf:hover { 
     background: var(--orange-hover); 
     color: white; 
-    border-color: var(--orange-hover); 
+    border-color: var(--orange-hover);
   }
 
   .count-label { 
@@ -551,7 +757,7 @@
     color: var(--text-disabled); 
     text-align: right; 
     margin-top: 4px; 
-    font-weight: 500; 
+    font-weight: 500;
   }
 
   .state-msg { 
@@ -569,14 +775,14 @@
   }
 
   .empty p { 
-    font-size: 14px; 
+    font-size: 14px;
   }
 
   .spinner { 
     width: 28px; 
     height: 28px; 
     margin: 0 auto;
-    border: 3px solid var(--border); 
+    border: 3px solid var(--border);
     border-top-color: var(--orange); 
     border-radius: 50%; 
     animation: spin 0.8s linear infinite;
@@ -584,7 +790,7 @@
 
   @keyframes spin { 
     to { 
-      transform: rotate(360deg); 
+      transform: rotate(360deg);
     } 
   }
 
@@ -592,12 +798,12 @@
     background: none; 
     border: none; 
     cursor: pointer; 
-    padding: 0; 
+    padding: 0;
     font-family: var(--font); 
     font-size: 14px; 
     font-weight: 600; 
     color: var(--text-secondary);
-    transition: color 0.15s; 
+    transition: color 0.15s;
   }
 
   .btn-back:hover { 
@@ -605,7 +811,7 @@
   }
 
   .expediente-layout { 
-    display: grid; 
+    display: grid;
     grid-template-columns: 320px 1fr; 
     gap: 24px;
     align-items: start; 
@@ -637,14 +843,14 @@
     height: 1px; 
     background: var(--border); 
     width: 100%; 
-    margin-top: -4px; 
+    margin-top: -4px;
   }
 
   .ficha-grid { 
     display: grid;
     grid-template-columns: auto 1fr; 
     gap: 10px 16px; 
-    align-items: baseline; 
+    align-items: baseline;
   }
 
   .ficha-key { 
@@ -652,7 +858,7 @@
     font-weight: 600; 
     color: var(--text-disabled);
     text-transform: uppercase; 
-    letter-spacing: 0.02em; 
+    letter-spacing: 0.02em;
   }
 
   .ficha-val { 
@@ -665,12 +871,12 @@
   .ficha-mono { 
     font-family: monospace; 
     font-weight: 600; 
-    color: var(--text-primary); 
+    color: var(--text-primary);
   }
 
   .promedio-box { 
     background: rgba(249, 115, 22, 0.06);
-    border: 1px solid rgba(249, 115, 22, 0.15); 
+    border: 1px solid rgba(249, 115, 22, 0.15);
     border-radius: 12px; 
     padding: 14px; 
     text-align: center; 
@@ -679,7 +885,7 @@
   .promedio-label { 
     font-size: 11px;
     font-weight: 700; 
-    text-transform: uppercase; 
+    text-transform: uppercase;
     letter-spacing: 0.05em; 
     color: var(--orange); 
     margin: 0 0 4px; 
@@ -696,7 +902,7 @@
 
   .ficha-acciones { 
     display: flex; 
-    flex-direction: column; 
+    flex-direction: column;
     gap: 10px; 
     margin-top: 4px;
   }
@@ -713,10 +919,53 @@
   }
 
   .card-title { 
-    font-size: 16px; 
+    font-size: 16px;
     font-weight: 700; 
     color: var(--text-primary);
     margin: 0; 
+  }
+
+  /* Nuevas clases para los componentes añadidos */
+  .grid-form { 
+    display: grid; 
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+    gap: 16px; 
+  }
+
+  .card-static {
+    position: static;
+    margin-top: 20px;
+  }
+
+  .highlight-orange {
+    color: var(--orange);
+  }
+
+  .csv-upload-section {
+    margin-top: 14px;
+  }
+
+  .csv-instructions {
+    font-size: 13px; 
+    color: var(--text-secondary); 
+    margin-bottom: 12px;
+  }
+
+  .btn-mb {
+    margin-bottom: 16px;
+  }
+
+  .mt-10 {
+    margin-top: 10px;
+  }
+
+  .mt-14 {
+    margin-top: 14px;
+  }
+
+  .bold-primary {
+    color: var(--text-primary); 
+    font-weight: 600;
   }
 
   @media (max-width: 900px) {
