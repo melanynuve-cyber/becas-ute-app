@@ -1,4 +1,5 @@
 <script>
+  // src/lib/components/layout/Navbar.svelte
   import { 
     navigate, 
     link, 
@@ -57,6 +58,8 @@
   $: queryParams = $location.search || ''
   $: activeBandeja = isActive('/dual/coordinador') && !queryParams.includes('vista=empresas')
   $: activeEmpresas = isActive('/dual/coordinador') && queryParams.includes('vista=empresas')
+  $: activeCarreraDirectorio = isActive('/dual/carrera') && !queryParams.includes('vista=grupos')
+  $: activeCarreraGrupos = isActive('/dual/carrera') && queryParams.includes('vista=grupos')
   $: activeBecaInterna = isActive('/dashboard') || isActive('/solicitud')
 </script>
 

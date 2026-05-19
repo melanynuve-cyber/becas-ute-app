@@ -2,7 +2,7 @@
   // src/routes/dual/CoordinadorCarrera.svelte
   // Importaciones desglosadas
   import { onMount } from 'svelte'
-  import { navigate } from 'svelte-routing'
+  import { navigate, useLocation } from 'svelte-routing'
   import { get } from 'svelte/store'
   import { 
     isAuthenticated, 
@@ -13,7 +13,19 @@
   import FiltrosBarra from '../../lib/components/shared/FiltrosBarra.svelte'
   import { formatFecha } from '../../lib/utils.js'
 
+  const location = useLocation()
   let vista = 'directorio'
+
+  // Sincronización reactiva: Escucha cambios en el Navbar
+  $: {
+    const queryVista = new URLSearchParams($location.search).get('vista')
+    if (queryVista === 'grupos' && vista !== 'grupos') {
+      vista = 'grupos'
+    } else if (!queryVista && vista === 'grupos') {
+      vista = 'directorio'
+      cargarAlumnos()
+    }
+  }
 
   // Variables de control del directorio
   let alumnos = []
@@ -174,20 +186,81 @@
     document.body.removeChild(link)
   }
 
+  let resultadoCSV = null // { insertados, errores: [] }
+
+  // Validador local extraído de la versión de Claude
+  function validarFilasCSV(texto) {
+    const lineas = texto.trim().split('\n')
+    if (lineas.length < 2) return { validas: [], errores: [{ fila: 0, razon: 'El archivo no contiene datos.' }] }
+
+    const encabezado = lineas[0].toLowerCase().replace(/\r/, '')
+    if (!encabezado.includes('matricula') || !encabezado.includes('nombre')) {
+      return { validas: [], errores: [{ fila: 1, razon: 'Faltan columnas "matricula" y "nombre".' }] }
+    }
+
+    const validas = []
+    const errores = []
+
+    for (let i = 1; i < lineas.length; i++) {
+      const fila = lineas[i].replace(/\r/, '').trim()
+      if (!fila) continue
+
+      const cols = fila.split(',')
+      const matricula = (cols[0] || '').trim()
+      const nombre = cols.slice(1).join(',').trim()
+
+      if (!matricula && !nombre) continue
+
+      const numFila = i + 1
+
+      if (!/^\d+$/.test(matricula)) {
+        errores.push({ fila: numFila, matricula, razon: 'Matrícula no numérica.' })
+        continue
+      }
+      if (matricula.length !== 9) {
+        errores.push({ fila: numFila, matricula, razon: 'Longitud inválida (deben ser 9).' })
+        continue
+      }
+      if (!nombre) {
+        errores.push({ fila: numFila, matricula, razon: 'Nombre vacío.' })
+        continue
+      }
+
+      validas.push({ matricula, nombre })
+    }
+
+    return { validas, errores }
+  }
+
+  // Controlador de subida actualizado con transaccionalidad
   async function procesarCargaMasiva() {
     if (!archivoCSV || !grupoCreado) return
     subiendoCSV = true
     errorCSV = ''
-    exitoCSV = ''
+    resultadoCSV = null
+
     try {
+      const texto = await archivoCSV.text()
+      const { validas, errores: errs } = validarFilasCSV(texto)
+
+      // Bloquear si todo el lote viene corrupto
+      if (errs.length > 0 && validas.length === 0) {
+        resultadoCSV = { insertados: 0, errores: errs }
+        return
+      }
+
       const fd = new FormData()
       fd.append('file', archivoCSV)
-      await api.dual.subirAlumnosCSV(grupoCreado.id, fd)
-      
-      exitoCSV = 'Alumnos vinculados exitosamente a la base de datos.'
+      const respuesta = await api.dual.subirAlumnosCSV(grupoCreado.id, fd)
+
+      resultadoCSV = {
+        insertados: respuesta.insertados ?? validas.length,
+        errores: errs
+      }
       archivoCSV = null
+      await cargarAlumnos()
     } catch (e) {
-      errorCSV = e.message || 'Fallo de IO en la carga del archivo.'
+      errorCSV = e.message || 'Error de I/O al procesar el archivo.'
     } finally {
       subiendoCSV = false
     }
@@ -200,24 +273,6 @@
 
   {#if vista === 'directorio'}
     <div class="page-wrap">
-      <div class="page-header header-flex">
-        <div>
-          <h1 class="page-title">Alumnos Duales</h1>
-          <p class="page-sub">Directorio del cuatrimestre en curso</p>
-        </div>
-        <button 
-          class="btn-primary" 
-          on:click={() => { 
-            vista = 'grupos'
-            errorGrupo = ''
-            exitoCSV = ''
-            grupoCreado = null 
-          }}
-        >
-          + Nuevo Grupo
-        </button>
-      </div>
-
       <FiltrosBarra
         mostrarEstado={false}
         mostrarCarrera={true}
@@ -276,7 +331,7 @@
 
   {:else if vista === 'grupos'}
     <div class="page-wrap">
-      <div class="expediente-topbar">
+      <div class="expediente-layout">
         <button class="btn-back" on:click={volverDirectorio}>
           Volver al directorio
         </button>
@@ -369,16 +424,12 @@
           {:else}
             <div class="ficha-card card-static">
               <p class="ficha-titulo">
-                Grupo Creado: 
-                <span class="highlight-orange">
-                  {grupoCreado.nomenclatura}
-                </span>
+                Grupo Creado: <span class="highlight-orange">{grupoCreado.nomenclatura}</span>
               </p>
               <div class="ficha-divider"></div>
               <div class="csv-upload-section">
                 <p class="csv-instructions">
-                  Descarga la plantilla, llénala con los datos de control 
-                  escolar y súbela para matricular a los alumnos en bloque.
+                  Descarga la plantilla, llénala con los datos de control escolar y súbela para matricular a los alumnos en bloque.
                 </p>
                 <button 
                   class="btn-outline btn-mb" 
@@ -390,24 +441,44 @@
                 <input 
                   type="file" 
                   accept=".csv" 
-                  on:change={(e) => archivoCSV = e.target.files[0]} 
+                  on:change={(e) => { 
+                    archivoCSV = e.target.files[0]; 
+                    resultadoCSV = null; 
+                    errorCSV = ''; 
+                  }} 
                 />
-                
+
                 {#if errorCSV}
-                  <div class="error-msg mt-10">{errorCSV}</div>
+                  <div class="error-msg" style="margin-top:10px;">{errorCSV}</div>
                 {/if}
-                {#if exitoCSV}
-                  <div class="exito-msg mt-10">{exitoCSV}</div>
+
+                {#if resultadoCSV}
+                  <div style="margin-top:14px; padding:12px; border-radius:8px; background:var(--bg-page); border:1px solid var(--border);">
+                    <p style="color:var(--success); font-weight:600; font-size:13px; margin:0;">
+                      ✓ {resultadoCSV.insertados} alumnos procesados e insertados en la base de datos.
+                    </p>
+                    {#if resultadoCSV.errores.length > 0}
+                      <p style="color:var(--error); font-weight:600; font-size:12px; margin:8px 0 4px;">
+                        Excepciones detectadas (filas ignoradas):
+                      </p>
+                      <ul style="margin:0; padding-left:16px; font-size:12px; color:var(--text-secondary);">
+                        {#each resultadoCSV.errores as err}
+                          <li>
+                            <strong>Fila {err.fila}</strong> {err.matricula ? `(${err.matricula})` : ''}: {err.razon}
+                          </li>
+                        {/each}
+                      </ul>
+                    {/if}
+                  </div>
                 {/if}
 
                 <button 
-                  class="btn-primary mt-14" 
+                  class="btn-primary" 
+                  style="margin-top:14px;" 
                   disabled={!archivoCSV || subiendoCSV} 
                   on:click={procesarCargaMasiva}
                 >
-                  {subiendoCSV 
-                    ? 'Sincronizando...' 
-                    : 'Ejecutar Carga Masiva'}
+                  {subiendoCSV ? 'Sincronizando lote...' : 'Ejecutar Carga Masiva'}
                 </button>
               </div>
             </div>
