@@ -261,6 +261,7 @@
     color: var(--text-primary);
   }
 
+  /* Control de modo oscuro unificado */
   :global([data-theme="dark"]) .dual-activo {
     background: var(--bg-page) !important;
     border: none !important;

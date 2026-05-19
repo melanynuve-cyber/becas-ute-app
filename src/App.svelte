@@ -20,6 +20,7 @@
   import DetalleSolicitud   from './routes/solicitud/DetalleSolicitud.svelte'
   import AdminSolicitudes   from './routes/admin/AdminSolicitudes.svelte'
   import AdminDetalle       from './routes/admin/AdminDetalle.svelte'
+  import GestionUsuarios    from './routes/admin/GestionUsuarios.svelte'
   import ReportesDual       from './routes/dual/ReportesDual.svelte'
   import CoordinadorDual    from './routes/dual/CoordinadorDual.svelte'
   import CoordinadorCarrera from './routes/dual/CoordinadorCarrera.svelte'
@@ -65,6 +66,7 @@
 
   <Route path="/admin/solicitudes" component={AdminSolicitudes} />
   <Route path="/admin/solicitudes/:id" component={AdminDetalle} />
+  <Route path="/admin/usuarios" component={GestionUsuarios} />
 </Router>
 
 <style>

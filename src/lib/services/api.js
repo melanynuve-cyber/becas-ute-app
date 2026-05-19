@@ -88,6 +88,15 @@ export const api = {
     },
     me: () => {
       return request('GET', '/auth/me')
+    },
+    crearUsuarioPersonal: (body) => {
+      return request('POST', '/auth/personal', body)
+    },
+    listarPersonal: () => {
+      return request('GET', '/auth/personal')
+    },
+    eliminarPersonal: (id) => {
+      return request('DELETE', `/auth/personal/${id}`)
     }
   },
 
