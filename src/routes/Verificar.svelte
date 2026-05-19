@@ -1,17 +1,24 @@
 <script>
   // src/routes/Verificar.svelte
-  // Importaciones
+  // Importaciones desglosadas
   import { navigate } from 'svelte-routing'
   import { onMount } from 'svelte'
   import { api } from '../lib/services/api.js'
 
   // Recuperación de parámetros de la URL
-  const params  = new URLSearchParams(window.location.search)
-  const email   = params.get('email') || ''
+  const params = new URLSearchParams(window.location.search)
+  const email = params.get('email') || ''
   const autoCode = params.get('codigo') || ''
 
-  // Variables de estado
-  let digits = ['', '', '', '', '', '']
+  // Variables de estado estructuradas
+  let digits = [
+    '', 
+    '', 
+    '', 
+    '', 
+    '', 
+    ''
+  ]
   let inputs = []
   let loading = false
   let error = ''
@@ -27,10 +34,16 @@
 
   // Control de entrada de dígitos
   function handleInput(i, e) {
-    const val = e.target.value.replace(/\D/g, '').slice(-1)
+    const val = e.target.value
+      .replace(/\D/g, '')
+      .slice(-1)
+      
     digits[i] = val
     digits = [...digits]
-    if (val && i < 5) inputs[i + 1]?.focus()
+    
+    if (val && i < 5) {
+      inputs[i + 1]?.focus()
+    }
   }
 
   // Soporte de navegación con teclado
@@ -42,7 +55,11 @@
 
   // Soporte para pegar código completo
   function handlePaste(e) {
-    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6)
+    const pasted = e.clipboardData
+      .getData('text')
+      .replace(/\D/g, '')
+      .slice(0, 6)
+      
     if (pasted.length === 6) {
       digits = pasted.split('')
       inputs[5]?.focus()
@@ -53,50 +70,39 @@
   // Estados computados del código
   $: code = digits.join('')
   $: isComplete = code.length === 6
-
-  // Envío del código de verificación
-  async function submitCode() {
-    if (!isComplete) return
-    error = ''
-    loading = true
-    try {
-      await api.auth.verificar({ email, codigo: code })
-      navigate('/login?verified=1', { replace: true })
-    } catch (e) {
-      error = e.message
-      digits = ['', '', '', '', '', '']
-      inputs[0]?.focus()
-    } finally {
-      loading = false
-    }
-  }
-
-  // Solicitud de reenvío de correo
-  async function reenviar() {
-    resendMsg = ''
-    error = ''
-    try {
-      await api.auth.reenviar({ email })
-      resendMsg = 'Código reenviado. Revisa tu correo.'
-    } catch (e) {
-      error = e.message
-    }
-  }
 </script>
 
 <div class="page">
   <div class="card">
     <div class="shield-icon">
-      <svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" style="color: var(--orange)">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"/>
+      <svg width="24" height="24" fill="none"
+           stroke="currentColor" stroke-width="2" 
+           viewBox="0 0 24 24" style="color: var(--orange)">
+        <path 
+          stroke-linecap="round" 
+          stroke-linejoin="round" 
+          d="M9 12.75
+             L11.25 15
+             L15 9.75
+             m-3-7.036
+             A11.959 11.959 0 013.598 6
+             11.99 11.99 0 003 9.749
+             c0 5.592 3.824 10.29 9 11.623
+             5.176-1.332 9-6.03 9-11.622
+             0-1.31-.21-2.571-.598-3.751
+             h-.152
+             c-3.196 0-6.1-1.248-8.25-3.285z"
+        />
       </svg>
     </div>
 
     <div class="texts">
-      <h1 class="title">Verificación de Código</h1>
+      <h1 class="title">Verificación</h1>
       <p class="subtitle">
-        Se envió un código de verificación al correo:<br/>
-        <strong class="email-highlight">{email || 'tu correo institucional'}</strong>
+        Ingresa el código de 6 dígitos enviado a:<br/>
+        <strong class="email-highlight">
+          {email || 'tu correo institucional'}
+        </strong>
       </p>
     </div>
 
@@ -123,15 +129,21 @@
       {/each}
     </div>
 
-    <button class="btn-primary" on:click={submitCode} disabled={!isComplete || loading}>
+    <button 
+      class="btn-primary" 
+      on:click={submitCode} 
+      disabled={!isComplete || loading}
+    >
       {#if loading}
         <span class="spinner"></span> Verificando...
       {:else}
-        Aceptar
+        Confirmar Código
       {/if}
     </button>
 
-    <button class="resend-btn" on:click={reenviar}>Reenviar código</button>
+    <button class="resend-btn" on:click={reenviar}>
+      ¿No recibiste el código? Reenviar
+    </button>
   </div>
 </div>
 
@@ -144,56 +156,83 @@
     padding: 24px 16px;
     background: var(--bg-page);
   }
+
   .card {
     background: var(--bg-card);
     border-radius: var(--radius-card);
+    border: 1px solid var(--border);
     box-shadow: var(--shadow-card);
-    padding: 40px 36px;
+    padding: 36px 32px;
     width: 100%;
     max-width: 400px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 24px;
+    gap: 20px;
   }
+
   .shield-icon {
-    width: 60px;
-    height: 60px;
+    width: 52px;
+    height: 52px;
     background: var(--orange-light);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
   }
-  .texts { text-align: center; }
-  .title { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
-  .subtitle { font-size: 14px; color: var(--text-secondary); line-height: 1.5; }
-  .email-highlight { color: var(--orange); font-weight: 600; }
+
+  .texts { 
+    text-align: center; 
+  }
+
+  .title { 
+    font-size: 22px; 
+    font-weight: 700; 
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
+    margin-bottom: 6px;
+  }
+
+  .subtitle { 
+    font-size: 13px; 
+    color: var(--text-secondary); 
+    line-height: 1.5; 
+  }
+
+  .email-highlight { 
+    color: var(--orange); 
+    font-weight: 600;
+  }
 
   .digits-row {
     display: flex;
-    gap: 10px;
+    gap: 8px;
     justify-content: center;
+    width: 100%;
+    margin: 4px 0;
   }
+
   .digit-input {
-    width: 46px;
-    height: 54px;
+    width: 44px;
+    height: 50px;
     text-align: center;
-    font-size: 22px;
+    font-size: 20px;
     font-weight: 700;
     font-family: var(--font);
     border: 1.5px solid var(--border-input);
-    border-radius: 10px;
+    border-radius: 8px;
     outline: none;
-    transition: border-color 0.15s, box-shadow 0.15s;
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
     color: var(--text-primary);
-    background: #fff;
+    background: var(--bg-card);
     caret-color: var(--orange);
   }
+  
   .digit-input:focus {
     border-color: var(--orange);
-    box-shadow: 0 0 0 3px rgba(249,115,22,0.12);
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.15);
   }
+
   .digit-input.filled {
     border-color: var(--orange);
     background: var(--orange-light);
@@ -202,19 +241,24 @@
   .resend-btn {
     background: none;
     border: none;
-    color: var(--orange);
+    color: var(--text-secondary);
     font-family: var(--font);
-    font-size: 14px;
-    font-weight: 600;
+    font-size: 13px;
+    font-weight: 500;
     cursor: pointer;
     padding: 4px 8px;
+    transition: color 0.15s;
   }
-  .resend-btn:hover { text-decoration: underline; }
+
+  .resend-btn:hover { 
+    color: var(--orange);
+    text-decoration: underline; 
+  }
 
   .success-msg {
-    background: #F0FDF4;
-    border: 1px solid #BBF7D0;
-    color: #15803D;
+    background: rgba(34, 197, 94, 0.08);
+    border: 1px solid rgba(34, 197, 94, 0.2);
+    color: var(--success);
     border-radius: 8px;
     padding: 10px 14px;
     font-size: 13px;
@@ -222,13 +266,20 @@
     width: 100%;
     text-align: center;
   }
+
   .spinner {
-    width: 16px; height: 16px;
-    border: 2px solid rgba(255,255,255,0.4);
+    width: 16px; 
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.4);
     border-top-color: #fff;
     border-radius: 50%;
     animation: spin 0.7s linear infinite;
     display: inline-block;
   }
-  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @keyframes spin { 
+    to { 
+      transform: rotate(360deg); 
+    } 
+  }
 </style>

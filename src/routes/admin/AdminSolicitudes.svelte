@@ -1,70 +1,96 @@
 <script>
   // src/routes/admin/AdminSolicitudes.svelte
-  // Importación de librerías globales y componentes comunes de la app
+  // Importaciones desglosadas
   import { onMount } from 'svelte'
   import { navigate } from 'svelte-routing'
   import { get } from 'svelte/store'
-  import { isAuthenticated, isAdmin } from '../../lib/stores/auth.js'
+  import { 
+    isAuthenticated, 
+    isAdmin 
+  } from '../../lib/stores/auth.js'
   import { api } from '../../lib/services/api.js'
   import Navbar from '../../lib/components/layout/Navbar.svelte'
   import FiltrosBarra from '../../lib/components/shared/FiltrosBarra.svelte'
-  import { formatFecha, estadoBadgeClass, estadoLabel } from '../../lib/utils.js'
+  import { 
+    formatFecha, 
+    estadoBadgeClass, 
+    estadoLabel 
+  } from '../../lib/utils.js'
 
-  // Estados locales para el almacenamiento de registros y carga
+  // Variables de control de colecciones de datos
   let solicitudes = []
   let loading = true
   
-  // Variables unificadas para el control de los filtros de búsqueda
+  // Filtros unificados de búsqueda
   let filtro = '' 
   let filtroBusqueda = ''
   let filtroCarrera = ''
   let filtroGrupo = ''
 
-  // Extracción reactiva de grupos institucionales únicos
-  $: grupos = [...new Set(solicitudes.map(s => s.nomenclatura || s.grupo).filter(Boolean))].sort();
+  // Extracción de catálogos únicos de grupos
+  $: grupos = [
+    ...new Set(solicitudes.map(s => s.nomenclatura || s.grid_column || s.grupo).filter(Boolean))
+  ].sort()
 
-  // Algoritmo reactivo para el filtrado multidimensional en el cliente
+  // Algoritmo de filtrado reactivo desglosado verticalmente
   $: solicitudesFiltradas = solicitudes.filter(s => {
-    const nomenclatura = s.nomenclatura || s.grupo || '';
-    const carrera = s.carrera || '';
+    const nomenclatura = s.nomenclatura || s.grupo || ''
+    const carrera = s.carrera || ''
 
     const matchBusqueda = filtroBusqueda.trim()
-      ? s.matricula.toLowerCase().includes(filtroBusqueda.toLowerCase())
-      : true;
+      ? s.matricula
+          .toLowerCase()
+          .includes(filtroBusqueda.toLowerCase())
+      : true
 
     const matchCarrera = filtroCarrera
-      ? carrera.toLowerCase() === filtroCarrera.toLowerCase() || nomenclatura.toLowerCase().includes(filtroCarrera.toLowerCase())
-      : true;
+      ? carrera
+          .toLowerCase()
+          .isPrototypeOf(filtroCarrera.toLowerCase()) || 
+        carrera
+          .toLowerCase() === filtroCarrera.toLowerCase() || 
+        nomenclatura
+          .toLowerCase()
+          .includes(filtroCarrera.toLowerCase())
+      : true
 
     const matchGrupo = filtroGrupo
-      ? nomenclatura.toLowerCase() === filtroGrupo.toLowerCase()
-      : true;
+      ? nomenclatura
+          .toLowerCase() === filtroGrupo.toLowerCase()
+      : true
 
-    return matchBusqueda && matchCarrera && matchGrupo;
-  });
+    return matchBusqueda && matchCarrera && matchGrupo
+  })
 
-  // Verificación de autenticación al inicializar la pantalla
+  // Control de acceso al montar pantalla
   onMount(async () => {
     if (!get(isAuthenticated) || !get(isAdmin)) {
-      navigate('/login', { replace: true })
+      navigate('/login', { 
+        replace: true 
+      })
       return
     }
     await cargar()
   })
 
-  // Consulta de la lista completa de solicitudes vigentes
+  // Carga remota de la colección de folios
   async function cargar() {
     loading = true
     try {
       solicitudes = await api.admin.lista(filtro)
-    } catch {
+    } catch (e) {
+      console.error(e)
     } finally {
       loading = false
     }
   }
 
-  $: carreras = [...new Set(solicitudes.map(s => s.carrera || s.payload?.datos_personales?.programa_educativo).filter(Boolean))].sort();
-
+  // Catálogo reactivo de programas educativos
+  $: carreras = [
+    ...new Set(
+      solicitudes.map(s => s.carrera || s.payload?.datos_personales?.programa_educativo).filter(Boolean)
+    )
+  ].sort()
 </script>
 
 <Navbar />
@@ -74,7 +100,7 @@
 
     <div class="page-header">
       <h1 class="page-title">Solicitudes de Beca</h1>
-      <p class="page-sub">Panel de administración — Servicios Estudiantiles</p>
+      <p class="page-sub">Panel de administración — Servicios Estudiantiles UTE</p>
     </div>
 
     <FiltrosBarra
@@ -91,10 +117,15 @@
     />
 
     {#if loading}
-      <div class="loading-wrap"><div class="spinner-lg"></div></div>
+      <div class="loading-wrap">
+        <div class="spinner-lg"></div>
+      </div>
     {:else if solicitudesFiltradas.length === 0}
       <div class="empty">
-        No hay solicitudes con los filtros aplicados.
+        <svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9.776c.112-.017.227-.026.344-.026h15.812c.117 0 .232.009.344.026m-16.5 0a2.25 2.25 0 00-1.883 2.542l.857 6a2.25 2.25 0 002.227 1.932H19.05a2.25 2.25 0 002.227-1.932l.857-6a2.25 2.25 0 00-1.883-2.542m-16.5 0V6A2.25 2.25 0 016 3.75h12A2.25 2.25 0 0120.25 6v3.776" />
+        </svg>
+        <p>No se encontraron expedientes con los criterios de filtrado aplicados.</p>
       </div>
     {:else}
       <div class="table-wrap">
@@ -103,28 +134,32 @@
             <tr>
               <th>Matrícula</th>
               <th>Cuatrimestre</th>
-              <th>Tipo</th>
+              <th>Tipo de Trámite</th>
               <th>Estado</th>
-              <th>Fecha</th>
+              <th>Fecha de Envío</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
             {#each solicitudesFiltradas as s}
               <tr>
-                <td class="td-matricula">{s.matricula}</td>
-                <td>{s.cuatrimestre}</td>
-                <td>{s.tipo}</td>
+                <td class="td-matricula font-mono">{s.matricula}</td>
+                <td>{s.cuatrimestre}° Cuatrimestre</td>
+                <td style="font-weight: 500;">{s.tipo}</td>
                 <td>
-                  <span class={estadoBadgeClass(s.estado)}>{estadoLabel(s.estado)}</span>
-                  {#if s.documentos?.recibo_inscripcion === 'pendiente'}
-                    <span class="badge badge-doc-pendiente">Doc. pendiente</span>
-                  {/if}
+                  <div class="status-cell-container">
+                    <span class={estadoBadgeClass(s.estado)}>
+                      {estadoLabel(s.estado)}
+                    </span>
+                    {#if s.documentos?.recibo_inscripcion === 'pendiente'}
+                      <span class="badge-doc-pendiente">Inscripción Pendiente</span>
+                    {/if}
+                  </div>
                 </td>
-                <td>{formatFecha(s.created_at)}</td>
-                <td>
+                <td class="td-fecha">{formatFecha(s.created_at)}</td>
+                <td style="text-align: right;">
                   <button class="btn-ver" on:click={() => navigate(`/admin/solicitudes/${s.id}`)}>
-                    Ver detalle
+                    Ver expediente
                   </button>
                 </td>
               </tr>
@@ -143,78 +178,174 @@
     min-height: 100vh;
     background: var(--bg-page);
   }
+
   .content {
     max-width: 1000px;
     margin: 0 auto;
-    padding: 32px 16px;
+    padding: 40px 24px;
     display: flex;
     flex-direction: column;
     gap: 24px;
   }
 
-  .page-header { display: flex; flex-direction: column; gap: 4px; }
-  .page-title  { font-size: 24px; font-weight: 700; color: var(--text-primary); }
-  .page-sub    { font-size: 14px; color: var(--text-secondary); }
+  .page-header { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 4px; 
+  }
 
-  .loading-wrap { display: flex; justify-content: center; padding: 60px 0; }
+  .page-title { 
+    font-size: 22px;
+    font-weight: 700; 
+    color: var(--text-primary); 
+    letter-spacing: -0.02em;
+  }
+
+  .page-sub { 
+    font-size: 14px; 
+    color: var(--text-secondary);
+  }
+
+  .loading-wrap { 
+    display: flex; 
+    justify-content: center; 
+    padding: 60px 0; 
+  }
+
   .spinner-lg {
-    width: 36px; height: 36px;
+    width: 32px;
+    height: 32px;
     border: 3px solid var(--border);
     border-top-color: var(--orange);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
   }
-  @keyframes spin { to { transform: rotate(360deg); } }
 
-  .empty {
-    text-align: center; padding: 60px 0;
-    color: var(--text-secondary);
-    font-size: 14px;
+  @keyframes spin { 
+    to { 
+      transform: rotate(360deg); 
+    } 
   }
 
+  .empty {
+    text-align: center;
+    padding: 64px 16px;
+    color: var(--text-disabled);
+    font-size: 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  /* Estructura de Control de Tablas Administrativas */
   .table-wrap {
     background: var(--bg-card);
     border-radius: var(--radius-card);
-    box-shadow: var(--shadow-card); overflow: hidden;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
   }
-  .table { width: 100%; border-collapse: collapse; }
-  .table thead { background: var(--bg-page); border-bottom: 1.5px solid var(--border); }
+
+  .table { 
+    width: 100%; 
+    border-collapse: collapse; 
+  }
+
+  .table thead { 
+    background: var(--bg-page);
+    border-bottom: 1px solid var(--border); 
+  }
+
   .table th {
-    padding: 12px 16px;
+    padding: 12px 18px;
     text-align: left;
-    font-size: 12px; font-weight: 600;
-    color: var(--text-secondary);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-disabled);
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
   }
+
   .table td {
-    padding: 14px 16px; font-size: 14px;
-    color: var(--text-primary);
+    padding: 14px 18px;
+    font-size: 14px;
+    color: var(--text-secondary);
     border-bottom: 1px solid var(--border);
+    vertical-align: middle;
   }
-  .table tbody tr:last-child td { border-bottom: none; }
-  .table tbody tr:hover { background: var(--bg-page); }
 
-  .td-matricula { font-family: var(--font-mono, monospace); font-size: 13px; }
+  .table tbody tr:last-child td { 
+    border-bottom: none;
+  }
 
-  :global(.badge-doc-pendiente) { background: #FEF3C7; color: #92400E; margin-left: 6px; }
+  .table tbody tr:hover { 
+    background: var(--orange-light); 
+  }
+
+  .td-matricula { 
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .font-mono {
+    font-family: monospace;
+    font-size: 13px;
+    letter-spacing: 0.02em;
+  }
+
+  .td-fecha {
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  .status-cell-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .badge-doc-pendiente { 
+    background: rgba(249, 115, 22, 0.1); 
+    color: var(--orange); 
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 6px;
+    border: 1px solid rgba(249, 115, 22, 0.15);
+    white-space: nowrap;
+  }
 
   .btn-ver {
-    padding: 6px 14px; border-radius: 8px;
-    border: 1.5px solid var(--border);
+    padding: 6px 14px;
+    border-radius: 8px;
+    border: 1.5px solid var(--border-input);
     background: transparent;
     font-family: var(--font);
     font-size: 13px;
-    font-weight: 500;
+    font-weight: 600;
     color: var(--text-primary);
-    cursor: pointer; transition: all 0.15s;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
   }
-  .btn-ver:hover { border-color: var(--orange); color: var(--orange); }
 
-  @media (max-width: 640px) {
+  .btn-ver:hover { 
+    border-color: var(--orange); 
+    color: var(--orange);
+    background: var(--bg-card);
+  }
+
+  @media (max-width: 768px) {
     .table th:nth-child(2),
     .table td:nth-child(2),
     .table th:nth-child(5),
-    .table td:nth-child(5) { display: none; }
+    .table td:nth-child(5) { 
+      display: none;
+    }
+    .content {
+      padding: 24px 16px;
+    }
   }
 </style>

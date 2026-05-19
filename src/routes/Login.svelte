@@ -1,35 +1,43 @@
 <script>
   // src/routes/Login.svelte
-  // Importaciones
-  import { navigate, link } from 'svelte-routing'
+  import { 
+    navigate, 
+    link 
+  } from 'svelte-routing'
   import { fade } from 'svelte/transition'
   import { onMount } from 'svelte'
   import { api } from '../lib/services/api.js'
-  import { login, isAuthenticated, isAdmin, isCoordinadorDual, isCoordinadorCarrera } from '../lib/stores/auth.js'
+  import { 
+    login, 
+    isAuthenticated, 
+    isAdmin, 
+    isCoordinadorDual, 
+    isCoordinadorCarrera 
+  } from '../lib/stores/auth.js'
   import { get } from 'svelte/store'
 
-  // Variables de estado
   let email = ''
   let password = ''
   let loading = false
   let error = ''
   let showPassword = false
-  let passwordEl
 
-  // Redirección por sesión activa
   onMount(() => {
     if (get(isAuthenticated)) {
-      if (get(isAdmin)) navigate('/admin/solicitudes', { replace: true })
-      else if (get(isCoordinadorDual)) navigate('/dual/coordinador', { replace: true })
-      else if (get(isCoordinadorCarrera)) navigate('/dual/carrera', { replace: true })
-      else navigate('/dashboard', { replace: true })
+      if (get(isAdmin)) {
+        navigate('/admin/solicitudes', { replace: true })
+      } else if (get(isCoordinadorDual)) {
+        navigate('/dual/coordinador', { replace: true })
+      } else if (get(isCoordinadorCarrera)) {
+        navigate('/dual/carrera', { replace: true })
+      } else {
+        navigate('/dashboard', { replace: true })
+      }
     }
   })
 
-  // Manejo de envío de credenciales
   async function handleSubmit(e) {
-    if (e) e.preventDefault();
-
+    if (e) { e.preventDefault() }
     if (!email.endsWith('@ute.edu.mx')) {
       error = 'Debes usar tu correo institucional (@ute.edu.mx)'
       return
@@ -37,16 +45,17 @@
     loading = true
     try {
       const res = await api.auth.login({ email, password })
-      
       if (!res || !res.access_token) {
         throw new Error('Contraseña incorrecta o usuario no encontrado.')
       }
-
       const payload = JSON.parse(atob(res.access_token.split('.')[1]))
-      const userData = { roles: payload.roles, matricula: payload.matricula, email: payload.sub, dual_activo: payload.dual_activo }
+      const userData = { 
+        roles: payload.roles, 
+        matricula: payload.matricula, 
+        email: payload.sub, 
+        dual_activo: payload.dual_activo 
+      }
       login(res.access_token, userData)
-      
-      // Enrutamiento basado en roles
       if (payload.roles?.admin || payload.roles?.root) {
         navigate('/admin/solicitudes', { replace: true })
       } else if (payload.roles?.coordinador_dual) {
@@ -59,26 +68,30 @@
     } catch (e) {
       error = e.message === "Cannot read properties of undefined (reading 'access_token')"
         ? 'Contraseña incorrecta o usuario no encontrado.'
-        : (e.message || 'Error al conectar con el servidor.');
+        : (e.message || 'Error al conectar con el servidor.')
     } finally {
       loading = false
     }
   }
 
-  // Soporte de tecla enter
   function handleKeydown(e) {
-    if (e.key === 'Enter') handleSubmit(e) 
+    if (e.key === 'Enter') {
+      handleSubmit(e) 
+    }
   }
-
 </script>
 
 <div class="page">
   <div class="card" in:fade>
     <div class="header">
-      <img src="/UTEG-01.png" alt="Universidad Tecnológica Gral. Mariano Escobedo" class="logo-ute" />
+      <img 
+        src="/UTEG-01.png" 
+        alt="Universidad Tecnológica" 
+        class="logo-ute" 
+      />
+      <h1 class="title">Iniciar Sesión</h1>
+      <p class="subtitle">Ingresa a tu cuenta institucional del sistema</p>
     </div>
-
-    <h1 class="title">Iniciar Sesión</h1>
 
     {#if error}
       <div class="error-msg">{error}</div>
@@ -113,23 +126,33 @@
               <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/>
             </svg>
           </span>
-          <input
-            id="password"
-            type="password"
-            bind:this={passwordEl}
-            bind:value={password}
-            placeholder="••••••••"
-            on:keydown={handleKeydown}
-            on:input={() => error = ''}
-            autocomplete="current-password"
-          />
+          
+          {#if showPassword}
+            <input
+              id="password"
+              type="text"
+              bind:value={password}
+              placeholder="••••••••"
+              on:keydown={handleKeydown}
+              on:input={() => error = ''}
+              autocomplete="current-password"
+            />
+          {:else}
+            <input
+              id="password"
+              type="password"
+              bind:value={password}
+              placeholder="••••••••"
+              on:keydown={handleKeydown}
+              on:input={() => error = ''}
+              autocomplete="current-password"
+            />
+          {/if}
+
           <button
             type="button"
             class="eye-btn"
-            on:click={() => {
-              showPassword = !showPassword;
-              passwordEl.type = showPassword ? 'text' : 'password';
-            }}
+            on:click={() => showPassword = !showPassword}
             aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
           >
             {#if showPassword}
@@ -147,7 +170,7 @@
       </div>
 
       <div class="forgot-row">
-        <button class="link-orange forgot-link" on:click={() => alert('Contacta a Servicios Estudiantiles para recuperar tu contraseña.')}>
+        <button class="link-orange forgot-link" on:click={() => alert('Contacta a Servicios Estudiantiles.')}>
           ¿Olvidaste tu contraseña?
         </button>
       </div>
@@ -161,7 +184,8 @@
       </button>
 
       <p class="bottom-text">
-        ¿No tienes cuenta? <a href="/register" class="link-orange" use:link>Registrarme</a>
+        ¿No tienes cuenta?
+        <a href="/register" class="link-orange" use:link>Registrarme</a>
       </p>
     </div>
   </div>
@@ -180,33 +204,41 @@
   .card {
     background: var(--bg-card);
     border-radius: var(--radius-card);
+    border: 1px solid var(--border);
     box-shadow: var(--shadow-card);
-    padding: 40px 36px;
+    padding: 36px 32px;
     width: 100%;
-    max-width: 420px;
+    max-width: 400px;
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 20px;
   }
 
   .header {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2px;
+    text-align: center;
+    gap: 6px;
   }
   
   .logo-ute {
-    height: 150px;
+    height: 76px;
     width: auto;
     object-fit: contain;
+    margin-bottom: 8px;
   }
 
   .title {
-    font-size: 24px;
+    font-size: 22px;
     font-weight: 700;
-    text-align: center;
     color: var(--text-primary);
+    letter-spacing: -0.02em;
+  }
+
+  .subtitle {
+    font-size: 13px;
+    color: var(--text-secondary);
   }
 
   .form {
@@ -215,11 +247,16 @@
     gap: 16px;
   }
 
+  :global(.input-wrap input) {
+    padding-right: 42px !important;
+  }
+
   .forgot-row {
     display: flex;
     justify-content: flex-end;
     margin-top: -4px;
   }
+
   .forgot-row .forgot-link {
     font-size: 13px;
     background: none;
@@ -233,6 +270,7 @@
     text-align: center;
     font-size: 13px;
     color: var(--text-secondary);
+    margin-top: 8px;
   }
 
   .spinner {
@@ -246,16 +284,25 @@
   }
 
   .eye-btn {
+    position: absolute;
+    right: 14px;
     background: none;
     border: none;
     cursor: pointer;
-    padding: 0 4px;
+    padding: 4px;
     display: flex;
     align-items: center;
-    color: var(--text-secondary);
-    flex-shrink: 0;
-    transition: color 0.15s;
+    color: var(--text-disabled);
+    transition: color 0.15s ease;
   }
-  .eye-btn:hover { color: var(--text-primary); }
-  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .eye-btn:hover { 
+    color: var(--text-secondary);
+  }
+  
+  @keyframes spin { 
+    to { 
+      transform: rotate(360deg); 
+    } 
+  }
 </style>

@@ -37,9 +37,15 @@
 
   // Enrutamiento basado en roles de usuario
   function redirectByRole() {
-    if (get(isAdmin))               return navigate('/admin/solicitudes', { replace: true })
-    if (get(isCoordinadorDual))     return navigate('/dual/coordinador',  { replace: true })
-    if (get(isCoordinadorCarrera))  return navigate('/dual/carrera',      { replace: true })
+    if (get(isAdmin)) {
+      return navigate('/admin/solicitudes', { replace: true })
+    }
+    if (get(isCoordinadorDual)) {
+      return navigate('/dual/coordinador',  { replace: true })
+    }
+    if (get(isCoordinadorCarrera)) {
+      return navigate('/dual/carrera',      { replace: true })
+    }
     navigate('/dashboard', { replace: true })
   }
 </script>
@@ -70,44 +76,49 @@
   }
 
   :global(:root) {
-    --orange:        #F97316;
-    --orange-hover:  #EA6C00;
-    --orange-light:  #FFF7ED;
-    --orange-mid:    #FDBA74;
-    --text-primary:  #1F2937;
-    --text-secondary:#6B7280;
-    --text-disabled: #9CA3AF;
-    --bg-page:       #F3F4F6;
-    --bg-card:       #FFFFFF;
-    --border:        #E5E7EB;
-    --border-input:  #D1D5DB;
-    --error:         #EF4444;
-    --success:       #22C55E;
-    --blue:          #3B82F6;
-    --radius-card:   14px;
-    --radius-input:  8px;
-    --radius-btn:    8px;
-    --shadow-card:   0 1px 8px rgba(0,0,0,0.08), 0 0 1px rgba(0,0,0,0.04);
-    --font:          'DM Sans', system-ui, sans-serif;
+    --orange: #F97316;
+    --orange-hover: #EA6C00;
+    --orange-light: #FFF7ED;
+    --orange-mid: #FDBA74;
+    
+    /* Grises sofisticados con base azulada (Slate) */
+    --text-primary: #0F172A;
+    --text-secondary: #475569;
+    --text-disabled: #94A3B8;
+    --bg-page: #F8FAFC;
+    --bg-card: #FFFFFF;
+    --border: #E2E8F0;
+    --border-input: #CBD5E1;
+    
+    --error: #EF4444;
+    --success: #22C55E;
+    --blue: #3B82F6;
+    
+    --radius-card: 16px;
+    --radius-input: 10px;
+    --radius-btn: 10px;
+    --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+    --font: 'DM Sans', system-ui, sans-serif;
   }
 
   /* Modo oscuro */
   :global([data-theme="dark"]) {
-    --bg-page:        #111827;
-    --bg-card:        #1F2937;
-    --border:         #374151;
-    --border-input:   #4B5563;
-    --text-primary:   #F9FAFB;
-    --text-secondary: #9CA3AF;
-    --text-disabled:  #6B7280;
-    --orange-light:   #431407;
-    --shadow-card:    0 1px 8px rgba(0,0,0,0.4);
+    --bg-page: #0B0F19;
+    --bg-card: #151D30;
+    --border: #1E2942;
+    --border-input: #2E3F61;
+    --text-primary: #F8FAFC;
+    --text-secondary: #94A3B8;
+    --text-disabled: #64748B;
+    --orange-light: #2C140A;
+    --shadow-card: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
   }
+  
   :global([data-theme="dark"] .input-plain),
   :global([data-theme="dark"] .input-wrap input) {
-    background: #374151 !important;
+    background: #1E2942 !important;
     color: var(--text-primary) !important;
-    border-color: #4B5563 !important;
+    border-color: #2E3F61 !important;
   }
 
   :global(body) {
@@ -118,35 +129,36 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  /* Botones primarios */
+  /* Botones primarios estilizados */
   :global(.btn-primary) {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
     width: 100%;
-    padding: 13px 20px;
+    padding: 12px 24px;
     background: var(--orange);
     color: #fff;
     border: none;
     border-radius: var(--radius-btn);
     font-family: var(--font);
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 600;
     cursor: pointer;
-    transition: background 0.15s, transform 0.1s, opacity 0.15s;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 4px rgba(249, 115, 22, 0.2);
   }
+
   :global(.btn-primary:hover:not(:disabled)) {
     background: var(--orange-hover);
-    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
   }
-  :global(.btn-primary:active:not(:disabled)) {
-    transform: translateY(0);
-  }
+
   :global(.btn-primary:disabled) {
     background: var(--border-input);
     color: var(--text-disabled);
     cursor: not-allowed;
+    box-shadow: none;
   }
 
   /* Botones outline */
@@ -155,84 +167,85 @@
     align-items: center;
     justify-content: center;
     gap: 8px;
-    padding: 13px 20px;
+    padding: 12px 24px;
     background: transparent;
     color: var(--text-primary);
     border: 1.5px solid var(--border-input);
     border-radius: var(--radius-btn);
     font-family: var(--font);
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 600;
     cursor: pointer;
-    transition: border-color 0.15s, background 0.15s;
+    transition: all 0.2s ease;
   }
+
   :global(.btn-outline:hover) {
     border-color: var(--orange);
     color: var(--orange);
     background: var(--orange-light);
   }
 
-  /* Campos de entrada con icono */
+  /* Inputs refinados */
   :global(.input-group) {
     display: flex;
     flex-direction: column;
     gap: 6px;
   }
+
   :global(.input-group label) {
     font-size: 13px;
     font-weight: 600;
-    color: var(--text-primary);
+    color: var(--text-secondary);
   }
+
   :global(.input-wrap) {
     position: relative;
     display: flex;
     align-items: center;
   }
+
   :global(.input-wrap .icon) {
     position: absolute;
-    left: 12px;
+    left: 14px;
     color: var(--text-disabled);
     display: flex;
     pointer-events: none;
   }
+
   :global(.input-wrap input) {
     width: 100%;
-    padding: 11px 14px 11px 38px;
+    padding: 12px 14px 12px 42px;
     border: 1.5px solid var(--border-input);
     border-radius: var(--radius-input);
     font-family: var(--font);
     font-size: 14px;
     color: var(--text-primary);
-    background: #fff;
+    background: var(--bg-card);
     outline: none;
-    transition: border-color 0.15s;
-  }
-  :global(.input-wrap input:focus)       { border-color: var(--orange); }
-  :global(.input-wrap input::placeholder) { color: var(--text-disabled); }
-  :global(.input-wrap input:disabled) {
-    background: var(--bg-page);
-    color: var(--text-secondary);
-    cursor: not-allowed;
+    transition: all 0.15s ease;
   }
 
-  /* Campos de entrada estándar */
+  :global(.input-wrap input:focus) { 
+    border-color: var(--orange);
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.15);
+  }
+
   :global(.input-plain) {
     width: 100%;
-    padding: 11px 14px;
+    padding: 12px 14px;
     border: 1.5px solid var(--border-input);
     border-radius: var(--radius-input);
     font-family: var(--font);
     font-size: 14px;
     color: var(--text-primary);
-    background: #fff;
+    background: var(--bg-card);
     outline: none;
-    transition: border-color 0.15s;
+    transition: all 0.15s ease;
   }
-  :global(.input-plain:focus) { border-color: var(--orange); }
-  :global(.input-plain:disabled) {
-    background: var(--bg-page);
-    color: var(--text-secondary);
-    cursor: not-allowed;
+
+  :global(.input-plain:focus) { 
+    border-color: var(--orange);
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.15);
   }
 
   /* Mensajes de error */
@@ -246,6 +259,11 @@
     font-weight: 500;
   }
 
+  :global([data-theme="dark"] .error-msg) {
+    background: #2D1414;
+    border-color: #4C1D1D;
+  }
+
   /* Enlaces de sistema */
   :global(.link-orange) {
     color: var(--orange);
@@ -253,18 +271,43 @@
     text-decoration: none;
     cursor: pointer;
   }
-  :global(.link-orange:hover) { text-decoration: underline; }
+
+  :global(.link-orange:hover) {
+    text-decoration: underline;
+  }
 
   /* Etiquetas de estado */
   :global(.badge) {
-    display: inline-block;
-    padding: 3px 10px;
-    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    border-radius: 6px;
     font-size: 12px;
     font-weight: 600;
+    border: 1px solid transparent;
   }
-  :global(.badge-pendiente)   { background: #FFF7ED; color: #C2410C; }
-  :global(.badge-en_revision) { background: #EFF6FF; color: #1D4ED8; }
-  :global(.badge-aprobada)    { background: #F0FDF4; color: #15803D; }
-  :global(.badge-rechazada)   { background: #FEF2F2; color: #B91C1C; }
+
+  :global(.badge-pendiente) {
+    background: rgba(249, 115, 22, 0.08);
+    color: #F97316;
+    border-color: rgba(249, 115, 22, 0.2);
+  }
+
+  :global(.badge-en_revision) {
+    background: rgba(59, 130, 246, 0.08);
+    color: #3B82F6;
+    border-color: rgba(59, 130, 246, 0.2);
+  }
+
+  :global(.badge-aprobada) {
+    background: rgba(34, 197, 94, 0.08);
+    color: #22C55E;
+    border-color: rgba(34, 197, 94, 0.2);
+  }
+
+  :global(.badge-rechazada) {
+    background: rgba(239, 68, 68, 0.08);
+    color: #EF4444;
+    border-color: rgba(239, 68, 68, 0.2);
+  }
 </style>

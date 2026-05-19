@@ -1,44 +1,64 @@
 <script>
   // src/lib/components/shared/FiltrosBarra.svelte
-
-  // Importaciones
+  // Importaciones desglosadas
   import { createEventDispatcher } from 'svelte'
   const dispatch = createEventDispatcher()
 
-  // Props de visibilidad y selectores dinámicos
+  // Parámetros de configuración de visibilidad
   export let mostrarEstado = true
   export let mostrarCarrera = true
   export let mostrarGrupo = true
+  
+  // Orígenes de datos remotos (Catálogos puros)
   export let grupos = [] 
-  export let carreras = [] // Recibe un arreglo de strings directo de la BD
+  export let carreras = []
 
-  // Props de filtros vinculados
+  // Bindeos bidireccionales de estados de filtrado
   export let filtroBusqueda = ''
   export let filtroGrupo = ''
   export let filtroCarrera = ''
   export let filtroEstado = ''
   
-  // Filtrado inteligente de grupos por palabras clave de la carrera
+  // Algoritmo reactivo de correspondencia entre grupos e iniciales de carrera
   $: gruposFiltrados = filtroCarrera
-    ? grupos.filter(g => {
+    ? grupos.filter((g) => {
         const gUpper = g.toUpperCase()
         const cUpper = filtroCarrera.toUpperCase()
         
-        if (gUpper.includes('TII') && cUpper.includes('INFORMACIÓN')) return true
-        if (gUpper.includes('LOG') && cUpper.includes('LOGISTICA')) return true
-        if (gUpper.includes('EDU') && cUpper.includes('EDUCACIÓN')) return true
+        if (gUpper.includes('TII') && cUpper.includes('INFORMACIÓN')) {
+          return true
+        }
+        if (gUpper.includes('LOG') && cUpper.includes('LOGISTICA')) {
+          return true
+        }
+        if (gUpper.includes('EDU') && cUpper.includes('EDUCACIÓN')) {
+          return true
+        }
         return false
       })
     : []
 
-  // Manejo de eventos
+  // CORRECCIÓN: Preparación reactiva del catálogo para el ciclo del HTML
+  $: gruposVisibles = filtroCarrera
+    ? gruposFiltrados
+    : grupos
+
+  // Manejo del cambio de carrera e invalidación de selección previa
   function handleCarreraChange() {
     filtroGrupo = ''
     handleBuscar()
   }
 
+  // Despacho centralizado de peticiones de actualización al componente padre
   function handleBuscar() {
     dispatch('buscar')
+  }
+
+  // CORRECCIÓN: Extracción formal de la lógica de intercepción del teclado
+  function handleKeydown(e) {
+    if (e.key === 'Enter') {
+      handleBuscar()
+    }
   }
 </script>
 
@@ -48,11 +68,15 @@
     class="input-plain input-busqueda"
     placeholder="Buscar por matrícula o nombre…"
     bind:value={filtroBusqueda}
-    on:keydown={(e) => e.key === 'Enter' && handleBuscar()}
+    on:keydown={handleKeydown}
   />
 
   {#if mostrarCarrera}
-    <select bind:value={filtroCarrera} class="input-plain select-field select-carrera" on:change={handleCarreraChange}>
+    <select 
+      bind:value={filtroCarrera} 
+      class="input-plain select-field select-carrera" 
+      on:change={handleCarreraChange}
+    >
       <option value="">Todas las carreras</option>
       {#each carreras as carrera}
         <option value={carrera}>{carrera}</option>
@@ -61,12 +85,17 @@
   {/if}
 
   {#if mostrarGrupo}
-    <select bind:value={filtroGrupo} class="input-plain select-field select-grupo" on:change={handleBuscar} disabled={mostrarCarrera && !filtroCarrera}>
+    <select 
+      bind:value={filtroGrupo} 
+      class="input-plain select-field select-grupo" 
+      on:change={handleBuscar} 
+      disabled={mostrarCarrera && !filtroCarrera}
+    >
       {#if mostrarCarrera && !filtroCarrera}
         <option value="">Selecciona una carrera primero...</option>
       {:else}
         <option value="">Todos los grupos</option>
-        {#each (filtroCarrera ? gruposFiltrados : grupos) as g}
+        {#each gruposVisibles as g}
           <option value={g}>{g}</option>
         {/each}
       {/if}
@@ -74,7 +103,11 @@
   {/if}
 
   {#if mostrarEstado}
-    <select bind:value={filtroEstado} class="input-plain select-field select-estado" on:change={handleBuscar}>
+    <select 
+      bind:value={filtroEstado} 
+      class="input-plain select-field select-estado" 
+      on:change={handleBuscar}
+    >
       <option value="">Todos los estados</option>
       <option value="Pendiente">Pendiente</option>
       <option value="En_revision">En revisión</option>
@@ -83,7 +116,12 @@
     </select>
   {/if}
 
-  <button class="btn-outline btn-actualizar" on:click={handleBuscar}>Actualizar</button>
+  <button 
+    class="btn-outline btn-actualizar" 
+    on:click={handleBuscar}
+  >
+    Actualizar
+  </button>
 </div>
 
 <style>
@@ -99,14 +137,42 @@
     box-shadow: var(--shadow-card);
     margin-bottom: 1.5rem;
   }
+
   .input-plain {
     font-family: var(--font);
     font-size: 14px;
   }
-  .input-busqueda { flex: 1.2; min-width: 150px; max-width: 220px; }
-  .select-field { flex: 1; min-width: 130px; }
-  .select-carrera { max-width: 320px; text-overflow: ellipsis; }
-  .select-grupo { max-width: 160px; }
-  .select-estado { max-width: 150px; }
-  .btn-actualizar { white-space: nowrap; padding: 10px 16px; font-size: 14px; height: 40px; display: flex; align-items: center; }
+
+  .input-busqueda { 
+    flex: 1.2; 
+    min-width: 150px; 
+    max-width: 220px; 
+  }
+
+  .select-field { 
+    flex: 1; 
+    min-width: 130px;
+  }
+
+  .select-carrera { 
+    max-width: 320px; 
+    text-overflow: ellipsis; 
+  }
+
+  .select-grupo { 
+    max-width: 160px; 
+  }
+
+  .select-estado { 
+    max-width: 150px;
+  }
+
+  .btn-actualizar { 
+    white-space: nowrap; 
+    padding: 10px 16px; 
+    font-size: 14px; 
+    height: 40px; 
+    display: flex; 
+    align-items: center; 
+  }
 </style>
