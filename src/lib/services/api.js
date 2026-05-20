@@ -152,6 +152,12 @@ export const api = {
         { estado }
       )
     },
+    listarGrupos: (carrera) => {
+      const queryParam = carrera
+        ? `?carrera=${encodeURIComponent(carrera)}`
+        : ''
+      return request('GET', `/dual/carrera/grupos${queryParam}`)
+    },
     documentUrl: (id, tipo) => {
       return `${BASE_URL}/admin/solicitudes/${id}/documento/${tipo}`
     }
@@ -254,11 +260,17 @@ export const api = {
     subirAlumnosCSV: (grupoId, fd) => {
       return request('POST', `/dual/carrera/grupos/${grupoId}/alumnos`, fd, true)
     },
+    agregarAlumno: (grupoId, body) => {
+      return request('POST', `/dual/carrera/grupos/${grupoId}/alumnos/individual`, body)
+    },
+    actualizarAlumno: (matricula, body) => {
+      return request('PATCH', `/dual/carrera/alumnos/${matricula}`, body)
+    },
+    desvincularAlumno: (matricula) => {
+      return request('DELETE', `/dual/carrera/alumnos/${matricula}`)
+    },
     semanaActual: () => {
       return request('GET', '/dual/alumno/semana-actual')
     },
   }
 }
-
-
-  

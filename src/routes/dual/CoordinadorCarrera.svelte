@@ -21,6 +21,7 @@
     const queryVista = new URLSearchParams($location.search).get('vista')
     if (queryVista === 'grupos' && vista !== 'grupos') {
       vista = 'grupos'
+      cargarGrupos()
     } else if (!queryVista && vista === 'grupos') {
       vista = 'directorio'
       cargarAlumnos()
@@ -46,7 +47,6 @@
   // Variables de control de gestión de grupos
   let formGrupo = {
     carrera: 'ING.NME TEC DE LA INFORMACIÓN E INNOVACION DIGITAL',
-    siglas: 'TII',
     cuatrimestre: 5,
     modalidad: 'bis',
     letra: 'A',
@@ -60,6 +60,10 @@
   let subiendoCSV = false
   let errorCSV = ''
   let exitoCSV = ''
+  let gruposExistentes = []
+  let loadingGrupos = false
+  let filtroCarreraGrupos = ''
+  let grupoSeleccionado = null
 
   onMount(async () => {
     if (!get(isAuthenticated) || !get(isCoordinadorCarrera)) {
@@ -164,7 +168,7 @@
     grupoCreado = null
     try {
       const res = await api.dual.crearGrupo(formGrupo)
-      grupoCreado = res.grupo
+      grupoCreado = res
     } catch (e) {
       errorGrupo = e.message || 'Error de integridad al registrar grupo.'
     } finally {
@@ -265,6 +269,122 @@
       subiendoCSV = false
     }
   }
+  // Carga remota de grupos existentes, con o sin filtro de carrera
+  async function cargarGrupos() {
+    loadingGrupos = true
+    try {
+      gruposExistentes = await api.admin.listarGrupos(filtroCarreraGrupos || null)
+    } catch (e) {
+      gruposExistentes = []
+    } finally {
+      loadingGrupos = false
+    }
+  }
+
+  // Selección de grupo existente para carga masiva
+  function seleccionarGrupo(grupo) {
+    grupoCreado = grupo
+    grupoSeleccionado = grupo
+    errorGrupo = ''
+    archivoCSV = null
+    resultadoCSV = null
+    errorCSV = ''
+  }
+
+  // Variables de gestión individual de alumnos
+  let inputFileRef = null
+  let filasAlumnos = [{ matricula: '', nombre: '' }]
+  let errorIndividual = ''
+  let previewIndividual = null  // { accion, filas }
+  let modalEliminar = null      // { matricula, nombre }
+  let procesandoIndividual = false
+
+  function agregarFila() {
+    filasAlumnos = [...filasAlumnos, { matricula: '', nombre: '' }]
+  }
+
+  function resetIndividual() {
+    filasAlumnos = [{ matricula: '', nombre: '' }]
+    errorIndividual = ''
+    previewIndividual = null
+  }
+
+  function validarFilasIndividuales(soloMatricula = false) {
+    for (const f of filasAlumnos) {
+      if (!f.matricula) return 'La matrícula es obligatoria.'
+      if (!soloMatricula && !f.nombre.trim()) return 'El nombre es obligatorio.'
+      if (!/^\d{9}$/.test(f.matricula)) return `Matrícula inválida: ${f.matricula} (deben ser 9 dígitos).`
+    }
+    return null
+  }
+
+  // Prepara la preview antes de confirmar agregar o actualizar
+  function prepararAccion(accion) {
+    errorIndividual = ''
+    const soloMatricula = accion === 'actualizar'
+    const err = validarFilasIndividuales(soloMatricula)
+    if (err) { errorIndividual = err; return }
+    // Agregar requiere grupo activo
+    if (accion === 'agregar' && !grupoCreado) {
+      errorIndividual = 'Selecciona un grupo activo para agregar alumnos.'
+      return
+    }
+    previewIndividual = { accion, filas: filasAlumnos.map(f => ({ ...f })) }
+  }
+
+  // Prepara confirmación antes de eliminar
+  function prepararEliminar() {
+    errorIndividual = ''
+    if (filasAlumnos.length !== 1 || !filasAlumnos[0].matricula) {
+      errorIndividual = 'Ingresa una sola matrícula para eliminar.'
+      return
+    }
+    if (!/^\d{9}$/.test(filasAlumnos[0].matricula)) {
+      errorIndividual = 'Matrícula inválida (deben ser 9 dígitos).'
+      return
+    }
+    modalEliminar = { matricula: filasAlumnos[0].matricula, nombre: filasAlumnos[0].nombre }
+  }
+
+  async function confirmarAccion() {
+    if (!previewIndividual) return
+    procesandoIndividual = true
+    errorIndividual = ''
+    try {
+      if (previewIndividual.accion === 'agregar') {
+        for (const f of previewIndividual.filas) {
+          await api.dual.agregarAlumno(grupoCreado.id, f)
+        }
+      } else if (previewIndividual.accion === 'actualizar') {
+        for (const f of previewIndividual.filas) {
+          await api.dual.actualizarAlumno(f.matricula, { nombre: f.nombre })
+        }
+      }
+      resetIndividual()
+      await cargarGrupos()
+    } catch (e) {
+      errorIndividual = e.message || 'Error al procesar la operación.'
+    } finally {
+      procesandoIndividual = false
+    }
+  }
+
+  async function confirmarEliminar() {
+    if (!modalEliminar) return
+    procesandoIndividual = true
+    errorIndividual = ''
+    try {
+      await api.dual.desvincularAlumno(modalEliminar.matricula)
+      modalEliminar = null
+      resetIndividual()
+      await cargarGrupos()
+    } catch (e) {
+      errorIndividual = e.message || 'Error al eliminar el alumno.'
+      modalEliminar = null
+    } finally {
+      procesandoIndividual = false
+    }
+  }
 </script>
 
 <Navbar />
@@ -330,160 +450,338 @@
     </div>
 
   {:else if vista === 'grupos'}
-    <div class="page-wrap">
-      <div class="expediente-layout">
+    <div class="page-wrap-grupos">
+
+      <div class="grupos-topbar">
         <button class="btn-back" on:click={volverDirectorio}>
+          <svg
+            width="16"
+            height="16"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.2"
+            viewBox="0 0 24 24"
+            style="display:inline; margin-right:4px; vertical-align:text-bottom;"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M10.5 19.5 L3 12 m0 0 l7.5-7.5 M3 12 h18"
+            />
+          </svg>
           Volver al directorio
         </button>
       </div>
 
-      <div class="expediente-layout">
-        <div class="reportes-card">
-          <h2 class="card-title">Configuración de Estructura Académica</h2>
-          
-          {#if errorGrupo}
-            <div class="error-msg">{errorGrupo}</div>
-          {/if}
+      <!-- Layout principal: barra izquierda + columna derecha -->
+      <div class="grupos-layout">
 
-          <div class="grid-form">
+        <div class="grupos-col-izq">
+
+          <!-- Selector de grupo activo -->
+          <div class="grupos-selector-card">
             <div class="field">
-              <label>Carrera Completa</label>
-              <input 
-                type="text" 
-                class="input-plain" 
-                bind:value={formGrupo.carrera} 
-                disabled={grupoCreado} 
-              />
-            </div>
-            <div class="field">
-              <label>Siglas</label>
-              <input 
-                type="text" 
-                class="input-plain" 
-                bind:value={formGrupo.siglas} 
-                disabled={grupoCreado} 
-              />
-            </div>
-            <div class="field">
-              <label>Cuatrimestre</label>
-              <input 
-                type="number" 
-                class="input-plain" 
-                min="1" 
-                max="12" 
-                bind:value={formGrupo.cuatrimestre} 
-                disabled={grupoCreado} 
-              />
-            </div>
-            <div class="field">
-              <label>Modalidad</label>
-              <select 
-                class="input-plain" 
-                bind:value={formGrupo.modalidad} 
-                disabled={grupoCreado}
+              <label class="grupos-barra-label">Carrera</label>
+              <select
+                class="input-plain input-sm"
+                bind:value={filtroCarreraGrupos}
+                on:change={cargarGrupos}
               >
-                <option value="bis">BIS</option>
-                <option value="intensivo">Intensivo</option>
-                <option value="mixta">Mixta</option>
-                <option value="despresurizada">Despresurizada</option>
+                <option value="">Todas</option>
+                <option value="ING.NME TEC DE LA INFORMACIÓN E INNOVACION DIGITAL">TII</option>
+                <option value="ING. NME LOGISTICA">LOG</option>
+                <option value="LIC. NME EDUCACIÓN">EDU</option>
               </select>
             </div>
             <div class="field">
-              <label>Letra</label>
-              <input 
-                type="text" 
-                class="input-plain" 
-                maxlength="1" 
-                bind:value={formGrupo.letra} 
-                disabled={grupoCreado} 
-              />
-            </div>
-            <div class="field">
-              <label>Turno</label>
-              <select 
-                class="input-plain" 
-                bind:value={formGrupo.turno} 
-                disabled={grupoCreado}
-              >
-                <option value="Matutino">Matutino</option>
-                <option value="Vespertino">Vespertino</option>
-                <option value="Despresurizado">Despresurizado</option>
-              </select>
+              <label class="grupos-barra-label">
+                {#if grupoCreado}
+                  Grupo activo — <span class="highlight-orange">{grupoCreado.nomenclatura}</span>
+                {:else}
+                  Grupo activo
+                {/if}
+              </label>
+              {#if loadingGrupos}
+                <div class="spinner" style="width:18px;height:18px;border-width:2px;"></div>
+              {:else}
+                <select
+                  class="input-plain input-sm"
+                  class:select-activo={grupoCreado}
+                  on:change={(e) => {
+                    const g = gruposExistentes.find(x => x.id === e.target.value)
+                    if (g) seleccionarGrupo(g)
+                    else { grupoCreado = null; grupoSeleccionado = null }
+                  }}
+                >
+                  <option value="">Sin grupo activo</option>
+                  {#each gruposExistentes as g}
+                    <option value={g.id} selected={grupoCreado?.id === g.id}>
+                      {g.nomenclatura}
+                    </option>
+                  {/each}
+                </select>
+              {/if}
             </div>
           </div>
+          <div class="reportes-card reportes-card-compacta">
+            <h2 class="card-title">Registrar grupo nuevo</h2>
 
-          {#if !grupoCreado}
-            <button 
-              class="btn-primary" 
-              style="margin-top:10px" 
-              on:click={registrarGrupo} 
-              disabled={guardandoGrupo}
-            >
-              {guardandoGrupo ? 'Registrando...' : 'Establecer Grupo'}
-            </button>
-          {:else}
-            <div class="ficha-card card-static">
-              <p class="ficha-titulo">
-                Grupo Creado: <span class="highlight-orange">{grupoCreado.nomenclatura}</span>
-              </p>
-              <div class="ficha-divider"></div>
-              <div class="csv-upload-section">
-                <p class="csv-instructions">
-                  Descarga la plantilla, llénala con los datos de control escolar y súbela para matricular a los alumnos en bloque.
-                </p>
-                <button 
-                  class="btn-outline btn-mb" 
-                  on:click={descargarPlantillaCSV}
+            {#if errorGrupo}
+              <div class="error-msg">{errorGrupo}</div>
+            {/if}
+
+            <div class="form-col">
+              <div class="field">
+                <label>Carrera</label>
+                <select
+                  class="input-plain input-sm"
+                  bind:value={formGrupo.carrera}
+                  disabled={grupoCreado}
                 >
-                  Descargar CSV Base
-                </button>
-                
-                <input 
-                  type="file" 
-                  accept=".csv" 
-                  on:change={(e) => { 
-                    archivoCSV = e.target.files[0]; 
-                    resultadoCSV = null; 
-                    errorCSV = ''; 
-                  }} 
-                />
-
-                {#if errorCSV}
-                  <div class="error-msg" style="margin-top:10px;">{errorCSV}</div>
-                {/if}
-
-                {#if resultadoCSV}
-                  <div style="margin-top:14px; padding:12px; border-radius:8px; background:var(--bg-page); border:1px solid var(--border);">
-                    <p style="color:var(--success); font-weight:600; font-size:13px; margin:0;">
-                      ✓ {resultadoCSV.insertados} alumnos procesados e insertados en la base de datos.
-                    </p>
-                    {#if resultadoCSV.errores.length > 0}
-                      <p style="color:var(--error); font-weight:600; font-size:12px; margin:8px 0 4px;">
-                        Excepciones detectadas (filas ignoradas):
-                      </p>
-                      <ul style="margin:0; padding-left:16px; font-size:12px; color:var(--text-secondary);">
-                        {#each resultadoCSV.errores as err}
-                          <li>
-                            <strong>Fila {err.fila}</strong> {err.matricula ? `(${err.matricula})` : ''}: {err.razon}
-                          </li>
-                        {/each}
-                      </ul>
-                    {/if}
-                  </div>
-                {/if}
-
-                <button 
-                  class="btn-primary" 
-                  style="margin-top:14px;" 
-                  disabled={!archivoCSV || subiendoCSV} 
-                  on:click={procesarCargaMasiva}
+                  <option value="ING.NME TEC DE LA INFORMACIÓN E INNOVACION DIGITAL">
+                    ING.NME TEC DE LA INFORMACIÓN E INNOVACION DIGITAL
+                  </option>
+                  <option value="ING. NME LOGISTICA">
+                    ING. NME LOGISTICA
+                  </option>
+                  <option value="LIC. NME EDUCACIÓN">
+                    LIC. NME EDUCACIÓN
+                  </option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Modalidad</label>
+                <select
+                  class="input-plain input-sm"
+                  bind:value={formGrupo.modalidad}
+                  disabled={grupoCreado}
                 >
-                  {subiendoCSV ? 'Sincronizando lote...' : 'Ejecutar Carga Masiva'}
-                </button>
+                  <option value="bis">BIS</option>
+                  <option value="intensivo">Intensivo</option>
+                  <option value="mixta">Mixta</option>
+                  <option value="despresurizada">Despresurizada</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Turno</label>
+                <select
+                  class="input-plain input-sm"
+                  bind:value={formGrupo.turno}
+                  disabled={grupoCreado}
+                >
+                  <option value="Matutino">Matutino</option>
+                  <option value="Vespertino">Vespertino</option>
+                  <option value="Despresurizado">Despresurizado</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Cuatrimestre</label>
+                <select
+                  class="input-plain input-sm"
+                  bind:value={formGrupo.cuatrimestre}
+                  disabled={grupoCreado}
+                >
+                  {#each Array.from({length: 12}, (_, i) => i + 1) as n}
+                    <option value={n}>{n}</option>
+                  {/each}
+                </select>
+              </div>
+              <div class="field">
+                <label>Letra</label>
+                <select
+                  class="input-plain input-sm"
+                  bind:value={formGrupo.letra}
+                  disabled={grupoCreado}
+                >
+                  {#each ['A','B','C','D','E','F'] as l}
+                    <option value={l}>{l}</option>
+                  {/each}
+                </select>
               </div>
             </div>
-          {/if}
+
+            {#if !grupoCreado}
+              <button
+                class="btn-primary"
+                style="margin-top:6px"
+                on:click={registrarGrupo}
+                disabled={guardandoGrupo}
+              >
+                {guardandoGrupo ? 'Registrando...' : 'Registrar grupo'}
+              </button>
+            {:else}
+              <button
+                class="btn-outline"
+                style="margin-top:6px"
+                on:click={() => {
+                  grupoCreado = null
+                  grupoSeleccionado = null
+                  resultadoCSV = null
+                  errorCSV = ''
+                  archivoCSV = null
+                }}
+              >
+                Registrar otro grupo
+              </button>
+            {/if}
+          </div>
         </div>
+
+        <div class="grupos-col-der">
+          {#if grupoCreado}
+            <div class="reportes-card reportes-card-compacta">
+              <h2 class="card-title">Carga masiva de alumnos</h2>
+              <p class="csv-instructions">
+                Descarga la plantilla, llénala y súbela para matricular alumnos en bloque.
+              </p>
+
+              <div class="carga-fila-botones">
+                <button
+                  class="btn-outline"
+                  on:click={descargarPlantillaCSV}
+                >
+                  Descargar CSV base
+                </button>
+
+                <!-- Input file oculto activado por botón estilizado -->
+                <input
+                  type="file"
+                  accept=".csv"
+                  bind:this={inputFileRef}
+                  style="display:none"
+                  on:change={(e) => {
+                    archivoCSV = e.target.files[0]
+                    resultadoCSV = null
+                    errorCSV = ''
+                  }}
+                />
+                <button
+                  class="btn-file"
+                  on:click={() => inputFileRef.click()}
+                >
+                  <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
+                  </svg>
+                  {archivoCSV ? archivoCSV.name : 'Seleccionar archivo CSV'}
+                </button>
+
+                <button
+                  class="btn-primary"
+                  disabled={!archivoCSV || subiendoCSV}
+                  on:click={procesarCargaMasiva}
+                >
+                  {subiendoCSV ? 'Sincronizando...' : 'Ejecutar carga masiva'}
+                </button>
+              </div>
+
+              {#if errorCSV}
+                <div class="error-msg" style="margin-top:10px">{errorCSV}</div>
+              {/if}
+
+              {#if resultadoCSV}
+                <div class="resultado-csv">
+                  <p class="resultado-ok">
+                    ✓ {resultadoCSV.insertados} alumnos procesados correctamente.
+                  </p>
+                  {#if resultadoCSV.errores.length > 0}
+                    <p class="resultado-err-titulo">
+                      Filas ignoradas:
+                    </p>
+                    <ul class="resultado-err-lista">
+                      {#each resultadoCSV.errores as err}
+                        <li>
+                          <strong>Fila {err.fila}</strong>
+                          {err.matricula ? `(${err.matricula})` : ''}:
+                          {err.razon}
+                        </li>
+                      {/each}
+                    </ul>
+                  {/if}
+                </div>
+              {/if}
+
+            </div>
+          {/if}
+
+          <!-- Gestión individual: siempre visible, no requiere grupo activo -->
+          <div class="reportes-card" style={grupoCreado ? 'margin-top:16px' : ''}>
+            <h2 class="card-title">Gestión individual de alumnos</h2>
+            <p class="csv-instructions">
+              Para actualizar o eliminar solo necesitas la matrícula. Para agregar, selecciona un grupo activo primero.
+            </p>
+
+            {#if errorIndividual}
+              <div class="error-msg">{errorIndividual}</div>
+            {/if}
+
+            {#if previewIndividual}
+              <div class="preview-individual">
+                <p class="preview-titulo">
+                  {previewIndividual.accion === 'agregar' ? 'Confirmar alta' : 'Confirmar actualización'}
+                </p>
+                {#each previewIndividual.filas as f}
+                  <div class="preview-fila">
+                    <span class="ficha-mono">{f.matricula}</span>
+                    <span>{f.nombre}</span>
+                  </div>
+                {/each}
+                <div class="preview-acciones">
+                  <button
+                    class="btn-primary"
+                    disabled={procesandoIndividual}
+                    on:click={confirmarAccion}
+                  >
+                    {procesandoIndividual ? 'Procesando...' : 'Confirmar'}
+                  </button>
+                  <button
+                    class="btn-outline"
+                    disabled={procesandoIndividual}
+                    on:click={() => previewIndividual = null}
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            {:else}
+              <div class="filas-individuales">
+                {#each filasAlumnos as fila}
+                  <div class="fila-alumno">
+                    <input
+                      type="text"
+                      class="input-plain"
+                      placeholder="Matrícula (9 dígitos)"
+                      maxlength="9"
+                      bind:value={fila.matricula}
+                    />
+                    <input
+                      type="text"
+                      class="input-plain"
+                      placeholder="Nombre completo"
+                      bind:value={fila.nombre}
+                    />
+                  </div>
+                {/each}
+                <button class="btn-add-fila" on:click={agregarFila}>
+                  + Agregar otro
+                </button>
+              </div>
+
+              <div class="acciones-individuales">
+                <button class="btn-outline" on:click={() => prepararAccion('agregar')}>
+                  Agregar
+                </button>
+                <button class="btn-outline" on:click={() => prepararAccion('actualizar')}>
+                  Actualizar
+                </button>
+                <button class="btn-eliminar" on:click={prepararEliminar}>
+                  Eliminar
+                </button>
+              </div>
+            {/if}
+          </div>
+
+        </div>
+
       </div>
     </div>
   
@@ -637,6 +935,35 @@
       </div>
     </div>
   {/if}
+
+  <!-- Modal de confirmación para eliminar alumno -->
+  {#if modalEliminar}
+    <div class="modal-overlay" on:click={() => modalEliminar = null}>
+      <div class="modal-box" on:click|stopPropagation>
+        <p class="modal-titulo">¿Eliminar alumno?</p>
+        <p class="modal-cuerpo">
+          Se eliminará a <strong>{modalEliminar.nombre || modalEliminar.matricula}</strong> del grupo activo. Esta acción no se puede deshacer.
+        </p>
+        <div class="modal-acciones">
+          <button
+            class="btn-eliminar"
+            disabled={procesandoIndividual}
+            on:click={confirmarEliminar}
+          >
+            {procesandoIndividual ? 'Eliminando...' : 'Sí, eliminar'}
+          </button>
+          <button
+            class="btn-outline"
+            disabled={procesandoIndividual}
+            on:click={() => modalEliminar = null}
+          >
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </div>
+  {/if}
+
 </div>
 
 <style>
@@ -654,6 +981,15 @@
     display: flex; 
     flex-direction: column; 
     gap: 20px; 
+  }
+
+  .page-wrap-grupos {
+    padding: 32px 24px;
+    max-width: 1100px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
   }
 
   .header-flex {
@@ -989,6 +1325,11 @@
     gap: 20px; 
   }
 
+  .reportes-card-compacta {
+    padding: 20px;
+    gap: 12px;
+  }
+
   .card-title { 
     font-size: 16px;
     font-weight: 700; 
@@ -997,10 +1338,10 @@
   }
 
   /* Nuevas clases para los componentes añadidos */
-  .grid-form { 
-    display: grid; 
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
-    gap: 16px; 
+  .form-col {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
   }
 
   .card-static {
@@ -1020,6 +1361,21 @@
     font-size: 13px; 
     color: var(--text-secondary); 
     margin-bottom: 12px;
+  }
+
+  .carga-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .carga-fila-botones {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    align-items: stretch;
   }
 
   .btn-mb {
@@ -1045,6 +1401,378 @@
     }
     .ficha-card { 
       position: static; 
+    }
+  }
+  .grupos-topbar {
+    margin-bottom: 20px;
+  }
+
+  .grupos-layout {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+
+  .grupos-col-izq,
+  .grupos-col-der {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .grupos-selector-card {
+    background: var(--bg-card);
+    border-radius: var(--radius-card);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-card);
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .input-sm {
+    padding-top: 6px !important;
+    padding-bottom: 6px !important;
+    font-size: 13px !important;
+  }
+
+  .select-activo {
+    border-color: var(--orange);
+    color: var(--orange);
+    font-weight: 600;
+  }
+
+  .grupos-barra {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    background: var(--bg-card);
+    padding: 16px;
+    border-radius: var(--radius-card);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-card);
+  }
+
+  .grupos-barra-col {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .grupos-barra-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-disabled);
+    white-space: nowrap;
+  }
+
+  .grupos-barra-sep {
+    color: var(--text-disabled);
+  }
+
+  .grupos-barra-empty {
+    font-size: 13px;
+    color: var(--text-disabled);
+  }
+
+  .grupos-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .grupo-chip {
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 1.5px solid var(--border);
+    background: var(--bg-page);
+    font-family: monospace;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .grupo-chip:hover {
+    border-color: var(--orange);
+    color: var(--orange);
+    background: var(--orange-light);
+  }
+
+  .grupo-chip-activo {
+    border-color: var(--orange);
+    background: var(--orange-light);
+    color: var(--orange);
+  }
+
+  .grupos-der-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .select-carrera-grupos {
+    width: auto;
+    min-width: 100px;
+    font-size: 13px;
+    padding: 6px 10px;
+  }
+
+  .grupos-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .grupo-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1.5px solid var(--border);
+    background: var(--bg-page);
+    cursor: pointer;
+    font-family: var(--font);
+    transition: all 0.15s;
+    text-align: left;
+    width: 100%;
+  }
+
+  .grupo-item:hover {
+    border-color: var(--orange);
+    background: var(--orange-light);
+  }
+
+  .grupo-item-activo {
+    border-color: var(--orange);
+    background: var(--orange-light);
+  }
+
+  .grupo-nomenclatura {
+    font-family: monospace;
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--text-primary);
+  }
+
+  .grupo-meta {
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  .grupo-activo-banner {
+    margin-bottom: 12px;
+    padding: 10px 14px;
+    background: var(--orange-light);
+    border-radius: 8px;
+    border: 1px solid rgba(249,115,22,0.2);
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .btn-file {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 14px;
+    border: 1.5px dashed var(--border);
+    border-radius: var(--radius-input);
+    background: var(--bg-page);
+    color: var(--text-secondary);
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: left;
+  }
+
+  .btn-file:hover {
+    border-color: var(--orange);
+    color: var(--orange);
+    background: var(--orange-light);
+  }
+
+  .filas-individuales {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .fila-alumno {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 10px;
+  }
+
+  .btn-add-fila {
+    align-self: flex-start;
+    background: none;
+    border: none;
+    padding: 4px 0;
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--orange);
+    cursor: pointer;
+  }
+
+  .btn-add-fila:hover {
+    color: var(--orange-hover);
+  }
+
+  .acciones-individuales {
+    display: flex;
+    gap: 10px;
+    margin-top: 14px;
+    flex-wrap: wrap;
+  }
+
+  .btn-eliminar {
+    padding: 9px 18px;
+    border: 1.5px solid var(--error);
+    border-radius: var(--radius-input);
+    background: transparent;
+    color: var(--error);
+    font-family: var(--font);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .btn-eliminar:hover {
+    background: var(--error);
+    color: white;
+  }
+
+  .btn-eliminar:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .preview-individual {
+    background: var(--bg-page);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-input);
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .preview-titulo {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-disabled);
+    margin: 0;
+  }
+
+  .preview-fila {
+    display: flex;
+    gap: 12px;
+    font-size: 14px;
+    color: var(--text-secondary);
+    align-items: center;
+  }
+
+  .preview-acciones {
+    display: flex;
+    gap: 10px;
+    margin-top: 4px;
+  }
+
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+  }
+
+  .modal-box {
+    background: var(--bg-card);
+    border-radius: var(--radius-card);
+    border: 1px solid var(--border);
+    padding: 28px;
+    max-width: 400px;
+    width: 90%;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .modal-titulo {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+  }
+
+  .modal-cuerpo {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin: 0;
+  }
+
+  .modal-acciones {
+    display: flex;
+    gap: 10px;
+  }
+
+  .resultado-csv {
+    margin-top: 14px;
+    padding: 12px;
+    border-radius: 8px;
+    background: var(--bg-page);
+    border: 1px solid var(--border);
+  }
+
+  .resultado-ok {
+    color: var(--success);
+    font-weight: 600;
+    font-size: 13px;
+    margin: 0;
+  }
+
+  .resultado-err-titulo {
+    color: var(--error);
+    font-weight: 600;
+    font-size: 12px;
+    margin: 8px 0 4px;
+  }
+
+  .resultado-err-lista {
+    margin: 0;
+    padding-left: 16px;
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  @media (max-width: 900px) {
+    .grupos-layout {
+      grid-template-columns: 1fr;
+    }
+    .grupos-barra {
+      grid-template-columns: 1fr;
+    }
+    .carga-fila-botones {
+      grid-template-columns: 1fr;
     }
   }
 </style>
