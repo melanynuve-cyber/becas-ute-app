@@ -11,7 +11,7 @@
   import { api } from '../../lib/services/api.js'
   import Navbar from '../../lib/components/layout/Navbar.svelte'
   import FiltrosBarra from '../../lib/components/shared/FiltrosBarra.svelte'
-  import { formatFecha } from '../../lib/utils.js'
+  import { formatFecha, validarFilasCSV } from '../../lib/utils.js'
 
   const location = useLocation()
   let vista = 'directorio'
@@ -140,8 +140,7 @@
   function volverDirectorio() {
     alumnoSeleccionado = null
     reportes = []
-    vista = 'directorio'
-    cargarAlumnos()
+    navigate('/dual/carrera', { replace: true })
   }
 
   function descargarCSV(matricula) {
@@ -192,48 +191,11 @@
 
   let resultadoCSV = null // { insertados, errores: [] }
 
-  // Validador local extraído de la versión de Claude
-  function validarFilasCSV(texto) {
-    const lineas = texto.trim().split('\n')
-    if (lineas.length < 2) return { validas: [], errores: [{ fila: 0, razon: 'El archivo no contiene datos.' }] }
-
-    const encabezado = lineas[0].toLowerCase().replace(/\r/, '')
-    if (!encabezado.includes('matricula') || !encabezado.includes('nombre')) {
-      return { validas: [], errores: [{ fila: 1, razon: 'Faltan columnas "matricula" y "nombre".' }] }
-    }
-
-    const validas = []
-    const errores = []
-
-    for (let i = 1; i < lineas.length; i++) {
-      const fila = lineas[i].replace(/\r/, '').trim()
-      if (!fila) continue
-
-      const cols = fila.split(',')
-      const matricula = (cols[0] || '').trim()
-      const nombre = cols.slice(1).join(',').trim()
-
-      if (!matricula && !nombre) continue
-
-      const numFila = i + 1
-
-      if (!/^\d+$/.test(matricula)) {
-        errores.push({ fila: numFila, matricula, razon: 'Matrícula no numérica.' })
-        continue
-      }
-      if (matricula.length !== 9) {
-        errores.push({ fila: numFila, matricula, razon: 'Longitud inválida (deben ser 9).' })
-        continue
-      }
-      if (!nombre) {
-        errores.push({ fila: numFila, matricula, razon: 'Nombre vacío.' })
-        continue
-      }
-
-      validas.push({ matricula, nombre })
-    }
-
-    return { validas, errores }
+  function limpiarInputCSV() {
+    archivoCSV = null
+    resultadoCSV = null
+    errorCSV = ''
+    if (inputFileRef) inputFileRef.value = ""
   }
 
   // Controlador de subida actualizado con transaccionalidad
@@ -261,7 +223,7 @@
         insertados: respuesta.insertados ?? validas.length,
         errores: errs
       }
-      archivoCSV = null
+      limpiarInputCSV()
       await cargarAlumnos()
     } catch (e) {
       errorCSV = e.message || 'Error de I/O al procesar el archivo.'
@@ -286,9 +248,7 @@
     grupoCreado = grupo
     grupoSeleccionado = grupo
     errorGrupo = ''
-    archivoCSV = null
-    resultadoCSV = null
-    errorCSV = ''
+    limpiarInputCSV()
   }
 
   // Variables de gestión individual de alumnos
@@ -321,10 +281,8 @@
   // Prepara la preview antes de confirmar agregar o actualizar
   function prepararAccion(accion) {
     errorIndividual = ''
-    const soloMatricula = accion === 'actualizar'
-    const err = validarFilasIndividuales(soloMatricula)
+    const err = validarFilasIndividuales(false)
     if (err) { errorIndividual = err; return }
-    // Agregar requiere grupo activo
     if (accion === 'agregar' && !grupoCreado) {
       errorIndividual = 'Selecciona un grupo activo para agregar alumnos.'
       return
@@ -616,9 +574,7 @@
                 on:click={() => {
                   grupoCreado = null
                   grupoSeleccionado = null
-                  resultadoCSV = null
-                  errorCSV = ''
-                  archivoCSV = null
+                  limpiarInputCSV()
                 }}
               >
                 Registrar otro grupo

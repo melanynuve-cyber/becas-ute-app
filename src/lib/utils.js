@@ -43,3 +43,47 @@ export function estadoLabel(estado) {
 
   return etiquetaMapeada ?? estado ?? '—'
 }
+
+// Validador local extraído de la versión de Claude
+  export function validarFilasCSV(texto) {
+    const lineas = texto.trim().split('\n')
+    if (lineas.length < 2) return { validas: [], errores: [{ fila: 0, razon: 'El archivo no contiene datos.' }] }
+
+    const encabezado = lineas[0].toLowerCase().replace(/\r/, '')
+    if (!encabezado.includes('matricula') || !encabezado.includes('nombre')) {
+      return { validas: [], errores: [{ fila: 1, razon: 'Faltan columnas "matricula" y "nombre".' }] }
+    }
+
+    const validas = []
+    const errores = []
+
+    for (let i = 1; i < lineas.length; i++) {
+      const fila = lineas[i].replace(/\r/, '').trim()
+      if (!fila) continue
+
+      const cols = fila.split(',')
+      const matricula = (cols[0] || '').trim()
+      const nombre = cols.slice(1).join(',').trim()
+
+      if (!matricula && !nombre) continue
+
+      const numFila = i + 1
+
+      if (!/^\d+$/.test(matricula)) {
+        errores.push({ fila: numFila, matricula, razon: 'Matrícula no numérica.' })
+        continue
+      }
+      if (matricula.length !== 9) {
+        errores.push({ fila: numFila, matricula, razon: 'Longitud inválida (deben ser 9).' })
+        continue
+      }
+      if (!nombre) {
+        errores.push({ fila: numFila, matricula, razon: 'Nombre vacío.' })
+        continue
+      }
+
+      validas.push({ matricula, nombre })
+    }
+
+    return { validas, errores }
+  }

@@ -165,94 +165,72 @@ export const api = {
 
   dual: {
     // Operaciones del alumno en modalidad dual
-    subirReporte: (fd) => {
-      return request(
-        'POST', 
-        '/dual/alumno/', 
-        fd, 
-        true
-      )
+    subirReporte: (fd, isDebug = false) => {
+      const queryParam = isDebug ? '?debug=true' : ''
+      return request('POST', `/dual/alumno/${queryParam}`, fd, true)
     },
     misReportes: (cuatrimestre) => {
-      const queryParam = cuatrimestre 
-        ? `?cuatrimestre=${cuatrimestre}` 
-        : ''
-      return request(
-        'GET', 
-        `/dual/alumno/mis-reportes${queryParam}`
-      )
+      const queryParam = cuatrimestre ? `?cuatrimestre=${cuatrimestre}` : ''
+      return request('GET', `/dual/alumno/mis-reportes${queryParam}`)
     },
 
-    // Operaciones del coordinador de vinculación dual
+    // Operaciones del coordinador de vinculación dual (RUTAS ORIGINALES)
     listarReportes: (params) => {
-      const queryParam = params 
-        ? `?${params}` 
-        : ''
-      return request(
-        'GET', 
-        `/dual/coordinador/reportes${queryParam}`
-      )
+      const queryParam = params ? `?${params}` : ''
+      return request('GET', `/dual/coordinador/reportes${queryParam}`)
     },
     revisarReporte: (id, data) => {
-      return request(
-        'PATCH', 
-        `/dual/coordinador/reportes/${id}`, 
-        data
-      )
+      return request('PATCH', `/dual/coordinador/reportes/${id}`, data)
     },
     listarEmpresas: () => {
       return request('GET', '/dual/coordinador/empresas')
     },
     crearEmpresa: (body) => {
-      return request(
-        'POST', 
-        '/dual/coordinador/empresas', 
-        body
-      )
+      return request('POST', '/dual/coordinador/empresas', body)
     },
     asignarEmpresa: (body) => {
-      return request(
-        'POST', 
-        '/dual/coordinador/asignaciones', 
-        body
-      )
+      return request('POST', '/dual/coordinador/asignaciones', body)
     },
     buscarAlumno: (matricula) => {
-      return request(
-        'GET', 
-        `/dual/coordinador/alumnos/${matricula}`
-      )
+      return request('GET', `/dual/coordinador/alumnos/${matricula}`)
     },
     actualizarAlumnoDual: (matricula, body) => {
-      return request(
-        'PATCH', 
-        `/dual/coordinador/alumnos/${matricula}`, 
-        body
-      )
+      return request('PATCH', `/dual/coordinador/alumnos/${matricula}`, body)
     },
 
-    // Operaciones del coordinador de carrera académica
+    // Operaciones del coordinador de carrera académica (RUTAS ORIGINALES)
     listarAlumnos: (params) => {
-      const queryParam = params 
-        ? `?${params}` 
-        : ''
-      return request(
-        'GET', 
-        `/dual/carrera/alumnos${queryParam}`
-      )
+      const queryParam = params ? `?${params}` : ''
+      return request('GET', `/dual/carrera/alumnos${queryParam}`)
     },
     expediente: (matricula, cuatrimestre) => {
-      const queryParam = cuatrimestre 
-        ? `?cuatrimestre=${cuatrimestre}` 
-        : ''
-      return request(
-        'GET', 
-        `/dual/carrera/alumnos/${matricula}/reportes${queryParam}`
-      )
+      const queryParam = cuatrimestre ? `?cuatrimestre=${cuatrimestre}` : ''
+      return request('GET', `/dual/carrera/alumnos/${matricula}/reportes${queryParam}`)
     },
-    exportarCSV: (matricula) => {
-      return `${BASE_URL}/dual/carrera/alumnos/${matricula}/exportar-csv`
+    
+    // AQUÍ ESTÁ EL ÚNICO CAMBIO QUE DEJAMOS (La descarga del CSV con token)
+    exportarCSV: async (matricula, cuatrimestre) => {
+      const queryParam = cuatrimestre ? `?cuatrimestre=${cuatrimestre}` : ''
+      const jwt = get(token)
+      
+      const res = await fetch(`${BASE_URL}/dual/carrera/alumnos/${matricula}/exportar-csv${queryParam}`, {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${jwt}` }
+      })
+      
+      if (!res.ok) throw new Error('Error al descargar el CSV')
+      
+      const blob = await res.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `expediente_${matricula}.csv`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(url)
     },
+
     // Operaciones de gestión académica
     crearGrupo: (body) => {
       return request('POST', '/dual/carrera/grupos', body)

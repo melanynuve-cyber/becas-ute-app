@@ -521,10 +521,9 @@
               {#if seleccionado.estado === 'Pendiente'}
                 <div style="display:flex; gap:8px; flex-direction:column;">
                   <span class="ficha-val" style="font-weight:600;">Semana {seleccionado.semana}</span>
-                  <div style="display:flex; gap:4px; align-items:center;">
-                    <input type="date" class="input-plain" style="padding: 4px 8px; font-size:12px;" bind:value={editFechaInicio} />
-                    <span style="color:var(--text-disabled)">al</span>
-                    <input type="date" class="input-plain" style="padding: 4px 8px; font-size:12px;" bind:value={editFechaFin} />
+                  <div style="display:flex; flex-direction:column; gap:6px;">
+                    <input type="date" title="Fecha de inicio" class="input-plain" style="padding: 4px 8px; font-size:12px;" bind:value={editFechaInicio} />
+                    <input type="date" title="Fecha de fin" class="input-plain" style="padding: 4px 8px; font-size:12px;" bind:value={editFechaFin} />
                   </div>
                 </div>
               {:else}
@@ -569,13 +568,17 @@
               </div>
 
               {#if accion === 'rechazar' || accion === 'aprobar'}
-                <div style="margin-top:14px">
+                <div style="margin-top:14px; display: flex; flex-direction: column; gap: 4px;">
                   <textarea
                     class="input-plain textarea-nota"
                     placeholder={accion === 'rechazar' ? 'Razón técnica del rechazo (obligatorio)…' : 'Retroalimentación opcional para el alumno…'}
                     rows="3"
+                    maxlength="200"
                     bind:value={nota}
                   ></textarea>
+                  <div style="text-align: right; font-size: 11px; color: var(--text-disabled); font-weight: 500;">
+                    {nota.length}/200
+                  </div>
                 </div>
               {/if}
 

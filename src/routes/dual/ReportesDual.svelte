@@ -99,11 +99,20 @@
   function onArchivo(e) {
     const file = e.target.files[0]
     if (!file) return
+    
     if (!file.name.toLowerCase().endsWith('.pdf')) {
       errorForm = 'Solo se aceptan archivos PDF.'
       archivo = null
       return
     }
+
+    // Validación de peso: máximo 2 MB (2 * 1024 * 1024 bytes)
+    if (file.size > 2 * 1024 * 1024) {
+      errorForm = 'El PDF es muy pesado. Comprímelo a un máximo de 2 MB.'
+      archivo = null
+      return
+    }
+
     errorForm = ''
     archivo = file
   }
@@ -129,7 +138,7 @@
       fd.append('fecha_fin', fechaFin)
       fd.append('archivo', archivo)
       
-      await api.dual.subirReporte(fd)
+      await api.dual.subirReporte(fd, debugMode)
 
       formAbierto = false
       calificacion = ''
@@ -223,6 +232,12 @@
                   Enviado el {formatFecha(r.created_at)}{empresaNombre ? ` · ${empresaNombre}` : ''}
                 </div>
               </div>
+              {#if r.nota_agente}
+                <div class="tarjeta-feedback">
+                  <span class="nota-truncada"><strong>Nota:</strong> {r.nota_agente}</span>
+                  <div class="tooltip-box">{r.nota_agente}</div>
+                </div>
+              {/if}
               <span class={estadoBadgeClass(r.estado)}>{r.estado}</span>
             </div>
           {/each}
@@ -749,6 +764,38 @@
     }
     .form-grid { 
       grid-template-columns: 1fr; 
+    }
+  }
+  .tarjeta {
+    position: relative;
+  }
+
+  .tarjeta-feedback {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 12px;
+    color: var(--text-secondary);
+    background: var(--bg-page);
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    max-width: 250px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .tarjeta-feedback strong {
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+
+  @media (max-width: 768px) {
+    .tarjeta-feedback {
+      position: static;
+      transform: none;
+      margin-left: auto;
     }
   }
 </style>
