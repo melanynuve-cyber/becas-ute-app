@@ -1,4 +1,5 @@
 <script>
+  // src/routes/Login.svelte
   import { navigate, link } from 'svelte-routing'
   import { fade } from 'svelte/transition'
   import { onMount } from 'svelte'
@@ -98,10 +99,17 @@
             </svg>
           </span>
           
-          <input
-            id="password" type={showPassword ? "text" : "password"} bind:value={password}
-            placeholder="••••••••" on:keydown={handleKeydown} on:input={() => error = ''} autocomplete="current-password"
-          />
+          {#if showPassword}
+            <input
+              id="password" type="text" bind:value={password}
+              placeholder="••••••••" on:keydown={handleKeydown} on:input={() => error = ''} autocomplete="current-password"
+            />
+          {:else}
+            <input
+              id="password" type="password" bind:value={password}
+              placeholder="••••••••" on:keydown={handleKeydown} on:input={() => error = ''} autocomplete="current-password"
+            />
+          {/if}
 
           <button type="button" class="eye-btn" on:click={() => showPassword = !showPassword} aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
             {#if showPassword}

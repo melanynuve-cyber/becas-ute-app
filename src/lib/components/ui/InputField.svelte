@@ -13,29 +13,25 @@
 
 <div class="field" class:field-sm={isSmall}>
   <label for={id}>{label} {#if required}<span class="req">*</span>{/if}</label>
-  <input 
-    {id}
-    class="input-plain"
-    {type}
-    {placeholder}
-    {disabled}
-    {min}
-    {max}
-    bind:value
-  />
+  
+  {#if type === 'number'}
+    <input 
+      {id} class="input-plain" type="number" {placeholder} {disabled} {min} {max} bind:value 
+    />
+  {:else if type === 'email'}
+    <input 
+      {id} class="input-plain" type="email" {placeholder} {disabled} {min} {max} bind:value 
+    />
+  {:else}
+    <input 
+      {id} class="input-plain" type="text" {placeholder} {disabled} {min} {max} bind:value 
+    />
+  {/if}
 </div>
 
 <style>
-  .field { 
-    display: flex; 
-    flex-direction: column; 
-    gap: 6px; 
-  }
-  .field label { 
-    font-size: 13px; 
-    font-weight: 600; 
-    color: var(--text-primary); 
-  }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field label { font-size: 13px; font-weight: 600; color: var(--text-primary); }
   .field-sm { max-width: 120px; }
   .req { color: var(--orange); }
 </style>

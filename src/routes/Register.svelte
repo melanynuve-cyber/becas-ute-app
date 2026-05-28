@@ -74,7 +74,11 @@
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/></svg>
           </span>
           
-          <input id="password" type={showPassword ? "text" : "password"} bind:value={password} placeholder="••••••••" autocomplete="new-password" />
+          {#if showPassword}
+            <input id="password" type="text" bind:value={password} placeholder="••••••••" autocomplete="new-password" />
+          {:else}
+            <input id="password" type="password" bind:value={password} placeholder="••••••••" autocomplete="new-password" />
+          {/if}
 
           <button type="button" class="eye-btn" on:click={() => showPassword = !showPassword} aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
             {#if showPassword}
@@ -93,7 +97,11 @@
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/></svg>
           </span>
           
-          <input id="confirm" type={showConfirmPassword ? "text" : "password"} bind:value={confirmPassword} placeholder="••••••••" autocomplete="new-password" />
+          {#if showConfirmPassword}
+            <input id="confirm" type="text" bind:value={confirmPassword} placeholder="••••••••" autocomplete="new-password" />
+          {:else}
+            <input id="confirm" type="password" bind:value={confirmPassword} placeholder="••••••••" autocomplete="new-password" />
+          {/if}
 
           <button type="button" class="eye-btn" on:click={() => showConfirmPassword = !showConfirmPassword} aria-label={showConfirmPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
             {#if showConfirmPassword}
