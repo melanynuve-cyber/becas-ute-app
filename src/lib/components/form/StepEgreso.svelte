@@ -1,165 +1,60 @@
 <script>
-  // src/lib/components/form/StepEgreso.svelte
-  // Propiedades expuestas de control financiero
+  import StepHeader from '../ui/StepHeader.svelte'
+  import TableInputRow from '../ui/TableInputRow.svelte'
+
   export let egreso
 
-  // Reductor reactivo de la matriz de egresos mensuales declarados
   $: total = [
     egreso.gastos_alimentacion,
     egreso.gastos_educacion,
     egreso.gastos_renta_hipoteca,
     egreso.gastos_servicios,
     egreso.gastos_varios
-  ].reduce((sum, v) => {
-    return sum + (parseFloat(v) || 0)
-  }, 0)
+  ].reduce((sum, v) => sum + (parseFloat(v) || 0), 0)
 </script>
 
 <section>
-  <div class="section-header">
-    <span class="section-num">5.</span>
-    <h2 class="section-title">Egreso Mensual</h2>
-  </div>
-  <div class="divider-orange"></div>
+  <StepHeader num="5" title="Egreso Mensual" />
 
   <div class="tabla-info">
-    <div class="tabla-row">
-      <span class="tabla-label">A. Estimado en gastos de alimentación</span>
-      <input 
-        class="input-plain tabla-input" 
-        type="number" 
-        min="0"
-        placeholder="$0.00" 
-        bind:value={egreso.gastos_alimentacion} 
-      />
-    </div>
-    
-    <div class="tabla-row">
-      <span class="tabla-label">B. Estimado en gastos de educación</span>
-      <input 
-        class="input-plain tabla-input" 
-        type="number" 
-        min="0"
-        placeholder="$0.00" 
-        bind:value={egreso.gastos_educacion} 
-      />
-    </div>
-    
-    <div class="tabla-row">
-      <span class="tabla-label">C. Estimado en gastos de renta o pagos de préstamos hipotecarios (Infonavit)</span>
-      <input 
-        class="input-plain tabla-input" 
-        type="number" 
-        min="0"
-        placeholder="$0.00" 
-        bind:value={egreso.gastos_renta_hipoteca} 
-      />
-    </div>
-    
-    <div class="tabla-row">
-      <span class="tabla-label">D. Estimado en gastos de servicios (agua, luz, teléfono, etc.)</span>
-      <input 
-        class="input-plain tabla-input" 
-        type="number" 
-        min="0"
-        placeholder="$0.00" 
-        bind:value={egreso.gastos_servicios} 
-      />
-    </div>
-    
-    <div class="tabla-row">
-      <span class="tabla-label">E. Estimado en gastos varios</span>
-      <input 
-        class="input-plain tabla-input" 
-        type="number" 
-        min="0"
-        placeholder="$0.00" 
-        bind:value={egreso.gastos_varios} 
-      />
-    </div>
+    <TableInputRow 
+      label="A. Estimado en gastos de alimentación" 
+      type="number" min="0" placeholder="$0.00" bind:value={egreso.gastos_alimentacion} />
+      
+    <TableInputRow 
+      label="B. Estimado en gastos de educación" 
+      type="number" min="0" placeholder="$0.00" bind:value={egreso.gastos_educacion} />
+      
+    <TableInputRow 
+      label="C. Estimado en gastos de renta o pagos de préstamos hipotecarios (Infonavit)" 
+      type="number" min="0" placeholder="$0.00" bind:value={egreso.gastos_renta_hipoteca} />
+      
+    <TableInputRow 
+      label="D. Estimado en gastos de servicios (agua, luz, teléfono, etc.)" 
+      type="number" min="0" placeholder="$0.00" bind:value={egreso.gastos_servicios} />
+      
+    <TableInputRow 
+      label="E. Estimado en gastos varios" 
+      type="number" min="0" placeholder="$0.00" bind:value={egreso.gastos_varios} />
     
     <div class="tabla-row tabla-total">
-      <span class="tabla-label">
-        <strong>Total de egresos</strong>
-      </span>
-      <input 
-        class="input-plain tabla-input" 
-        value={`$${total.toFixed(2)}`} 
-        disabled 
-      />
+      <span class="tabla-label"><strong>Total de egresos</strong></span>
+      <input class="input-plain tabla-input" value={`$${total.toFixed(2)}`} disabled />
     </div>
   </div>
 </section>
 
 <style>
-  section { 
-    display: flex;
-    flex-direction: column; 
-    gap: 16px; 
-  }
+  section { display: flex; flex-direction: column; gap: 16px; }
+  .tabla-info { border: 1.5px solid var(--border); border-radius: var(--radius-input); overflow: hidden; }
   
-  .section-header { 
-    display: flex; 
-    align-items: center; 
-    gap: 8px; 
-  }
-  
-  .section-num { 
-    font-size: 18px;
-    font-weight: 700; 
-    color: var(--orange); 
-  }
-  
-  .section-title { 
-    font-size: 17px; 
-    font-weight: 600; 
-    color: var(--text-primary); 
-  }
-  
-  .divider-orange { 
-    height: 2px;
-    background: var(--orange); 
-    border-radius: 2px; 
-    opacity: 0.3; 
-  }
-  
-  .tabla-info { 
-    border: 1.5px solid var(--border); 
-    border-radius: var(--radius-input); 
-    overflow: hidden;
-  }
-  
-  .tabla-row {
-    display: grid; 
-    grid-template-columns: 1fr 160px;
-    align-items: center; 
-    border-bottom: 1px solid var(--border);
-  }
-  
-  .tabla-row:last-child { 
-    border-bottom: none; 
-  }
-  
-  .tabla-total { 
-    background: var(--bg-page); 
-  }
-  
-  .tabla-label { 
-    padding: 10px 14px;
-    font-size: 13px; 
-    color: var(--text-primary); 
-  }
-  
-  .tabla-input {
-    border: none !important;
-    border-left: 1.5px solid var(--border) !important;
-    border-radius: 0 !important;
-    text-align: right;
-  }
+  /* Mantengo estos estilos aquí porque el total de la tabla tiene un formato especial (bold y bg diferente) */
+  .tabla-row { display: grid; grid-template-columns: 1fr 160px; align-items: center; }
+  .tabla-total { background: var(--bg-page); }
+  .tabla-label { padding: 10px 14px; font-size: 13px; color: var(--text-primary); }
+  .tabla-input { border: none !important; border-left: 1.5px solid var(--border) !important; border-radius: 0 !important; text-align: right; }
   
   @media (max-width: 768px) {
-    .tabla-row { 
-      grid-template-columns: 1fr 120px; 
-    }
+    .tabla-row { grid-template-columns: 1fr 120px; }
   }
 </style>

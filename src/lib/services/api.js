@@ -1,9 +1,6 @@
 // src/lib/services/api.js
 import { get } from 'svelte/store'
-import { 
-  token, 
-  logout 
-} from '../stores/auth.js'
+import { token, logout } from '../stores/auth.js'
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
@@ -12,31 +9,12 @@ async function request(method, path, body = null, isMultipart = false) {
   const headers = {}
   const jwt = get(token)
 
-  if (jwt) {
-    headers['Authorization'] = `Bearer ${jwt}`
-  }
-  
-  if (!isMultipart && body) {
-    headers['Content-Type'] = 'application/json'
-  }
+  if (jwt) headers['Authorization'] = `Bearer ${jwt}`
+  if (!isMultipart && body) headers['Content-Type'] = 'application/json'
 
-  // Desglose del cuerpo de la petición según el tipo de codificación
-  const requestBody = isMultipart
-    ? body
-    : body
-      ? JSON.stringify(body)
-      : null
+  const requestBody = isMultipart ? body : body ? JSON.stringify(body) : null
 
-  const config = {
-    method,
-    headers,
-    body: requestBody
-  }
-
-  const res = await fetch(
-    `${BASE_URL}${path}`, 
-    config
-  )
+  const res = await fetch(`${BASE_URL}${path}`, { method, headers, body: requestBody })
 
   // Interceptor para vencimiento de sesión (Excluye el login)
   if (res.status === 401 && path !== '/auth/login') {
@@ -45,26 +23,12 @@ async function request(method, path, body = null, isMultipart = false) {
     return
   }
 
-  const data = await res
-    .json()
-    .catch(() => {
-      return {}
-    })
+  const data = await res.json().catch(() => ({}))
 
   // Manejo de excepciones y parseo de errores multiplexados del backend
   if (!res.ok) {
     const msg = data?.detail || 'Error en el servidor'
-    
-    if (Array.isArray(msg)) {
-      const errorString = msg
-        .map((e) => {
-          return e.msg
-        })
-        .join(', ')
-        
-      throw new Error(errorString)
-    }
-    
+    if (Array.isArray(msg)) throw new Error(msg.map(e => e.msg).join(', '))
     throw new Error(msg)
   }
 
@@ -74,146 +38,56 @@ async function request(method, path, body = null, isMultipart = false) {
 // Interfaz pública de la API organizada por módulos de negocio
 export const api = {
   auth: {
-    register: (body) => {
-      return request('POST', '/auth/register', body)
-    },
-    login: (body) => {
-      return request('POST', '/auth/login', body)
-    },
-    verificar: (body) => {
-      return request('POST', '/auth/verificar', body)
-    },
-    reenviar: (body) => {
-      return request('POST', '/auth/reenviar', body)
-    },
-    me: () => {
-      return request('GET', '/auth/me')
-    },
-    crearUsuarioPersonal: (body) => {
-      return request('POST', '/auth/personal', body)
-    },
-    listarPersonal: () => {
-      return request('GET', '/auth/personal')
-    },
-    eliminarPersonal: (id) => {
-      return request('DELETE', `/auth/personal/${id}`)
-    }
+    register: (body) => request('POST', '/auth/register', body),
+    login: (body) => request('POST', '/auth/login', body),
+    verificar: (body) => request('POST', '/auth/verificar', body),
+    reenviar: (body) => request('POST', '/auth/reenviar', body),
+    me: () => request('GET', '/auth/me'),
+    crearUsuarioPersonal: (body) => request('POST', '/auth/personal', body),
+    listarPersonal: () => request('GET', '/auth/personal'),
+    eliminarPersonal: (id) => request('DELETE', `/auth/personal/${id}`)
   },
 
   alumno: {
-    me: () => {
-      return request('GET', '/alumnos/me')
-    }
+    me: () => request('GET', '/alumnos/me')
   },
 
   solicitudes: {
-    crear: (formData) => {
-      return request(
-        'POST', 
-        '/solicitudes/', 
-        formData, 
-        true
-      )
-    },
-    mias: () => {
-      return request('GET', '/solicitudes/mias')
-    },
-    detalle: (id) => {
-      return request('GET', `/solicitudes/${id}`)
-    },
-    subirInscripcion: (id, fd) => {
-      return request(
-        'PATCH', 
-        `/solicitudes/${id}/documento/recibo_inscripcion`, 
-        fd, 
-        true
-      )
-    }
+    crear: (formData) => request('POST', '/solicitudes/', formData, true),
+    mias: () => request('GET', '/solicitudes/mias'),
+    detalle: (id) => request('GET', `/solicitudes/${id}`),
+    subirInscripcion: (id, fd) => request('PATCH', `/solicitudes/${id}/documento/recibo_inscripcion`, fd, true)
   },
 
   admin: {
-
-    lista: (estado) => {
-      const queryParam = estado 
-        ? `?estado=${estado}` 
-        : ''
-      return request(
-        'GET', 
-        `/admin/solicitudes${queryParam}`
-      )
-    },
-    detalle: (id) => {
-      return request('GET', `/admin/solicitudes/${id}`)
-    },
-    cambiarEstado: (id, estado) => {
-      return request(
-        'PATCH', 
-        `/admin/solicitudes/${id}/estado`, 
-        { estado }
-      )
-    },
-    listarGrupos: (carrera) => {
-      const queryParam = carrera
-        ? `?carrera=${encodeURIComponent(carrera)}`
-        : ''
-      return request('GET', `/dual/carrera/grupos${queryParam}`)
-    },
-    documentUrl: (id, tipo) => {
-      return `${BASE_URL}/admin/solicitudes/${id}/documento/${tipo}`
-    }
+    lista: (estado) => request('GET', `/admin/solicitudes${estado ? `?estado=${estado}` : ''}`),
+    detalle: (id) => request('GET', `/admin/solicitudes/${id}`),
+    cambiarEstado: (id, estado) => request('PATCH', `/admin/solicitudes/${id}/estado`, { estado }),
+    listarGrupos: (carrera) => request('GET', `/dual/carrera/grupos${carrera ? `?carrera=${encodeURIComponent(carrera)}` : ''}`),
+    documentUrl: (id, tipo) => `${BASE_URL}/admin/solicitudes/${id}/documento/${tipo}`
   },
 
   dual: {
     // Operaciones del alumno en modalidad dual
-    subirReporte: (fd, isDebug = false) => {
-      const queryParam = isDebug ? '?debug=true' : ''
-      return request('POST', `/dual/alumno/${queryParam}`, fd, true)
-    },
-    misReportes: (cuatrimestre) => {
-      const queryParam = cuatrimestre ? `?cuatrimestre=${cuatrimestre}` : ''
-      return request('GET', `/dual/alumno/mis-reportes${queryParam}`)
-    },
+    subirReporte: (fd, isDebug = false) => request('POST', `/dual/alumno/${isDebug ? '?debug=true' : ''}`, fd, true),
+    misReportes: (cuatrimestre) => request('GET', `/dual/alumno/mis-reportes${cuatrimestre ? `?cuatrimestre=${cuatrimestre}` : ''}`),
+    semanaActual: () => request('GET', '/dual/alumno/semana-actual'),
 
-    // Operaciones del coordinador de vinculación dual (RUTAS ORIGINALES)
-    listarReportes: (params) => {
-      const queryParam = params ? `?${params}` : ''
-      return request('GET', `/dual/coordinador/reportes${queryParam}`)
-    },
-    revisarReporte: (id, data) => {
-      return request('PATCH', `/dual/coordinador/reportes/${id}`, data)
-    },
-    listarEmpresas: () => {
-      return request('GET', '/dual/coordinador/empresas')
-    },
-    crearEmpresa: (body) => {
-      return request('POST', '/dual/coordinador/empresas', body)
-    },
-    asignarEmpresa: (body) => {
-      return request('POST', '/dual/coordinador/asignaciones', body)
-    },
-    buscarAlumno: (matricula) => {
-      return request('GET', `/dual/coordinador/alumnos/${matricula}`)
-    },
-    actualizarAlumnoDual: (matricula, body) => {
-      return request('PATCH', `/dual/coordinador/alumnos/${matricula}`, body)
-    },
+    // Operaciones del coordinador de vinculación dual
+    listarReportes: (params) => request('GET', `/dual/coordinador/reportes${params ? `?${params}` : ''}`),
+    revisarReporte: (id, data) => request('PATCH', `/dual/coordinador/reportes/${id}`, data),
+    listarEmpresas: () => request('GET', '/dual/coordinador/empresas'),
+    crearEmpresa: (body) => request('POST', '/dual/coordinador/empresas', body),
+    asignarEmpresa: (body) => request('POST', '/dual/coordinador/asignaciones', body),
+    buscarAlumno: (matricula) => request('GET', `/dual/coordinador/alumnos/${matricula}`),
+    actualizarAlumnoDual: (matricula, body) => request('PATCH', `/dual/coordinador/alumnos/${matricula}`, body),
 
-    // Operaciones del coordinador de carrera académica (RUTAS ORIGINALES)
-    listarAlumnos: (params) => {
-      const queryParam = params ? `?${params}` : ''
-      return request('GET', `/dual/carrera/alumnos${queryParam}`)
-    },
-    expediente: (matricula, cuatrimestre) => {
-      const queryParam = cuatrimestre ? `?cuatrimestre=${cuatrimestre}` : ''
-      return request('GET', `/dual/carrera/alumnos/${matricula}/reportes${queryParam}`)
-    },
-    
-    // AQUÍ ESTÁ EL ÚNICO CAMBIO QUE DEJAMOS (La descarga del CSV con token)
+    // Operaciones del coordinador de carrera académica
+    listarAlumnos: (params) => request('GET', `/dual/carrera/alumnos${params ? `?${params}` : ''}`),
+    expediente: (matricula, cuatrimestre) => request('GET', `/dual/carrera/alumnos/${matricula}/reportes${cuatrimestre ? `?cuatrimestre=${cuatrimestre}` : ''}`),
     exportarCSV: async (matricula, cuatrimestre) => {
-      const queryParam = cuatrimestre ? `?cuatrimestre=${cuatrimestre}` : ''
       const jwt = get(token)
-      
-      const res = await fetch(`${BASE_URL}/dual/carrera/alumnos/${matricula}/exportar-csv${queryParam}`, {
+      const res = await fetch(`${BASE_URL}/dual/carrera/alumnos/${matricula}/exportar-csv${cuatrimestre ? `?cuatrimestre=${cuatrimestre}` : ''}`, {
         method: 'GET',
         headers: { 'Authorization': `Bearer ${jwt}` }
       })
@@ -232,23 +106,10 @@ export const api = {
     },
 
     // Operaciones de gestión académica
-    crearGrupo: (body) => {
-      return request('POST', '/dual/carrera/grupos', body)
-    },
-    subirAlumnosCSV: (grupoId, fd) => {
-      return request('POST', `/dual/carrera/grupos/${grupoId}/alumnos`, fd, true)
-    },
-    agregarAlumno: (grupoId, body) => {
-      return request('POST', `/dual/carrera/grupos/${grupoId}/alumnos/individual`, body)
-    },
-    actualizarAlumno: (matricula, body) => {
-      return request('PATCH', `/dual/carrera/alumnos/${matricula}`, body)
-    },
-    desvincularAlumno: (matricula) => {
-      return request('DELETE', `/dual/carrera/alumnos/${matricula}`)
-    },
-    semanaActual: () => {
-      return request('GET', '/dual/alumno/semana-actual')
-    },
+    crearGrupo: (body) => request('POST', '/dual/carrera/grupos', body),
+    subirAlumnosCSV: (grupoId, fd) => request('POST', `/dual/carrera/grupos/${grupoId}/alumnos`, fd, true),
+    agregarAlumno: (grupoId, body) => request('POST', `/dual/carrera/grupos/${grupoId}/alumnos/individual`, body),
+    actualizarAlumno: (matricula, body) => request('PATCH', `/dual/carrera/alumnos/${matricula}`, body),
+    desvincularAlumno: (matricula) => request('DELETE', `/dual/carrera/alumnos/${matricula}`)
   }
 }

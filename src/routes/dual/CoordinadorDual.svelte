@@ -1,30 +1,21 @@
 <script>
   // src/routes/dual/CoordinadorDual.svelte
-  // Importaciones desglosadas
   import { onMount } from 'svelte'
-  import { 
-    navigate, 
-    useLocation 
-  } from 'svelte-routing'
+  import { navigate, useLocation } from 'svelte-routing'
   import { get } from 'svelte/store'
-  import { 
-    isAuthenticated, 
-    isCoordinadorDual 
-  } from '../../lib/stores/auth.js'
+  import { isAuthenticated, isCoordinadorDual } from '../../lib/stores/auth.js'
   import { api } from '../../lib/services/api.js'
   import Navbar from '../../lib/components/layout/Navbar.svelte'
   import FiltrosBarra from '../../lib/components/shared/FiltrosBarra.svelte'
-  import { 
-    formatFecha, 
-    estadoBadgeClass 
-  } from '../../lib/utils.js'
+  import PageHeader from '../../lib/components/ui/PageHeader.svelte'
+  import LoadingSpinner from '../../lib/components/ui/LoadingSpinner.svelte'
+  import EmptyState from '../../lib/components/ui/EmptyState.svelte'
+  import { formatFecha, estadoBadgeClass } from '../../lib/utils.js'
 
   const location = useLocation()
 
-  // Estado de control de vistas
   let vista = 'bandeja'
 
-  // Sincronización reactiva de la vista con la URL
   $: {
     const queryVista = new URLSearchParams($location.search).get('vista') === 'empresas' 
       ? 'empresas' 
@@ -39,7 +30,6 @@
     }
   }
 
-  // Variables de control de la bandeja
   let reportes = []
   let loading = true
   let error = ''
@@ -48,16 +38,9 @@
   let filtroCarrera = ''
   let filtroGrupo = ''
 
-  // Extracción dinámica de catálogos para filtros
-  $: grupos = [
-    ...new Set(reportes.map(r => r.nomenclatura).filter(Boolean))
-  ].sort()
-  
-  $: carreras = [
-    ...new Set(reportes.map(r => r.carrera).filter(Boolean))
-  ].sort()
+  $: grupos = [...new Set(reportes.map(r => r.nomenclatura).filter(Boolean))].sort()
+  $: carreras = [...new Set(reportes.map(r => r.carrera).filter(Boolean))].sort()
 
-  // Lógica reactiva de filtrado en cliente
   $: reportesFiltrados = reportes.filter(r => {
     const matchBusqueda = filtroBusqueda.trim()
       ? r.matricula.toLowerCase().includes(filtroBusqueda.toLowerCase()) || 
@@ -79,7 +62,6 @@
     return matchBusqueda && matchCarrera && matchGrupo && matchEstado
   })
 
-  // Variables de control de la revisión individual
   let seleccionado = null
   let accion = ''
   let nota = ''
@@ -87,12 +69,10 @@
   let exito = ''
   let errorAccion = ''
   
-  // Buffers locales para edicion rapida
   let editCalificacion = ''
   let editFechaInicio = ''
   let editFechaFin = ''
 
-  // Variables de control de catálogo de empresas y asignaciones
   let empresas = []
   let loadingEmpresas = false
   let nuevaEmpresa = ''
@@ -104,12 +84,9 @@
   let exitoAsignacion = ''
   let guardandoAsignacion = false
 
-  // Verificación de sesión y permisos
   onMount(() => {
     if (!get(isAuthenticated) || !get(isCoordinadorDual)) {
-      navigate('/login', { 
-        replace: true 
-      })
+      navigate('/login', { replace: true })
       return
     }
     
@@ -126,7 +103,6 @@
     }
   })
 
-  // Carga remota de reportes semanales
   async function cargarReportes() {
     loading = true
     error = ''
@@ -143,7 +119,6 @@
     }
   }
 
-  // Apertura del visor de dictamen
   function abrirRevision(reporte) {
     seleccionado = reporte
     accion = ''
@@ -156,14 +131,12 @@
     vista = 'revision'
   }
 
-  // Regreso a la bandeja principal desde cualquier subvista
   function volverBandeja() {
     seleccionado = null
     vista = 'bandeja'
     cargarReportes()
   }
 
-  // Envío del dictamen del reporte a la API
   async function enviarDecision() {
     if (!accion) { 
       errorAccion = 'Selecciona una acción.'
@@ -190,7 +163,6 @@
       exito = accion === 'aprobar'
         ? 'Reporte aprobado correctamente.'
         : 'Reporte rechazado. El alumno podrá reenviar.'
-        
       seleccionado = {
         ...seleccionado,
         estado: accion === 'aprobar' ? 'Aprobada' : 'Rechazada',
@@ -206,7 +178,6 @@
     }
   }
 
-  // Carga remota del catálogo corporativo
   async function cargarEmpresas() {
     loadingEmpresas = true
     try {
@@ -218,7 +189,6 @@
     }
   }
 
-  // Consulta de alumno por matrícula para previsualización
   async function buscarAlumno() {
     if (!matriculaBusqueda.trim()) {
       return
@@ -236,7 +206,6 @@
     }
   }
 
-  // Inserción de nueva unidad económica en el catálogo
   async function crearEmpresa() {
     if (!nuevaEmpresa.trim()) {
       return
@@ -245,10 +214,7 @@
       const emp = await api.dual.crearEmpresa({ 
         nombre: nuevaEmpresa.trim() 
       })
-      empresas = [
-        ...empresas, 
-        emp
-      ]
+      empresas = [...empresas, emp]
       empresaSeleccionada = emp.id
       nuevaEmpresa = ''
     } catch (e) {
@@ -256,7 +222,6 @@
     }
   }
 
-  // Persistencia de adscripción de empresa al alumno
   async function guardarAsignacion() {
     errorAsignacion = ''
     exitoAsignacion = ''
@@ -276,7 +241,6 @@
       })
       
       exitoAsignacion = 'Alumno dual actualizado correctamente.'
-      
       const nombreEmpresa = empresas.find(e => e.id === empresaSeleccionada)?.nombre
       alumnoPreview = {
         ...alumnoPreview,
@@ -291,7 +255,6 @@
     }
   }
 
-  // Remoción del estatus y vinculación dual del estudiante
   async function quitarDual() {
     if (!alumnoPreview) {
       return
@@ -316,14 +279,8 @@
     }
   }
 
-  // Mapeos inline desglosados
-  $: carreraCompletaRevision = seleccionado 
-    ? seleccionado.carrera 
-    : '—'
-    
-  $: carreraCompletaPreview = alumnoPreview 
-    ? alumnoPreview.carrera 
-    : '—'
+  $: carreraCompletaRevision = seleccionado ? seleccionado.carrera : '—'
+  $: carreraCompletaPreview = alumnoPreview ? alumnoPreview.carrera : '—'
 </script>
 
 <Navbar />
@@ -332,10 +289,10 @@
 
   {#if vista === 'bandeja'}
     <div class="page-wrap">
-      <div class="page-header">
-        <h1 class="page-title">Bandeja de Reportes Duales</h1>
-        <p class="page-sub">Revisión semanal de entregas de alumnos DUAL</p>
-      </div>
+      <PageHeader 
+        title="Bandeja de Reportes Duales" 
+        subtitle="Revisión semanal de entregas de alumnos DUAL" 
+      />
 
       <FiltrosBarra
         mostrarCarrera={true}
@@ -351,43 +308,11 @@
       />
 
       {#if loading}
-        <div class="state-msg">
-          <div class="spinner"></div>
-        </div>
+        <LoadingSpinner />
       {:else if error}
         <p class="error-msg">{error}</p>
       {:else if reportesFiltrados.length === 0}
-        <div class="state-msg empty">
-          <svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-            <path 
-              stroke-linecap="round" 
-              stroke-linejoin="round" 
-              d="M21.75 9
-                 v.906
-                 a2.25 2.25 0 0 1-.194.916
-                 l-3.07 6.143
-                 A2.25 2.25 0 0 1 16.471 18.25
-                 H7.529
-                 a2.25 2.25 0 0 1-2.015-1.285
-                 L2.444 10.822
-                 A2.25 2.25 0 0 1 2.25 9.906
-                 V9
-                 M21.75 9
-                 a2.25 2.25 0 0 0-2.25-2.25
-                 H4.5
-                 A2.25 2.25 0 0 0 2.25 9
-                 m19.5 0
-                 v.243
-                 a2.25 2.25 0 0 1-1.07 1.916
-                 l-7.5 4.615
-                 a2.25 2.25 0 0 1-2.36 0
-                 L3.32 11.16
-                 a2.25 2.25 0 0 1-1.07-1.916
-                 V9" 
-            />
-          </svg>
-          <p>No hay reportes con los filtros seleccionados.</p>
-        </div>
+        <EmptyState message="No hay reportes con los filtros seleccionados." />
       {:else}
         <div class="table-wrap">
           <table class="reporte-table">
@@ -442,11 +367,7 @@
             viewBox="0 0 24 24" 
             style="display:inline; margin-right:4px; vertical-align:text-bottom;"
           >
-            <path 
-              stroke-linecap="round" 
-              stroke-linejoin="round" 
-              d="M10.5 19.5 L3 12 m0 0 l7.5-7.5 M3 12 h18" 
-            />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 L3 12 m0 0 l7.5-7.5 M3 12 h18" />
           </svg>
           Volver a la bandeja
         </button>
@@ -622,15 +543,13 @@
 
   {:else if vista === 'empresas'}
     <div class="page-wrap">
-      <div class="page-header">
-        <h1 class="page-title">Gestión de Alumnos Duales</h1>
-        <p class="page-sub">Asigna empresas y vincula roles a la comunidad DUAL</p>
-      </div>
+      <PageHeader 
+        title="Gestión de Alumnos Duales" 
+        subtitle="Asigna empresas y vincula roles a la comunidad DUAL" 
+      />
 
       {#if loadingEmpresas}
-        <div class="state-msg">
-          <div class="spinner"></div>
-        </div>
+        <LoadingSpinner />
       {:else}
         <div class="empresas-layout">
           <div class="card-seccion">
@@ -752,540 +671,94 @@
 </div>
 
 <style>
-  .main-content { 
-    padding-top: 56px; 
-    background: var(--bg-page); 
-    min-height: 100vh; 
-  }
-  
-  .page-wrap { 
-    padding: 40px 24px; 
-    max-width: 1000px; 
-    margin: 0 auto; 
-    display: flex; 
-    flex-direction: column; 
-    gap: 20px; 
-  }
-  
-  .page-title { 
-    font-size: 22px; 
-    font-weight: 700; 
-    color: var(--text-primary); 
-    letter-spacing: -0.02em; 
-  }
-  
-  .page-sub { 
-    font-size: 14px; 
-    color: var(--text-secondary); 
-    margin-top: 2px; 
-  }
+  .main-content { padding-top: 56px; background: var(--bg-page); min-height: 100vh; }
+  .page-wrap { padding: 40px 24px; max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
 
-  .table-wrap { 
-    overflow-x: auto; 
-    border: 1px solid var(--border); 
-    border-radius: var(--radius-card); 
-    background: var(--bg-card); 
-    box-shadow: var(--shadow-card); 
-  }
-  
-  .reporte-table { 
-    width: 100%; 
-    border-collapse: collapse; 
-    font-size: 14px; 
-  }
-  
-  .reporte-table thead { 
-    background: var(--bg-page); 
-  }
-  
-  .reporte-table th { 
-    text-align: left; 
-    padding: 12px 18px; 
-    font-weight: 600; 
-    color: var(--text-disabled); 
-    font-size: 11px; 
-    text-transform: uppercase; 
-    letter-spacing: 0.05em; 
-    border-bottom: 1px solid var(--border); 
-    white-space: nowrap; 
-  }
-  
-  .reporte-table td { 
-    padding: 14px 18px; 
-    color: var(--text-secondary); 
-    border-bottom: 1px solid var(--border); 
-    vertical-align: middle; 
-  }
-  
-  .reporte-table tbody tr:last-child td { 
-    border-bottom: none; 
-  }
-  
-  .reporte-table tbody tr:hover { 
-    background: var(--orange-light); 
-  }
-  
-  .row-pendiente { 
-    border-left: 4px solid var(--orange); 
-  }
+  .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius-card); background: var(--bg-card); box-shadow: var(--shadow-card); }
+  .reporte-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .reporte-table thead { background: var(--bg-page); }
+  .reporte-table th { text-align: left; padding: 12px 18px; font-weight: 600; color: var(--text-disabled); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  .reporte-table td { padding: 14px 18px; color: var(--text-secondary); border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .reporte-table tbody tr:last-child td { border-bottom: none; }
+  .reporte-table tbody tr:hover { background: var(--orange-light); }
+  .row-pendiente { border-left: 4px solid var(--orange); }
 
-  .td-matricula { 
-    font-family: monospace; 
-    font-weight: 600; 
-    color: var(--text-primary); 
-  }
-  
-  .td-nombre { 
-    font-weight: 600; 
-    color: var(--text-primary); 
-  }
-  
-  .td-cal { 
-    font-weight: 700; 
-    color: var(--orange); 
-    font-size: 15px; 
-  }
-  
-  .td-fecha { 
-    color: var(--text-secondary); 
-    font-size: 13px; 
-    white-space: nowrap; 
-  }
+  .td-matricula { font-family: monospace; font-weight: 600; color: var(--text-primary); }
+  .td-nombre { font-weight: 600; color: var(--text-primary); }
+  .td-cal { font-weight: 700; color: var(--orange); font-size: 15px; }
+  .td-fecha { color: var(--text-secondary); font-size: 13px; white-space: nowrap; }
 
-  .btn-revisar { 
-    background: transparent; 
-    border: 1.5px solid var(--border-input); 
-    border-radius: 8px; 
-    padding: 6px 14px; 
-    font-size: 13px; 
-    font-weight: 600; 
-    color: var(--text-primary); 
-    cursor: pointer; 
-    transition: all 0.2s ease; 
-  }
-  
-  .btn-revisar:hover { 
-    border-color: var(--orange); 
-    color: var(--orange); 
-    background: var(--orange-light); 
-  }
+  .btn-revisar { background: transparent; border: 1.5px solid var(--border-input); border-radius: 8px; padding: 6px 14px; font-size: 13px; font-weight: 600; color: var(--text-primary); cursor: pointer; transition: all 0.2s ease; }
+  .btn-revisar:hover { border-color: var(--orange); color: var(--orange); background: var(--orange-light); }
 
-  .count-label { 
-    font-size: 12px; 
-    color: var(--text-disabled); 
-    text-align: right; 
-    margin-top: 4px; 
-    font-weight: 500; 
-  }
-  
-  .state-msg { 
-    text-align: center; 
-    padding: 48px 16px; 
-    color: var(--text-secondary); 
-  }
-  
-  .empty { 
-    display: flex; 
-    flex-direction: column; 
-    align-items: center; 
-    gap: 12px; 
-    color: var(--text-disabled); 
-  }
+  .count-label { font-size: 12px; color: var(--text-disabled); text-align: right; margin-top: 4px; font-weight: 500; }
 
-  .revision-wrap { 
-    display: flex; 
-    flex-direction: column; 
-    height: calc(100vh - 56px); 
-    overflow: hidden; 
-    background: var(--bg-page); 
-  }
+  .revision-wrap { display: flex; flex-direction: column; height: calc(100vh - 56px); overflow: hidden; background: var(--bg-page); }
+  .revision-topbar { display: flex; align-items: center; justify-content: space-between; padding: 14px 24px; background: var(--bg-card); border-bottom: 1px solid var(--border); box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
   
-  .revision-topbar { 
-    display: flex; 
-    align-items: center; 
-    justify-content: space-between; 
-    padding: 14px 24px; 
-    background: var(--bg-card); 
-    border-bottom: 1px solid var(--border); 
-    box-shadow: 0 1px 2px rgba(0,0,0,0.02); 
-  }
+  .btn-back { background: none; border: none; cursor: pointer; font-family: var(--font); font-size: 14px; font-weight: 600; color: var(--text-secondary); display: flex; align-items: center; transition: color 0.15s; }
+  .btn-back:hover { color: var(--orange); }
   
-  .btn-back { 
-    background: none; 
-    border: none; 
-    cursor: pointer; 
-    font-family: var(--font); 
-    font-size: 14px; 
-    font-weight: 600; 
-    color: var(--text-secondary); 
-    display: flex; 
-    align-items: center; 
-    transition: color 0.15s; 
-  }
+  .split-layout { display: grid; grid-template-columns: 1fr 360px; flex: 1; overflow: hidden; }
+  .panel-pdf { display: flex; flex-direction: column; border-right: 1px solid var(--border); overflow: hidden; background: #1e293b; }
+  .panel-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-disabled); padding: 10px 20px; border-bottom: 1px solid var(--border); background: var(--bg-page); }
+  .pdf-iframe { flex: 1; width: 100%; border: none; background: #fff; }
+  .link-externo { display: block; padding: 10px 20px; font-size: 13px; font-weight: 500; color: var(--orange); text-decoration: none; border-top: 1px solid var(--border); background: var(--bg-card); transition: background 0.15s; }
+  .link-externo:hover { background: var(--orange-light); }
+  .no-pdf { display: flex; align-items: center; justify-content: center; flex: 1; color: #94a3b8; font-size: 14px; font-style: italic; }
   
-  .btn-back:hover { 
-    color: var(--orange); 
-  }
-  
-  .split-layout { 
-    display: grid; 
-    grid-template-columns: 1fr 360px; 
-    flex: 1; 
-    overflow: hidden; 
-  }
-  
-  .panel-pdf { 
-    display: flex; 
-    flex-direction: column; 
-    border-right: 1px solid var(--border); 
-    overflow: hidden; 
-    background: #1e293b; 
-  }
-  
-  .panel-label { 
-    font-size: 11px; 
-    font-weight: 700; 
-    text-transform: uppercase; 
-    letter-spacing: 0.05em; 
-    color: var(--text-disabled); 
-    padding: 10px 20px; 
-    border-bottom: 1px solid var(--border); 
-    background: var(--bg-page); 
-  }
-  
-  .pdf-iframe { 
-    flex: 1; 
-    width: 100%; 
-    border: none; 
-    background: #fff; 
-  }
-  
-  .link-externo { 
-    display: block; 
-    padding: 10px 20px; 
-    font-size: 13px; 
-    font-weight: 500; 
-    color: var(--orange); 
-    text-decoration: none; 
-    border-top: 1px solid var(--border); 
-    background: var(--bg-card); 
-    transition: background 0.15s; 
-  }
-  
-  .link-externo:hover { 
-    background: var(--orange-light); 
-  }
-  
-  .no-pdf { 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    flex: 1; 
-    color: #94a3b8; 
-    font-size: 14px; 
-    font-style: italic; 
-  }
-  
-  .panel-acciones { 
-    display: flex; 
-    flex-direction: column; 
-    overflow-y: auto; 
-    background: var(--bg-card); 
-    gap: 1px; 
-  }
+  .panel-acciones { display: flex; flex-direction: column; overflow-y: auto; background: var(--bg-card); gap: 1px; }
 
-  .dato-cal { 
-    margin: 20px 20px 0; 
-    padding: 16px; 
-    background: rgba(249, 115, 22, 0.06); 
-    border: 1px solid rgba(249, 115, 22, 0.15); 
-    border-radius: 12px; 
-  }
-  
-  .dato-label { 
-    font-size: 11px; 
-    font-weight: 700; 
-    color: var(--text-disabled); 
-    margin: 0 0 4px; 
-    text-transform: uppercase; 
-    letter-spacing: 0.05em; 
-  }
-  
-  .dato-valor { 
-    font-size: 36px; 
-    font-weight: 800; 
-    color: var(--orange); 
-    margin: 0; 
-    line-height: 1; 
-    letter-spacing: -0.02em; 
-  }
+  .dato-cal { margin: 20px 20px 0; padding: 16px; background: rgba(249, 115, 22, 0.06); border: 1px solid rgba(249, 115, 22, 0.15); border-radius: 12px; }
+  .dato-label { font-size: 11px; font-weight: 700; color: var(--text-disabled); margin: 0 0 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .dato-valor { font-size: 36px; font-weight: 800; color: var(--orange); margin: 0; line-height: 1; letter-spacing: -0.02em; }
 
-  .ficha-alumno { 
-    margin: 16px 20px 0; 
-    padding: 16px; 
-    border: 1px solid var(--border); 
-    border-radius: 12px; 
-    background: var(--bg-page); 
-  }
-  
-  .ficha-titulo { 
-    font-size: 11px; 
-    font-weight: 700; 
-    text-transform: uppercase; 
-    letter-spacing: 0.05em; 
-    color: var(--text-disabled); 
-    margin: 0 0 12px; 
-  }
-  
-  .ficha-grid { 
-    display: grid; 
-    grid-template-columns: auto 1fr; 
-    gap: 8px 16px; 
-    align-items: baseline; 
-  }
-  
-  .ficha-key { 
-    font-size: 11px; 
-    font-weight: 600; 
-    color: var(--text-disabled); 
-    text-transform: uppercase; 
-  }
-  
-  .ficha-val { 
-    font-size: 13px; 
-    font-weight: 500; 
-    color: var(--text-secondary); 
-    word-break: break-word; 
-  }
-  
-  .ficha-mono { 
-    font-family: monospace; 
-    font-weight: 600; 
-    color: var(--text-primary); 
-  }
+  .ficha-alumno { margin: 16px 20px 0; padding: 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--bg-page); }
+  .ficha-titulo { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-disabled); margin: 0 0 12px; }
+  .ficha-grid { display: grid; grid-template-columns: auto 1fr; gap: 8px 16px; align-items: baseline; }
+  .ficha-key { font-size: 11px; font-weight: 600; color: var(--text-disabled); text-transform: uppercase; }
+  .ficha-val { font-size: 13px; font-weight: 500; color: var(--text-secondary); word-break: break-word; }
+  .ficha-mono { font-family: monospace; font-weight: 600; color: var(--text-primary); }
+  .ficha-periodo { font-weight: 600; white-space: normal; line-height: 1.5; }
 
-  .ficha-periodo {
-    font-weight: 600;
-    white-space: normal;
-    line-height: 1.5;
-  }
+  .nota-previa { margin: 16px 20px 0; padding: 14px; background: rgba(249, 115, 22, 0.04); border: 1px solid var(--border); border-radius: 12px; }
+  .nota-texto { font-size: 13px; color: var(--text-secondary); margin: 4px 0 0; line-height: 1.5; }
 
-  .nota-previa { 
-    margin: 16px 20px 0; 
-    padding: 14px; 
-    background: rgba(249, 115, 22, 0.04); 
-    border: 1px solid var(--border); 
-    border-radius: 12px; 
-  }
+  .acciones-grupo { padding: 20px; margin-top: auto; }
+  .btn-decision-row { display: flex; gap: 10px; }
+  .btn-decision { flex: 1; padding: 12px 8px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.15s ease; border: 1.5px solid transparent; text-align: center; }
+  .btn-aprobar { background: rgba(34, 197, 94, 0.08); color: var(--success); border-color: rgba(34, 197, 94, 0.2); }
+  .btn-aprobar:hover, .btn-aprobar.activo { background: var(--success); color: white; border-color: var(--success); }
+  .btn-rechazar { background: rgba(239, 68, 68, 0.08); color: var(--error); border-color: rgba(239, 68, 68, 0.2); }
+  .btn-rechazar:hover, .btn-rechazar.activo { background: var(--error); color: white; border-color: var(--error); }
+  .textarea-nota { width: 100%; min-height: 84px; resize: none; margin-top: 4px; }
+  .exito-msg { color: var(--success); background: rgba(34, 197, 94, 0.08); border: 1px solid rgba(34, 197, 94, 0.2); border-radius: 8px; padding: 10px 14px; font-size: 13px; margin-top: 12px; font-weight: 500; text-align: center; }
   
-  .nota-texto { 
-    font-size: 13px; 
-    color: var(--text-secondary); 
-    margin: 4px 0 0; 
-    line-height: 1.5; 
-  }
+  .ya-revisado { padding: 24px 20px; font-size: 14px; color: var(--text-secondary); text-align: center; }
+  .status-final { font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; }
+  .text-verde { color: var(--success); }
+  .text-rojo { color: var(--error); }
+  
+  .btn-danger { color: var(--error) !important; border-color: rgba(239, 68, 68, 0.3) !important; }
+  .btn-danger:hover { background: var(--error) !important; color: white !important; border-color: var(--error) !important; }
 
-  .acciones-grupo { 
-    padding: 20px; 
-    margin-top: auto; 
-  }
+  .empresas-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 8px; }
+  .card-seccion { background: var(--bg-card); border-radius: var(--radius-card); box-shadow: var(--shadow-card); padding: 28px; display: flex; flex-direction: column; gap: 16px; border: 1px solid var(--border); }
+  .seccion-title { font-size: 15px; font-weight: 700; color: var(--text-primary); margin: 0; }
   
-  .btn-decision-row { 
-    display: flex; 
-    gap: 10px; 
-  }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field label { font-size: 13px; font-weight: 600; color: var(--text-secondary); }
   
-  .btn-decision { 
-    flex: 1; 
-    padding: 12px 8px; 
-    border-radius: 8px; 
-    font-size: 13px; 
-    font-weight: 700; 
-    cursor: pointer; 
-    transition: all 0.15s ease; 
-    border: 1.5px solid transparent; 
-    text-align: center; 
-  }
+  .nueva-empresa-row { display: flex; gap: 10px; align-items: center; width: 100%; }
   
-  .btn-aprobar { 
-    background: rgba(34, 197, 94, 0.08); 
-    color: var(--success); 
-    border-color: rgba(34, 197, 94, 0.2); 
-  }
-  
-  .btn-aprobar:hover, 
-  .btn-aprobar.activo { 
-    background: var(--success); 
-    color: white; 
-    border-color: var(--success); 
-  }
-  
-  .btn-rechazar { 
-    background: rgba(239, 68, 68, 0.08); 
-    color: var(--error); 
-    border-color: rgba(239, 68, 68, 0.2); 
-  }
-  
-  .btn-rechazar:hover, 
-  .btn-rechazar.activo { 
-    background: var(--error); 
-    color: white; 
-    border-color: var(--error); 
-  }
-  
-  .textarea-nota { 
-    width: 100%; 
-    min-height: 84px; 
-    resize: none; 
-    margin-top: 4px; 
-  }
-
-  .exito-msg { 
-    color: var(--success); 
-    background: rgba(34, 197, 94, 0.08); 
-    border: 1px solid rgba(34, 197, 94, 0.2); 
-    border-radius: 8px; 
-    padding: 10px 14px; 
-    font-size: 13px; 
-    margin-top: 12px; 
-    font-weight: 500; 
-    text-align: center; 
-  }
-  
-  .ya-revisado { 
-    padding: 24px 20px; 
-    font-size: 14px; 
-    color: var(--text-secondary); 
-    text-align: center; 
-  }
-  
-  .status-final { 
-    font-weight: 700; 
-    text-transform: uppercase; 
-    letter-spacing: 0.02em; 
-  }
-  
-  .text-verde { 
-    color: var(--success); 
-  }
-  
-  .text-rojo { 
-    color: var(--error); 
-  }
-  
-  .btn-danger { 
-    color: var(--error) !important; 
-    border-color: rgba(239, 68, 68, 0.3) !important; 
-  }
-  
-  .btn-danger:hover { 
-    background: var(--error) !important; 
-    color: white !important; 
-    border-color: var(--error) !important; 
-  }
-
-  .empresas-layout { 
-    display: grid; 
-    grid-template-columns: 1fr 1fr; 
-    gap: 24px; 
-    margin-top: 8px; 
-  }
-  
-  .card-seccion { 
-    background: var(--bg-card); 
-    border-radius: var(--radius-card); 
-    box-shadow: var(--shadow-card); 
-    padding: 28px; 
-    display: flex; 
-    flex-direction: column; 
-    gap: 16px; 
-    border: 1px solid var(--border); 
-  }
-  
-  .seccion-title { 
-    font-size: 15px; 
-    font-weight: 700; 
-    color: var(--text-primary); 
-    margin: 0; 
-  }
-  
-  .field { 
-    display: flex; 
-    flex-direction: column; 
-    gap: 6px; 
-  }
-  
-  .field label { 
-    font-size: 13px; 
-    font-weight: 600; 
-    color: var(--text-secondary); 
-  }
-  
-  .nueva-empresa-row { 
-    display: flex; 
-    gap: 10px; 
-    align-items: center; 
-    width: 100%; 
-  }
-  
-  .empresa-list { 
-    list-style: none; 
-    padding: 0; 
-    margin: 0; 
-    display: flex; 
-    flex-direction: column; 
-    gap: 8px; 
-    overflow-y: auto; 
-    max-height: 380px; 
-  }
-  
-  .empresa-item { 
-    padding: 12px 16px; 
-    border: 1px solid var(--border); 
-    border-radius: 8px; 
-    background: var(--bg-page); 
-  }
-  
-  .empresa-nombre { 
-    font-size: 14px; 
-    font-weight: 600; 
-    color: var(--text-primary); 
-  }
-  
-  .empty-msg { 
-    font-size: 13px; 
-    color: var(--text-disabled); 
-    font-style: italic; 
-    margin: 0; 
-  }
-
-  .spinner { 
-    width: 28px; 
-    height: 28px; 
-    margin: 0 auto; 
-    border: 3px solid var(--border); 
-    border-top-color: var(--orange); 
-    border-radius: 50%; 
-    animation: spin 0.8s linear infinite; 
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
+  .empresa-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; max-height: 380px; }
+  .empresa-item { padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-page); }
+  .empresa-nombre { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+  .empty-msg { font-size: 13px; color: var(--text-disabled); font-style: italic; margin: 0; }
 
   @media (max-width: 768px) {
-    .split-layout { 
-      grid-template-columns: 1fr; 
-    }
-    .panel-pdf { 
-      height: 300px; 
-      border-right: none; 
-      border-bottom: 1px solid var(--border); 
-    }
-    .empresas-layout { 
-      grid-template-columns: 1fr; 
-    }
+    .split-layout { grid-template-columns: 1fr; }
+    .panel-pdf { height: 300px; border-right: none; border-bottom: 1px solid var(--border); }
+    .empresas-layout { grid-template-columns: 1fr; }
   }
 </style>

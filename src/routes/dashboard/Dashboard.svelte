@@ -1,6 +1,5 @@
 <script>
   // src/routes/dashboard/Dashboard.svelte
-  // Importaciones
   import { onMount } from 'svelte'
   import { navigate } from 'svelte-routing'
   import { get } from 'svelte/store'
@@ -8,6 +7,7 @@
   import { api } from '../../lib/services/api.js'
   import Navbar from '../../lib/components/layout/Navbar.svelte'
   import PerfilModal from '../../lib/components/layout/PerfilModal.svelte'
+  import LoadingSpinner from '../../lib/components/ui/LoadingSpinner.svelte'
   import { estadoBadgeClass, estadoLabel } from '../../lib/utils.js'
 
   // Variables de estado
@@ -64,8 +64,8 @@
 
 <main class="main">
   {#if loading}
-    <div class="loading-wrap">
-      <div class="spinner-lg"></div>
+    <div style="height: calc(100vh - 56px); display: flex; align-items: center; justify-content: center;">
+      <LoadingSpinner />
     </div>
   {:else if loadError}
     <div class="content">
@@ -278,28 +278,5 @@
   .empty-text {
     font-size: 14px;
     color: var(--text-secondary);
-  }
-
-  /* Loader */
-  .loading-wrap {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: calc(100vh - 56px);
-  }
-
-  .spinner-lg {
-    width: 32px;
-    height: 32px;
-    border: 3px solid var(--border);
-    border-top-color: var(--orange);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
   }
 </style>

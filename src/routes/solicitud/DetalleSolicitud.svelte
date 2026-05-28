@@ -1,65 +1,27 @@
 <script>
   // src/routes/solicitud/DetalleSolicitud.svelte
-  // Importaciones desglosadas
   import { onMount } from 'svelte'
   import { navigate } from 'svelte-routing'
   import { get } from 'svelte/store'
   import { isAuthenticated } from '../../lib/stores/auth.js'
   import { api } from '../../lib/services/api.js'
+  import { tiposBeca, nombresDocumentos } from '../../lib/utils/constants.js'
   import Navbar from '../../lib/components/layout/Navbar.svelte'
   import PerfilModal from '../../lib/components/layout/PerfilModal.svelte'
+  import PreviewField from '../../lib/components/ui/PreviewField.svelte'
   import { estadoBadgeClass, estadoLabel } from '../../lib/utils.js'
 
   export let id
 
-  // Variables de estado estructuradas
   let showPerfil = false
   let solicitud = null
   let loading = true
   let error = ''
   let alumno = null
 
-  // Catálogos estructurados verticalmente
-  const tiposBeca = [
-    { 
-      key: 'academica', 
-      label: 'A. Académica' 
-    },
-    { 
-      key: 'deportiva', 
-      label: 'B. Deportiva' 
-    },
-    { 
-      key: 'cultural', 
-      label: 'C. Cultural' 
-    },
-    { 
-      key: 'alimentos', 
-      label: 'D. Alimentos' 
-    },
-    { 
-      key: 'transporte', 
-      label: 'E. Transporte' 
-    },
-    { 
-      key: 'empleado_hijo', 
-      label: 'F. Empleado y/o hijo de empleado' 
-    }
-  ]
-
-  const nombresDocumentos = {
-    kardex: 'Kárdex',
-    recibo_ingresos: 'Recibo de Ingresos',
-    recibo_servicio_publico: 'Recibo de Servicio Público',
-    recibo_inscripcion: 'Comprobante de Inscripción'
-  }
-
-  // Carga inicial
   onMount(async () => {
     if (!get(isAuthenticated)) {
-      navigate('/login', { 
-        replace: true 
-      })
+      navigate('/login', { replace: true })
       return
     }
     try {
@@ -76,20 +38,19 @@
     }
   })
 
-  // Manejo de comprobante de inscripción
   let subiendoInscripcion = false
   let errorInscripcion = ''
   let exitoInscripcion = false
 
   async function onArchivoInscripcion(e) {
     const file = e.target.files[0]
-    if (!file) {
-      return
-    }
+    if (!file) return
+    
     if (!file.name.toLowerCase().endsWith('.pdf')) {
       errorInscripcion = 'Solo se aceptan archivos PDF'
       return
     }
+    
     errorInscripcion = ''
     subiendoInscripcion = true
     try {
@@ -112,7 +73,6 @@
     }
   }
 
-  // Mapeos reactivos desglosados
   $: p = solicitud?.payload || {}
   $: d = p.datos_personales || {}
   $: b = p.beca_solicitada || {}
@@ -146,20 +106,10 @@
       <div class="error-msg">{error}</div>
 
     {:else if solicitud}
-
       <div class="top-bar">
         <button class="back-btn" on:click={() => navigate('/dashboard')}>
           <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.1" viewBox="0 0 24 24">
-            <path 
-              stroke-linecap="round" 
-              stroke-linejoin="round" 
-              d="M10.5 19.5
-                 L3 12
-                 m0 0
-                 l7.5-7.5
-                 M3 12
-                 h18"
-            />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 L3 12 m0 0 l7.5-7.5 M3 12 h18" />
           </svg>
           Regresar al Panel
         </button>
@@ -172,31 +122,7 @@
         <div class="preview-header">
           <div class="preview-icon">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="2">
-              <path 
-                stroke-linecap="round" 
-                stroke-linejoin="round" 
-                d="M19.5 14.25
-                   v-2.625
-                   a3.375 3.375 0 0 0-3.375-3.375
-                   h-1.5
-                   A1.125 1.125 0 0 1 13.5 7.125
-                   v-1.5
-                   a3.375 3.375 0 0 0-3.375-3.375
-                   H8.25
-                   m0 12.75
-                   h7.5
-                   M12 18.75
-                   H12
-                   M10.5 2.25
-                   H5.625
-                   c-.621 0-1.125.504-1.125 1.125
-                   v17.25
-                   c0 .621.504 1.125 1.125 1.125
-                   h12.75
-                   c.621 0 1.125-.504 1.125-1.125
-                   V11.25
-                   a9 9 0 0 0-9-9Z" 
-              />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5M12 18.75H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
             </svg>
           </div>
           <div>
@@ -208,156 +134,59 @@
         <div class="preview-section">
           <h3 class="preview-section-title">Datos Personales</h3>
           <div class="preview-grid">
-            <div class="preview-field">
-              <span class="preview-label">Nombre(s)</span>
-              <span class="preview-value">{d.nombres || '—'}</span>
-            </div>
-            <div class="preview-field">
-              <span class="preview-label">Apellido Paterno</span>
-              <span class="preview-value">{d.apellido_paterno || '—'}</span>
-            </div>
-            <div class="preview-field">
-              <span class="preview-label">Apellido Materno</span>
-              <span class="preview-value">{d.apellido_materno || '—'}</span>
-            </div>
-            <div class="preview-field">
-              <span class="preview-label">Matrícula</span>
-              <span class="preview-value">{d.matricula || '—'}</span>
-            </div>
-            <div class="preview-field">
-              <span class="preview-label">Programa educativo</span>
-              <span class="preview-value">{d.programa_educativo || '—'}</span>
-            </div>
-            <div class="preview-field">
-              <span class="preview-label">Cuatrimestre a cursar</span>
-              <span class="preview-value">{d.cuatrimestre_a_cursar || '—'}</span>
-            </div>
-            <div class="preview-field">
-              <span class="preview-label">Turno</span>
-              <span class="preview-value">
-                {d.turno === 'M' ? 'Matutino' : d.turno === 'V' ? 'Vespertino' : '—'}
-              </span>
-            </div>
-            <div class="preview-field">
-              <span class="preview-label">Grupo</span>
-              <span class="preview-value">{d.grupo || '—'}</span>
-            </div>
-            <div class="preview-field">
-              <span class="preview-label">Domicilio</span>
-              <span class="preview-value">
-                {d.domicilio_calle} {d.domicilio_numero}, {d.colonia}, {d.municipio}
-              </span>
-            </div>
-            <div class="preview-field">
-              <span class="preview-label">Correo electrónico</span>
-              <span class="preview-value">{d.correo_electronico || '—'}</span>
-            </div>
-            <div class="preview-field">
-              <span class="preview-label">Estado civil</span>
-              <span class="preview-value">{d.estado_civil || '—'}</span>
-            </div>
-            <div class="preview-field">
-              <span class="preview-label">Edad</span>
-              <span class="preview-value">{d.edad || '—'}</span>
-            </div>
-            <div class="preview-field">
-              <span class="preview-label">Celular</span>
-              <span class="preview-value">{d.celular || '—'}</span>
-            </div>
-            <div class="preview-field">
-              <span class="preview-label">RFC</span>
-              <span class="preview-value font-mono">{d.rfc || '—'}</span>
-            </div>
-            <div class="preview-field">
-              <span class="preview-label">CURP</span>
-              <span class="preview-value font-mono">{d.curp || '—'}</span>
-            </div>
+            <PreviewField label="Nombre(s)" value={d.nombres} />
+            <PreviewField label="Apellido Paterno" value={d.apellido_paterno} />
+            <PreviewField label="Apellido Materno" value={d.apellido_materno} />
+            <PreviewField label="Matrícula" value={d.matricula} />
+            <PreviewField label="Programa educativo" value={d.programa_educativo} />
+            <PreviewField label="Cuatrimestre a cursar" value={d.cuatrimestre_a_cursar} />
+            <PreviewField label="Turno" value={d.turno === 'M' ? 'Matutino' : d.turno === 'V' ? 'Vespertino' : ''} />
+            <PreviewField label="Grupo" value={d.grupo} />
+            <PreviewField label="Domicilio" value={`${d.domicilio_calle} ${d.domicilio_numero}, ${d.colonia}, ${d.municipio}`} />
+            <PreviewField label="Correo electrónico" value={d.correo_electronico} />
+            <PreviewField label="Estado civil" value={d.estado_civil} />
+            <PreviewField label="Edad" value={d.edad} />
+            <PreviewField label="Celular" value={d.celular} />
+            <PreviewField label="RFC" value={d.rfc} isMono={true} />
+            <PreviewField label="CURP" value={d.curp} isMono={true} />
           </div>
         </div>
 
         <div class="preview-section">
           <h3 class="preview-section-title">Beca Solicitada</h3>
           <div class="preview-grid">
-            <div class="preview-field">
-              <span class="preview-label">Tipo de solicitud</span>
-              <span class="preview-value">{b.tipo_solicitud || '—'}</span>
-            </div>
-            <div class="preview-field">
-              <span class="preview-label">Tipos de beca</span>
-              <span class="preview-value">
-                {(b.tipos_beca || []).length > 0
-                  ? b.tipos_beca.map(k => tiposBeca.find(t => t.key === k)?.label).join(', ')
-                  : '—'}
-              </span>
-            </div>
+            <PreviewField label="Tipo de solicitud" value={b.tipo_solicitud} />
+            <PreviewField label="Tipos de beca" value={(b.tipos_beca || []).length > 0 ? b.tipos_beca.map(k => tiposBeca.find(t => t.key === k)?.label).join(', ') : ''} />
           </div>
         </div>
 
         <div class="preview-section">
           <h3 class="preview-section-title">Información General</h3>
           <div class="preview-grid">
-            <div class="preview-field">
-              <span class="preview-label">Promedio preparatoria</span>
-              <span class="preview-value">{info.promedio_preparatoria || '—'}</span>
-            </div>
-            <div class="preview-field">
-              <span class="preview-label">% beca cuatrimestre anterior</span>
-              <span class="preview-value">{info.porcentaje_beca_anterior || '—'}</span>
-            </div>
-            <div class="preview-field">
-              <span class="preview-label">Promedio cuatrimestre anterior</span>
-              <span class="preview-value">{info.promedio_cuatrimestre_anterior || '—'}</span>
-            </div>
-            <div class="preview-field">
-              <span class="preview-label">Otra beca</span>
-              <span class="preview-value">{info.otra_beca || '—'}</span>
-            </div>
+            <PreviewField label="Promedio preparatoria" value={info.promedio_preparatoria} />
+            <PreviewField label="% beca cuatrimestre anterior" value={info.porcentaje_beca_anterior} />
+            <PreviewField label="Promedio cuatrimestre anterior" value={info.promedio_cuatrimestre_anterior} />
+            <PreviewField label="Otra beca" value={info.otra_beca} />
           </div>
         </div>
 
         <div class="preview-section">
           <h3 class="preview-section-title">Ingreso Mensual</h3>
           <div class="preview-grid">
-            <div class="preview-field">
-              <span class="preview-label">Monto de ingreso</span>
-              <span class="preview-value">${ing.monto_ingreso || '0'}</span>
-            </div>
-            <div class="preview-field">
-              <span class="preview-label">Personas dependientes</span>
-              <span class="preview-value">{ing.numero_dependientes || '0'}</span>
-            </div>
+            <PreviewField label="Monto de ingreso" value={`$${ing.monto_ingreso || '0'}`} />
+            <PreviewField label="Personas dependientes" value={ing.numero_dependientes || '0'} />
           </div>
         </div>
 
         <div class="preview-section">
           <h3 class="preview-section-title">Egreso Mensual</h3>
           <div class="preview-grid">
-            <div class="preview-field">
-              <span class="preview-label">Alimentación</span>
-              <span class="preview-value">${egr.gastos_alimentacion || '0'}</span>
-            </div>
-            <div class="preview-field">
-              <span class="preview-label">Educación</span>
-              <span class="preview-value">${egr.gastos_educacion || '0'}</span>
-            </div>
-            <div class="preview-field">
-              <span class="preview-label">Renta / Hipoteca</span>
-              <span class="preview-value">${egr.gastos_renta_hipoteca || '0'}</span>
-            </div>
-            <div class="preview-field">
-              <span class="preview-label">Servicios</span>
-              <span class="preview-value">${egr.gastos_servicios || '0'}</span>
-            </div>
-            <div class="preview-field">
-              <span class="preview-label">Gastos varios</span>
-              <span class="preview-value">${egr.gastos_varios || '0'}</span>
-            </div>
-            <div class="preview-field">
-              <span class="preview-label">Total egresos</span>
-              <span class="preview-value" style="color: var(--text-primary); font-weight: 700;">
-                ${egr.total_egresos?.toFixed(2) || '0.00'}
-              </span>
-            </div>
+            <PreviewField label="Alimentación" value={`$${egr.gastos_alimentacion || '0'}`} />
+            <PreviewField label="Educación" value={`$${egr.gastos_educacion || '0'}`} />
+            <PreviewField label="Renta / Hipoteca" value={`$${egr.gastos_renta_hipoteca || '0'}`} />
+            <PreviewField label="Servicios" value={`$${egr.gastos_servicios || '0'}`} />
+            <PreviewField label="Gastos varios" value={`$${egr.gastos_varios || '0'}`} />
+            <PreviewField label="Total egresos" value={`$${egr.total_egresos?.toFixed(2) || '0.00'}`} highlight={true} />
           </div>
         </div>
 
@@ -431,9 +260,7 @@
   }
 
   @keyframes spin { 
-    to { 
-      transform: rotate(360deg); 
-    } 
+    to { transform: rotate(360deg); } 
   }
 
   .top-bar { 
@@ -522,32 +349,6 @@
     display: grid; 
     grid-template-columns: 1fr 1fr; 
     gap: 14px 32px; 
-  }
-
-  .preview-field { 
-    display: flex; 
-    flex-direction: column; 
-    gap: 4px; 
-  }
-  
-  .preview-label { 
-    font-size: 11px; 
-    font-weight: 600; 
-    color: var(--text-disabled); 
-    text-transform: uppercase; 
-    letter-spacing: 0.03em; 
-  }
-
-  .preview-value { 
-    font-size: 14px; 
-    font-weight: 500; 
-    color: var(--text-secondary); 
-    word-break: break-word; 
-  }
-
-  .font-mono { 
-    font-family: monospace; 
-    letter-spacing: 0.02em; 
   }
 
   .docs-grid { 

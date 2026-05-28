@@ -1,64 +1,40 @@
 <script>
-  // src/lib/components/shared/FiltrosBarra.svelte
-  // Importaciones desglosadas
   import { createEventDispatcher } from 'svelte'
   const dispatch = createEventDispatcher()
 
-  // Parámetros de configuración de visibilidad
   export let mostrarEstado = true
   export let mostrarCarrera = true
   export let mostrarGrupo = true
   
-  // Orígenes de datos remotos (Catálogos puros)
   export let grupos = [] 
   export let carreras = []
 
-  // Bindeos bidireccionales de estados de filtrado
   export let filtroBusqueda = ''
   export let filtroGrupo = ''
   export let filtroCarrera = ''
   export let filtroEstado = ''
-  
-  // Algoritmo reactivo de correspondencia entre grupos e iniciales de carrera
+ 
   $: gruposFiltrados = filtroCarrera
     ? grupos.filter((g) => {
         const gUpper = g.toUpperCase()
         const cUpper = filtroCarrera.toUpperCase()
         
-        if (gUpper.includes('TII') && cUpper.includes('INFORMACIÓN')) {
-          return true
-        }
-        if (gUpper.includes('LOG') && cUpper.includes('LOGISTICA')) {
-          return true
-        }
-        if (gUpper.includes('EDU') && cUpper.includes('EDUCACIÓN')) {
-          return true
-        }
+        if (gUpper.includes('TII') && cUpper.includes('INFORMACIÓN')) return true
+        if (gUpper.includes('LOG') && cUpper.includes('LOGISTICA')) return true
+        if (gUpper.includes('EDU') && cUpper.includes('EDUCACIÓN')) return true
         return false
       })
     : []
 
-  // CORRECCIÓN: Preparación reactiva del catálogo para el ciclo del HTML
-  $: gruposVisibles = filtroCarrera
-    ? gruposFiltrados
-    : grupos
+  $: gruposVisibles = filtroCarrera ? gruposFiltrados : grupos
 
-  // Manejo del cambio de carrera e invalidación de selección previa
   function handleCarreraChange() {
     filtroGrupo = ''
-    handleBuscar()
-  }
-
-  // Despacho centralizado de peticiones de actualización al componente padre
-  function handleBuscar() {
     dispatch('buscar')
   }
 
-  // CORRECCIÓN: Extracción formal de la lógica de intercepción del teclado
   function handleKeydown(e) {
-    if (e.key === 'Enter') {
-      handleBuscar()
-    }
+    if (e.key === 'Enter') dispatch('buscar')
   }
 </script>
 
@@ -88,7 +64,7 @@
     <select 
       bind:value={filtroGrupo} 
       class="input-plain select-field select-grupo" 
-      on:change={handleBuscar} 
+      on:change={() => dispatch('buscar')} 
       disabled={mostrarCarrera && !filtroCarrera}
     >
       {#if mostrarCarrera && !filtroCarrera}
@@ -106,7 +82,7 @@
     <select 
       bind:value={filtroEstado} 
       class="input-plain select-field select-estado" 
-      on:change={handleBuscar}
+      on:change={() => dispatch('buscar')}
     >
       <option value="">Todos los estados</option>
       <option value="Pendiente">Pendiente</option>
@@ -116,63 +92,18 @@
     </select>
   {/if}
 
-  <button 
-    class="btn-outline btn-actualizar" 
-    on:click={handleBuscar}
-  >
+  <button class="btn-outline btn-actualizar" on:click={() => dispatch('buscar')}>
     Actualizar
   </button>
 </div>
 
 <style>
-  .filters-row {
-    display: flex;
-    gap: 8px;
-    flex-wrap: nowrap;
-    align-items: center;
-    background: var(--bg-card);
-    padding: 12px 16px;
-    border-radius: var(--radius-card);
-    border: 1px solid var(--border);
-    box-shadow: var(--shadow-card);
-    margin-bottom: 1.5rem;
-  }
-
-  .input-plain {
-    font-family: var(--font);
-    font-size: 14px;
-  }
-
-  .input-busqueda { 
-    flex: 1.2; 
-    min-width: 150px; 
-    max-width: 220px; 
-  }
-
-  .select-field { 
-    flex: 1; 
-    min-width: 130px;
-  }
-
-  .select-carrera { 
-    max-width: 320px; 
-    text-overflow: ellipsis; 
-  }
-
-  .select-grupo { 
-    max-width: 160px; 
-  }
-
-  .select-estado { 
-    max-width: 150px;
-  }
-
-  .btn-actualizar { 
-    white-space: nowrap; 
-    padding: 10px 16px; 
-    font-size: 14px; 
-    height: 40px; 
-    display: flex; 
-    align-items: center; 
-  }
+  .filters-row { display: flex; gap: 8px; flex-wrap: nowrap; align-items: center; background: var(--bg-card); padding: 12px 16px; border-radius: var(--radius-card); border: 1px solid var(--border); box-shadow: var(--shadow-card); margin-bottom: 1.5rem; }
+  .input-plain { font-family: var(--font); font-size: 14px; }
+  .input-busqueda { flex: 1.2; min-width: 150px; max-width: 220px; }
+  .select-field { flex: 1; min-width: 130px; }
+  .select-carrera { max-width: 320px; text-overflow: ellipsis; }
+  .select-grupo { max-width: 160px; }
+  .select-estado { max-width: 150px; }
+  .btn-actualizar { white-space: nowrap; padding: 10px 16px; font-size: 14px; height: 40px; display: flex; align-items: center; }
 </style>
