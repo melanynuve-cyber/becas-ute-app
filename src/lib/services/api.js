@@ -105,11 +105,12 @@ export const api = {
     cuatrimestreActual: () => request('GET', '/dual/coordinador/cuatrimestre-actual'),
     alumnosSinReporte: (cuatrimestre, semana) => request('GET', `/dual/coordinador/alumnos-sin-reporte?cuatrimestre=${cuatrimestre}&semana=${semana}`),
     alumnosAtrasados: () => request('GET', '/dual/coordinador/alumnos-atrasados'),
-    reportePdfUrl: (reporteId) => `${BASE_URL}/dual/coordinador/reporte/${reporteId}/pdf`,
+    reportePdfUrlCoordinador: (reporteId) => `${BASE_URL}/dual/coordinador/reporte/${reporteId}/pdf`,
 
     // Operaciones del coordinador de carrera académica
     listarAlumnos: (params) => request('GET', `/dual/carrera/alumnos${params ? `?${params}` : ''}`),
     expediente: (matricula, cuatrimestre) => request('GET', `/dual/carrera/alumnos/${matricula}/reportes${cuatrimestre ? `?cuatrimestre=${cuatrimestre}` : ''}`),
+    reportePdfUrlCarrera: (reporteId) => `${BASE_URL}/dual/carrera/reporte/${reporteId}/pdf`,
     exportarCSV: async (matricula, cuatrimestre) => {
       const blob = await request('GET',
         `/dual/carrera/alumnos/${matricula}/exportar-csv${cuatrimestre ? `?cuatrimestre=${cuatrimestre}` : ''}`,

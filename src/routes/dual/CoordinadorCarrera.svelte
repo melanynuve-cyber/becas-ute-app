@@ -10,7 +10,7 @@
   import FiltrosBarra from '../../lib/components/shared/FiltrosBarra.svelte'
   import LoadingSpinner from '../../lib/components/ui/LoadingSpinner.svelte'
   import EmptyState from '../../lib/components/ui/EmptyState.svelte'
-  import { formatFecha, validarFilasCSV } from '../../lib/utils.js'
+  import { formatFecha } from '../../lib/utils.js'
 
   const location = useLocation()
   let vista = 'directorio'
@@ -185,24 +185,17 @@
     resultadoCSV = null
 
     try {
-      const texto = await archivoCSV.text()
-      const { validas, errores: errs } = validarFilasCSV(texto)
-
-      if (errs.length > 0 && validas.length === 0) {
-        resultadoCSV = { insertados: 0, errores: errs }
-        return
-      }
-
       const fd = new FormData()
       fd.append('file', archivoCSV)
       const respuesta = await api.dual.subirAlumnosCSV(grupoCreado.id, fd)
 
       resultadoCSV = {
-        insertados: respuesta.insertados ?? validas.length,
-        alumnos: respuesta.alumnos || [],
-        errores: errs
+        insertados: respuesta.insertados || [],
+        actualizados: respuesta.actualizados || [],
+        errores: respuesta.errores || [],
       }
-      limpiarInputCSV()
+      archivoCSV = null
+      if (inputFileRef) inputFileRef.value = ""
       await cargarAlumnos()
     } catch (e) {
       errorCSV = e.message || 'Error de I/O al procesar el archivo.'
@@ -518,25 +511,39 @@
               {/if}
 
               {#if resultadoCSV}
+                {@const total = resultadoCSV.insertados.length + resultadoCSV.actualizados.length + resultadoCSV.errores.length}
                 <div class="resultado-csv">
-                  <p class="resultado-ok">✓ {resultadoCSV.insertados} alumnos insertados correctamente.</p>
-                  {#if resultadoCSV.alumnos?.length > 0}
-                    <div class="resultado-alumnos">
-                      <p class="resultado-subtitulo">Alumnos insertados:</p>
-                      <ul class="resultado-lista-alumnos">
-                        {#each resultadoCSV.alumnos as alumno}
-                          <li>{alumno.matricula} — {alumno.nombre}</li>
+                  {#if total === 0}
+                    <p class="resultado-vacio">El archivo no contiene registros para procesar.</p>
+                  {:else}
+                    {#if resultadoCSV.insertados.length > 0}
+                      <p class="resultado-ok">✓ {resultadoCSV.insertados.length} alumno{resultadoCSV.insertados.length !== 1 ? 's' : ''} insertado{resultadoCSV.insertados.length !== 1 ? 's' : ''} correctamente.</p>
+                      <div class="resultado-alumnos">
+                        <ul class="resultado-lista-alumnos">
+                          {#each resultadoCSV.insertados as alumno}
+                            <li><span class="ficha-mono">{alumno.matricula}</span> — {alumno.nombre}</li>
+                          {/each}
+                        </ul>
+                      </div>
+                    {/if}
+                    {#if resultadoCSV.actualizados.length > 0}
+                      <p class="resultado-actualizados">↻ {resultadoCSV.actualizados.length} alumno{resultadoCSV.actualizados.length !== 1 ? 's' : ''} ya existía{resultadoCSV.actualizados.length !== 1 ? 'n' : ''} y {resultadoCSV.actualizados.length !== 1 ? 'fueron' : 'fue'} reasignado{resultadoCSV.actualizados.length !== 1 ? 's' : ''} al grupo.</p>
+                      <div class="resultado-alumnos">
+                        <ul class="resultado-lista-alumnos">
+                          {#each resultadoCSV.actualizados as alumno}
+                            <li><span class="ficha-mono">{alumno.matricula}</span> — {alumno.nombre}</li>
+                          {/each}
+                        </ul>
+                      </div>
+                    {/if}
+                    {#if resultadoCSV.errores.length > 0}
+                      <p class="resultado-err-titulo">{resultadoCSV.errores.length} registro{resultadoCSV.errores.length !== 1 ? 's' : ''} no procesado{resultadoCSV.errores.length !== 1 ? 's' : ''}:</p>
+                      <ul class="resultado-err-lista">
+                        {#each resultadoCSV.errores as err}
+                          <li><strong>Fila {err.fila}</strong> {err.matricula ? `(${err.matricula})` : ''}: {err.razon}</li>
                         {/each}
                       </ul>
-                    </div>
-                  {/if}
-                  {#if resultadoCSV.errores.length > 0}
-                    <p class="resultado-err-titulo">Filas ignoradas:</p>
-                    <ul class="resultado-err-lista">
-                      {#each resultadoCSV.errores as err}
-                        <li><strong>Fila {err.fila}</strong> {err.matricula ? `(${err.matricula})` : ''}: {err.razon}</li>
-                      {/each}
-                    </ul>
+                    {/if}
                   {/if}
                 </div>
               {/if}
@@ -688,7 +695,7 @@
                 </div>
                 <div class="expediente-pdf-col">
                   <VisorPDF
-                    url={pdfSeleccionado ? api.dual.reportePdfUrl(pdfSeleccionado.id) : ''}
+                    url={pdfSeleccionado ? api.dual.reportePdfUrlCarrera(pdfSeleccionado.id) : ''}
                     titulo={pdfSeleccionado ? `Semana ${pdfSeleccionado.semana}` : 'Selecciona un reporte'}
                   />
                 </div>
@@ -856,9 +863,13 @@
   .modal-cuerpo { font-size: 14px; color: var(--text-secondary); margin: 0; }
   .modal-acciones { display: flex; gap: 10px; }
 
-  .resultado-csv { margin-top: 14px; padding: 12px; border-radius: 8px; background: var(--bg-page); border: 1px solid var(--border); }
+  .resultado-csv { margin-top: 14px; padding: 12px; border-radius: 8px; background: var(--bg-page); border: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
   .resultado-ok { color: var(--success); font-weight: 600; font-size: 13px; margin: 0; }
-  .resultado-err-titulo { color: var(--error); font-weight: 600; font-size: 12px; margin: 8px 0 4px; }
+  .resultado-actualizados { color: #d97706; font-weight: 600; font-size: 13px; margin: 0; }
+  .resultado-vacio { color: var(--text-disabled); font-size: 13px; font-style: italic; margin: 0; }
+  .resultado-alumnos { margin-top: 2px; }
+  .resultado-lista-alumnos { margin: 0; padding-left: 16px; font-size: 12px; color: var(--text-secondary); display: flex; flex-direction: column; gap: 2px; }
+  .resultado-err-titulo { color: var(--error); font-weight: 600; font-size: 12px; margin: 0; }
   .resultado-err-lista { margin: 0; padding-left: 16px; font-size: 12px; color: var(--text-secondary); }
 
   .expediente-der { flex: 1; min-width: 0; }

@@ -146,8 +146,8 @@
       cargarDirectorioExp()
     } else {
       cargarReportes()
-      cargarEstadoCuatrimestre()
     }
+    cargarEstadoCuatrimestre()
     mounted = true
   })
 
@@ -581,36 +581,6 @@
           {modoNoEntregado ? ' pendiente' : ''}{reportesFiltrados.length !== 1 && modoNoEntregado ? 's' : ''}
         </p>
 
-        <div class="bandeja-acciones">
-          {#if loadingCuatrimestre}
-            <span style="font-size:13px; color: var(--text-disabled);">Cargando estado del cuatrimestre…</span>
-          {:else if errorCuatrimestre}
-            <span style="font-size:13px; color: var(--error);">{errorCuatrimestre}</span>
-            <button class="btn-outline" style="font-size:12px; padding:6px 14px;" on:click={cargarEstadoCuatrimestre}>
-              Reintentar
-            </button>
-          {:else if cuatrimestreActual?.abierto}
-            <div class="quarter-badge quarter-abierto">
-              <span class="quarter-dot"></span>
-              {cuatrimestreActual.periodo_label || 'Cuatrimestre activo'}
-            </div>
-            <button class="btn-cierre" on:click={abrirCierre}>
-              Cerrar Cuatrimestre
-            </button>
-          {:else if cuatrimestreActual?.cerrado}
-            <div class="quarter-badge quarter-cerrado">
-              <span class="quarter-dot"></span>
-              CERRADO — {cuatrimestreActual.periodo_label || 'Sin etiqueta'}
-            </div>
-            <button class="btn-apertura" on:click={abrirApertura}>
-              Abrir Nuevo Cuatrimestre
-            </button>
-          {:else}
-            <button class="btn-apertura" on:click={abrirApertura}>
-              Abrir Primer Cuatrimestre
-            </button>
-          {/if}
-        </div>
       {/if}
     </div>
 
@@ -641,7 +611,7 @@
           <div class="panel-label">Documento del reporte</div>
           {#if seleccionado.id}
             <VisorPDF
-              url={api.dual.reportePdfUrl(seleccionado.id)}
+              url={api.dual.reportePdfUrlCoordinador(seleccionado.id)}
               titulo={`Semana ${seleccionado.semana}`}
             />
           {:else}
@@ -957,6 +927,37 @@
           <p class="count-label">{alumnosExpFiltrados.length} alumno{alumnosExpFiltrados.length !== 1 ? 's' : ''}</p>
         {/if}
       </div>
+
+      <div class="bandeja-acciones" style="margin-top: 20px;">
+        {#if loadingCuatrimestre}
+          <span style="font-size:13px; color: var(--text-disabled);">Cargando estado del cuatrimestre…</span>
+        {:else if errorCuatrimestre}
+          <span style="font-size:13px; color: var(--error);">{errorCuatrimestre}</span>
+          <button class="btn-outline" style="font-size:12px; padding:6px 14px;" on:click={cargarEstadoCuatrimestre}>
+            Reintentar
+          </button>
+        {:else if cuatrimestreActual?.abierto}
+          <div class="quarter-badge quarter-abierto">
+            <span class="quarter-dot"></span>
+            {cuatrimestreActual.periodo_label || 'Cuatrimestre activo'}
+          </div>
+          <button class="btn-cierre" on:click={abrirCierre}>
+            Cerrar Cuatrimestre
+          </button>
+        {:else if cuatrimestreActual?.cerrado}
+          <div class="quarter-badge quarter-cerrado">
+            <span class="quarter-dot"></span>
+            CERRADO — {cuatrimestreActual.periodo_label || 'Sin etiqueta'}
+          </div>
+          <button class="btn-apertura" on:click={abrirApertura}>
+            Abrir Nuevo Cuatrimestre
+          </button>
+        {:else}
+          <button class="btn-apertura" on:click={abrirApertura}>
+            Abrir Primer Cuatrimestre
+          </button>
+        {/if}
+      </div>
     </div>
     {:else}
     <!-- EXPEDIENTE: layout idéntico a CoordinadorCarrera -->
@@ -1053,7 +1054,7 @@
                 </div>
                 <div class="expediente-pdf-col">
                   <VisorPDF
-                    url={pdfExpSeleccionado ? api.dual.reportePdfUrl(pdfExpSeleccionado.id) : ''}
+                    url={pdfExpSeleccionado ? api.dual.reportePdfUrlCoordinador(pdfExpSeleccionado.id) : ''}
                     titulo={pdfExpSeleccionado ? `Semana ${pdfExpSeleccionado.semana}` : 'Selecciona un reporte'}
                   />
                 </div>
