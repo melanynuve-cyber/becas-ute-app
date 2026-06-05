@@ -4,6 +4,9 @@ import { token, logout } from '../stores/auth.js'
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
+// impide que multiples 401 en paralelo disparen redirects redundantes
+let _redirigiendo = false
+
 // Manejador centralizado de peticiones HTTP
 async function request(method, path, body = null, isMultipart = false) {
   const headers = {}
@@ -18,8 +21,11 @@ async function request(method, path, body = null, isMultipart = false) {
 
   // Interceptor para vencimiento de sesión (Excluye el login)
   if (res.status === 401 && path !== '/auth/login') {
-    logout()
-    window.location.href = '/login'
+    if (!_redirigiendo) {
+      _redirigiendo = true
+      logout()
+      window.location.href = '/login'
+    }
     return
   }
 
@@ -77,6 +83,7 @@ export const api = {
     subirReporte: (fd, isDebug = false) => request('POST', `/dual/alumno/${isDebug ? '?debug=true' : ''}`, fd, true),
     misReportes: (cuatrimestre) => request('GET', `/dual/alumno/mis-reportes${cuatrimestre ? `?cuatrimestre=${cuatrimestre}` : ''}`),
     semanaActual: () => request('GET', '/dual/alumno/semana-actual'),
+    reportePdfUrl: (reporteId) => `${BASE_URL}/dual/alumno/reporte/${reporteId}/pdf`,
 
     // Operaciones del coordinador de vinculación dual
     listarReportes: (params) => request('GET', `/dual/coordinador/reportes${params ? `?${params}` : ''}`),
@@ -91,6 +98,7 @@ export const api = {
     cuatrimestreActual: () => request('GET', '/dual/coordinador/cuatrimestre-actual'),
     alumnosSinReporte: (cuatrimestre, semana) => request('GET', `/dual/coordinador/alumnos-sin-reporte?cuatrimestre=${cuatrimestre}&semana=${semana}`),
     alumnosAtrasados: () => request('GET', '/dual/coordinador/alumnos-atrasados'),
+    reportePdfUrl: (reporteId) => `${BASE_URL}/dual/coordinador/reporte/${reporteId}/pdf`,
 
     // Operaciones del coordinador de carrera académica
     listarAlumnos: (params) => request('GET', `/dual/carrera/alumnos${params ? `?${params}` : ''}`),

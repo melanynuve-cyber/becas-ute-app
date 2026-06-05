@@ -114,6 +114,7 @@
   // Estado del cuatrimestre actual
   let cuatrimestreActual = null
   let loadingCuatrimestre = false
+  let errorCuatrimestre = ''
 
   // Expediente / directorio
   let alumnosExpediente = []
@@ -150,10 +151,12 @@
 
   async function cargarEstadoCuatrimestre() {
     loadingCuatrimestre = true
+    errorCuatrimestre = ''
     try {
       cuatrimestreActual = await api.dual.cuatrimestreActual()
-    } catch {
+    } catch (e) {
       cuatrimestreActual = null
+      errorCuatrimestre = e.message || 'Error al cargar estado del cuatrimestre.'
     } finally {
       loadingCuatrimestre = false
     }
@@ -577,7 +580,14 @@
         </p>
 
         <div class="bandeja-acciones">
-          {#if cuatrimestreActual?.abierto}
+          {#if loadingCuatrimestre}
+            <span style="font-size:13px; color: var(--text-disabled);">Cargando estado del cuatrimestre…</span>
+          {:else if errorCuatrimestre}
+            <span style="font-size:13px; color: var(--error);">{errorCuatrimestre}</span>
+            <button class="btn-outline" style="font-size:12px; padding:6px 14px;" on:click={cargarEstadoCuatrimestre}>
+              Reintentar
+            </button>
+          {:else if cuatrimestreActual?.abierto}
             <div class="quarter-badge quarter-abierto">
               <span class="quarter-dot"></span>
               {cuatrimestreActual.periodo_label || 'Cuatrimestre activo'}

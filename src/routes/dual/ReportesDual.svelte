@@ -129,6 +129,50 @@
 
   $: empresaNombre = alumno?.empresa || ''
   $: semanaRechazada = infoSemana?.estado_actual === 'Rechazada'
+
+  // posicionamiento inteligente del tooltip — por defecto abajo, flip arriba si no hay espacio
+  function posicionarTooltip(triggerEl) {
+    const tooltipEl = triggerEl.querySelector('.nota-tooltip')
+    if (!tooltipEl) return
+
+    // forzar display block para medir dimensiones reales
+    tooltipEl.style.display = 'block'
+    tooltipEl.style.visibility = 'hidden'
+
+    const triggerRect = triggerEl.getBoundingClientRect()
+    const th = tooltipEl.offsetHeight
+    const tw = tooltipEl.offsetWidth
+    const vh = window.innerHeight
+    const vw = window.innerWidth
+    const gap = 8
+
+    // por defecto abajo del icono
+    let top = triggerRect.bottom + gap
+    let left = triggerRect.left + triggerRect.width / 2 - tw / 2
+
+    // si no cabe abajo, flip arriba
+    if (top + th > vh - gap) {
+      top = triggerRect.top - th - gap
+    }
+
+    // clamp horizontal — no desbordar viewport
+    if (left < gap) left = gap
+    if (left + tw > vw - gap) left = vw - tw - gap
+
+    tooltipEl.style.top = `${top}px`
+    tooltipEl.style.left = `${left}px`
+    tooltipEl.style.bottom = 'auto'
+    tooltipEl.style.transform = 'none'
+    tooltipEl.style.visibility = 'visible'
+  }
+
+  function ocultarTooltip(triggerEl) {
+    const tooltipEl = triggerEl.querySelector('.nota-tooltip')
+    if (tooltipEl) {
+      tooltipEl.style.display = 'none'
+      tooltipEl.style.visibility = 'hidden'
+    }
+  }
 </script>
 
 <Navbar onAlumnoClick={() => showPerfil = true} />
@@ -191,7 +235,16 @@
                 </div>
               </div>
               {#if r.nota_agente}
-                <div class="tarjeta-nota" title={r.nota_agente}>
+                <div
+                  class="tarjeta-nota"
+                  on:mouseenter={(e) => posicionarTooltip(e.currentTarget)}
+                  on:mouseleave={(e) => ocultarTooltip(e.currentTarget)}
+                  on:focus={(e) => posicionarTooltip(e.currentTarget)}
+                  on:blur={(e) => ocultarTooltip(e.currentTarget)}
+                  tabindex="0"
+                  role="tooltip"
+                  aria-label={r.nota_agente}
+                >
                   <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
                   </svg>
@@ -415,7 +468,7 @@
   .nota-rechazo-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--error); margin-bottom: 6px; }
   .nota-rechazo-texto { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
 
-  /* Nota: ícono de mensaje + tooltip */
+  /* Nota: ícono de mensaje + tooltip con posicionamiento smart (js) */
   .tarjeta-nota {
     position: relative;
     display: flex;
@@ -435,35 +488,24 @@
   }
   .nota-tooltip {
     display: none;
-    position: absolute;
-    bottom: calc(100% + 8px);
-    left: 50%;
-    transform: translateX(-50%);
+    visibility: hidden;
+    position: fixed;
     background: var(--text-primary);
     color: #fff;
     font-size: 12px;
     font-weight: 500;
     padding: 8px 14px;
     border-radius: 8px;
-    max-width: 280px;
+    max-width: 240px;
     white-space: normal;
     word-break: break-word;
     line-height: 1.5;
     z-index: 50;
     box-shadow: 0 8px 24px rgba(0,0,0,0.18);
     pointer-events: none;
-  }
-  .nota-tooltip::after {
-    content: '';
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    border: 6px solid transparent;
-    border-top-color: var(--text-primary);
-  }
-  .tarjeta-nota:hover .nota-tooltip {
-    display: block;
+    text-align: left;
+    direction: ltr;
+    writing-mode: horizontal-tb;
   }
 
   @media (max-width: 768px) {
@@ -471,14 +513,7 @@
     .plantillas-grid { grid-template-columns: 1fr; }
     .form-grid { grid-template-columns: 1fr; }
     .nota-tooltip {
-      left: auto;
-      right: 0;
-      transform: none;
-    }
-    .nota-tooltip::after {
-      left: auto;
-      right: 12px;
-      transform: none;
+      max-width: 220px;
     }
   }
 </style>
