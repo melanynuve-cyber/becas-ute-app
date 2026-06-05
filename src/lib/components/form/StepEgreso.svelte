@@ -19,7 +19,7 @@
   <div class="tabla-info">
     <TableInputRow 
       label="A. Estimado en gastos de alimentación" 
-      type="number" min="0" placeholder="$0" integerOnly bind:value={egreso.gastos_alimentacion} />
+      type="number" min="0" placeholder="$0.00" integerOnly bind:value={egreso.gastos_alimentacion} />
       
     <TableInputRow 
       label="B. Estimado en gastos de educación" 
