@@ -89,6 +89,7 @@
       <option value="En_revision">En revisión</option>
       <option value="Aprobada">Aprobada</option>
       <option value="Rechazada">Rechazada</option>
+      <option value="No entregado">No entregado</option>
     </select>
   {/if}
 

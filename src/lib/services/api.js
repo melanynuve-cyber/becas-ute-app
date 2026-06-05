@@ -64,7 +64,12 @@ export const api = {
     detalle: (id) => request('GET', `/admin/solicitudes/${id}`),
     cambiarEstado: (id, estado) => request('PATCH', `/admin/solicitudes/${id}/estado`, { estado }),
     listarGrupos: (carrera) => request('GET', `/dual/carrera/grupos${carrera ? `?carrera=${encodeURIComponent(carrera)}` : ''}`),
-    documentUrl: (id, tipo) => `${BASE_URL}/admin/solicitudes/${id}/documento/${tipo}`
+    documentUrl: (id, tipo) => `${BASE_URL}/admin/solicitudes/${id}/documento/${tipo}`,
+
+    // Convocatorias de becas
+    convocatoriaActiva: () => request('GET', '/admin/becas/convocatoria/activa'),
+    crearConvocatoria: (body) => request('POST', '/admin/becas/convocatoria', body),
+    cerrarConvocatoria: (id) => request('PATCH', `/admin/becas/convocatoria/${id}/cerrar`)
   },
 
   dual: {
@@ -81,6 +86,11 @@ export const api = {
     asignarEmpresa: (body) => request('POST', '/dual/coordinador/asignaciones', body),
     buscarAlumno: (matricula) => request('GET', `/dual/coordinador/alumnos/${matricula}`),
     actualizarAlumnoDual: (matricula, body) => request('PATCH', `/dual/coordinador/alumnos/${matricula}`, body),
+    cerrarCuatrimestre: (periodo_label) => request('POST', '/dual/coordinador/cierre', { periodo_label }),
+    abrirCuatrimestre: (body) => request('POST', '/dual/coordinador/abrir-cuatrimestre', body),
+    cuatrimestreActual: () => request('GET', '/dual/coordinador/cuatrimestre-actual'),
+    alumnosSinReporte: (cuatrimestre, semana) => request('GET', `/dual/coordinador/alumnos-sin-reporte?cuatrimestre=${cuatrimestre}&semana=${semana}`),
+    alumnosAtrasados: () => request('GET', '/dual/coordinador/alumnos-atrasados'),
 
     // Operaciones del coordinador de carrera académica
     listarAlumnos: (params) => request('GET', `/dual/carrera/alumnos${params ? `?${params}` : ''}`),
@@ -110,6 +120,28 @@ export const api = {
     subirAlumnosCSV: (grupoId, fd) => request('POST', `/dual/carrera/grupos/${grupoId}/alumnos`, fd, true),
     agregarAlumno: (grupoId, body) => request('POST', `/dual/carrera/grupos/${grupoId}/alumnos/individual`, body),
     actualizarAlumno: (matricula, body) => request('PATCH', `/dual/carrera/alumnos/${matricula}`, body),
-    desvincularAlumno: (matricula) => request('DELETE', `/dual/carrera/alumnos/${matricula}`)
+    eliminarAlumno: (matricula) => request('DELETE', `/dual/carrera/alumnos/${matricula}`),
+
+    // Exportaciones
+    exportarZip: async (matricula, cuatrimestre) => {
+      const jwt = get(token)
+      const res = await fetch(`${BASE_URL}/dual/carrera/alumnos/${matricula}/exportar-zip${cuatrimestre ? `?cuatrimestre=${cuatrimestre}` : ''}`, {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${jwt}` }
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data?.detail || 'Error al descargar el ZIP')
+      }
+      const blob = await res.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `expediente_${matricula}.zip`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(url)
+    }
   }
 }

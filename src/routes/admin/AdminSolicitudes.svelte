@@ -3,7 +3,7 @@
   import { onMount } from 'svelte'
   import { navigate } from 'svelte-routing'
   import { get } from 'svelte/store'
-  import { isAuthenticated, isAdmin } from '../../lib/stores/auth.js'
+  import { isAuthenticated, isCoordinadorBecas } from '../../lib/stores/auth.js'
   import { api } from '../../lib/services/api.js'
   import Navbar from '../../lib/components/layout/Navbar.svelte'
   import FiltrosBarra from '../../lib/components/shared/FiltrosBarra.svelte'
@@ -46,7 +46,7 @@
   })
 
   onMount(async () => {
-    if (!get(isAuthenticated) || !get(isAdmin)) {
+    if (!get(isAuthenticated) || !get(isCoordinadorBecas)) {
       navigate('/login', { replace: true })
       return
     }

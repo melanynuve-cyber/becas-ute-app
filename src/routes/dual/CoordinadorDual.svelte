@@ -11,21 +11,26 @@
   import LoadingSpinner from '../../lib/components/ui/LoadingSpinner.svelte'
   import EmptyState from '../../lib/components/ui/EmptyState.svelte'
   import { formatFecha, estadoBadgeClass } from '../../lib/utils.js'
+  import VisorPDF from '../../lib/components/shared/VisorPDF.svelte'
 
   const location = useLocation()
 
   let vista = 'bandeja'
 
   $: {
-    const queryVista = new URLSearchParams($location.search).get('vista') === 'empresas' 
-      ? 'empresas' 
-      : 'bandeja'
-      
+    const params = new URLSearchParams($location.search)
+    const queryVista = params.get('vista')
     if (queryVista === 'empresas' && vista !== 'empresas') {
       vista = 'empresas'
       cargarEmpresas()
-    } else if (queryVista === 'bandeja' && vista === 'empresas') {
+    } else if (queryVista === 'expediente' && vista !== 'expediente') {
+      vista = 'expediente'
+      cargarDirectorioExp()
+    } else if (!queryVista && vista !== 'bandeja' && vista !== 'revision') {
       vista = 'bandeja'
+      alumnoExpSeleccionado = null
+      pdfExpSeleccionado = null
+      reportesExp = []
       cargarReportes()
     }
   }
@@ -43,22 +48,22 @@
 
   $: reportesFiltrados = reportes.filter(r => {
     const matchBusqueda = filtroBusqueda.trim()
-      ? r.matricula.toLowerCase().includes(filtroBusqueda.toLowerCase()) || 
+      ? r.matricula.toLowerCase().includes(filtroBusqueda.toLowerCase()) ||
         (r.nombre && r.nombre.toLowerCase().includes(filtroBusqueda.toLowerCase()))
       : true
-      
-    const matchCarrera = filtroCarrera 
-      ? (r.carrera && r.carrera.toLowerCase() === filtroCarrera.toLowerCase()) 
+
+    const matchCarrera = filtroCarrera && r.carrera
+      ? (r.carrera.toLowerCase() === filtroCarrera.toLowerCase())
       : true
-      
-    const matchGrupo = filtroGrupo 
-      ? (r.nomenclatura && r.nomenclatura.toLowerCase() === filtroGrupo.toLowerCase()) 
+
+    const matchGrupo = filtroGrupo && r.nomenclatura
+      ? (r.nomenclatura.toLowerCase() === filtroGrupo.toLowerCase())
       : true
-      
-    const matchEstado = filtroEstado 
-      ? r.estado === filtroEstado 
+
+    const matchEstado = !modoNoEntregado && filtroEstado
+      ? r.estado === filtroEstado
       : true
-      
+
     return matchBusqueda && matchCarrera && matchGrupo && matchEstado
   })
 
@@ -84,34 +89,93 @@
   let exitoAsignacion = ''
   let guardandoAsignacion = false
 
+  // Cerrar cuatrimestre
+  const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
+  const ANIOS = Array.from({length: 5}, (_, i) => new Date().getFullYear() - 1 + i)
+  let showModalCierre = false
+  let mesInicioCierre = ''
+  let mesFinCierre = ''
+  let anioCierre = new Date().getFullYear()
+  let cerrandoCuatrimestre = false
+  let errorCierre = ''
+  let exitoCierre = ''
+
+  // Abrir cuatrimestre
+  let showModalApertura = false
+  let mesInicioApertura = ''
+  let mesFinApertura = ''
+  let anioApertura = new Date().getFullYear()
+  let fechaInicioApertura = ''
+  let fechaFinApertura = ''
+  let abriendoCuatrimestre = false
+  let errorApertura = ''
+  let exitoApertura = ''
+
+  // Estado del cuatrimestre actual
+  let cuatrimestreActual = null
+  let loadingCuatrimestre = false
+
+  // Expediente / directorio
+  let alumnosExpediente = []
+  let loadingAlumnos = false
+  let filtroCuatrimestreExp = ''
+  let filtroBusquedaExp = ''
+  let alumnoExpSeleccionado = null
+  let reportesExp = []
+  let loadingReportesExp = false
+  let pdfExpSeleccionado = null
+
   onMount(() => {
     if (!get(isAuthenticated) || !get(isCoordinadorDual)) {
       navigate('/login', { replace: true })
       return
     }
-    
-    const initialVista = new URLSearchParams(window.location.search).get('vista') === 'empresas' 
-      ? 'empresas' 
-      : 'bandeja'
-      
+
+    const queryVista = new URLSearchParams(window.location.search).get('vista')
+    let initialVista = 'bandeja'
+    if (queryVista === 'empresas') initialVista = 'empresas'
+    else if (queryVista === 'expediente') initialVista = 'expediente'
+
     vista = initialVista
 
     if (vista === 'empresas') {
       cargarEmpresas()
+    } else if (vista === 'expediente') {
+      cargarDirectorioExp()
     } else {
       cargarReportes()
+      cargarEstadoCuatrimestre()
     }
   })
+
+  async function cargarEstadoCuatrimestre() {
+    loadingCuatrimestre = true
+    try {
+      cuatrimestreActual = await api.dual.cuatrimestreActual()
+    } catch {
+      cuatrimestreActual = null
+    } finally {
+      loadingCuatrimestre = false
+    }
+  }
+
+  let modoNoEntregado = false
 
   async function cargarReportes() {
     loading = true
     error = ''
     try {
-      const params = new URLSearchParams()
-      if (filtroEstado) {
-        params.append('estado', filtroEstado)
+      if (filtroEstado === 'No entregado') {
+        modoNoEntregado = true
+        reportes = await api.dual.alumnosAtrasados()
+      } else {
+        modoNoEntregado = false
+        const params = new URLSearchParams()
+        if (filtroEstado) {
+          params.append('estado', filtroEstado)
+        }
+        reportes = await api.dual.listarReportes(params.toString())
       }
-      reportes = await api.dual.listarReportes(params.toString())
     } catch (e) {
       error = e.message || 'Error al cargar reportes.'
     } finally {
@@ -279,8 +343,135 @@
     }
   }
 
+  async function abrirCierre() {
+    showModalCierre = true
+    errorCierre = ''
+    exitoCierre = ''
+    mesInicioCierre = ''
+    mesFinCierre = ''
+    anioCierre = new Date().getFullYear()
+  }
+
+  async function confirmarCierre() {
+    if (!mesInicioCierre || !mesFinCierre || !anioCierre) {
+      errorCierre = 'Selecciona mes de inicio, mes de fin y año.'
+      return
+    }
+    const periodo = `${mesInicioCierre}–${mesFinCierre} ${anioCierre}`
+    cerrandoCuatrimestre = true
+    errorCierre = ''
+    exitoCierre = ''
+    try {
+      await api.dual.cerrarCuatrimestre(periodo)
+      exitoCierre = `Periodo "${periodo}" cerrado correctamente.`
+      await cargarEstadoCuatrimestre()
+      await cargarReportes()
+    } catch (e) {
+      errorCierre = e.message || 'Error al cerrar cuatrimestre.'
+    } finally {
+      cerrandoCuatrimestre = false
+    }
+  }
+
+  function abrirApertura() {
+    showModalApertura = true
+    errorApertura = ''
+    exitoApertura = ''
+    mesInicioApertura = ''
+    mesFinApertura = ''
+    anioApertura = new Date().getFullYear()
+    fechaInicioApertura = ''
+    fechaFinApertura = ''
+  }
+
+  async function confirmarApertura() {
+    if (!mesInicioApertura || !mesFinApertura || !anioApertura) {
+      errorApertura = 'Selecciona mes de inicio, mes de fin y año.'
+      return
+    }
+    if (!fechaInicioApertura || !fechaFinApertura) {
+      errorApertura = 'Selecciona las fechas de inicio y fin del cuatrimestre.'
+      return
+    }
+    const periodo = `${mesInicioApertura}–${mesFinApertura} ${anioApertura}`
+    abriendoCuatrimestre = true
+    errorApertura = ''
+    exitoApertura = ''
+    try {
+      await api.dual.abrirCuatrimestre({
+        periodo_label: periodo,
+        fecha_inicio: fechaInicioApertura,
+        fecha_fin: fechaFinApertura
+      })
+      exitoApertura = `Cuatrimestre "${periodo}" abierto correctamente.`
+      await cargarEstadoCuatrimestre()
+      await cargarReportes()
+    } catch (e) {
+      errorApertura = e.message || 'Error al abrir cuatrimestre.'
+    } finally {
+      abriendoCuatrimestre = false
+    }
+  }
+
+  async function cargarDirectorioExp() {
+    if (vista !== 'expediente') {
+      vista = 'expediente'
+      navigate('/dual/coordinador?vista=expediente', { replace: true })
+    }
+    alumnoExpSeleccionado = null
+    pdfExpSeleccionado = null
+    reportesExp = []
+    loadingAlumnos = true
+    try {
+      const params = new URLSearchParams()
+      if (filtroCuatrimestreExp) params.append('cuatrimestre', filtroCuatrimestreExp)
+      alumnosExpediente = await api.dual.listarAlumnos(params.toString())
+    } catch (e) {
+      alumnosExpediente = []
+    } finally {
+      loadingAlumnos = false
+    }
+  }
+
+  function volverDirectorio() {
+    alumnoExpSeleccionado = null
+    pdfExpSeleccionado = null
+    reportesExp = []
+    errorExp = ''
+  }
+
+  $: alumnosExpFiltrados = alumnosExpediente.filter(a => {
+    const b = filtroBusquedaExp.toLowerCase()
+    return !b || a.matricula.toLowerCase().includes(b) || a.nombre.toLowerCase().includes(b)
+  })
+
+  async function abrirExpAlumno(alumno) {
+    alumnoExpSeleccionado = alumno
+    pdfExpSeleccionado = null
+    reportesExp = []
+    loadingReportesExp = true
+    try {
+      reportesExp = await api.dual.expediente(alumno.matricula, filtroCuatrimestreExp || null)
+    } catch {
+      reportesExp = []
+    } finally {
+      loadingReportesExp = false
+    }
+  }
+
+  let errorExp = ''
+
+  $: promedioExp = reportesExp.length
+    ? (reportesExp.reduce((s, r) => s + Number(r.calificacion_alumno), 0) / reportesExp.length).toFixed(2)
+    : null
+
+  async function descargarCSVExp(matricula) {
+    await api.dual.exportarCSV(matricula, filtroCuatrimestreExp || undefined)
+  }
+
   $: carreraCompletaRevision = seleccionado ? seleccionado.carrera : '—'
   $: carreraCompletaPreview = alumnoPreview ? alumnoPreview.carrera : '—'
+  $: carreraExpSel = alumnoExpSeleccionado ? alumnoExpSeleccionado.carrera : '—'
 </script>
 
 <Navbar />
@@ -317,40 +508,97 @@
         <div class="table-wrap">
           <table class="reporte-table">
             <thead>
-              <tr>
-                <th>Matrícula</th>
-                <th>Nombre</th>
-                <th class="td-center">Calificación</th>
-                <th>Estado</th>
-                <th>Entregado</th>
-                <th></th>
-              </tr>
+              {#if modoNoEntregado}
+                <tr>
+                  <th>Matrícula</th>
+                  <th>Nombre</th>
+                  <th>Grupo</th>
+                  <th>Empresa</th>
+                  <th class="td-center">Semana</th>
+                  <th class="td-center">Estado</th>
+                </tr>
+              {:else}
+                <tr>
+                  <th>Matrícula</th>
+                  <th>Nombre</th>
+                  <th class="td-center">Calificación</th>
+                  <th>Estado</th>
+                  <th>Entregado</th>
+                  <th></th>
+                </tr>
+              {/if}
             </thead>
             <tbody>
-              {#each reportesFiltrados as r}
-                <tr class:row-pendiente={r.estado === 'Pendiente'}>
-                  <td class="td-matricula">{r.matricula}</td>
-                  <td class="td-nombre">{r.nombre || '—'}</td>
-                  <td class="td-cal">{r.calificacion_alumno}</td>
-                  <td>
-                    <span class={estadoBadgeClass(r.estado)}>
-                      {r.estado}
-                    </span>
-                  </td>
-                  <td class="td-fecha">{formatFecha(r.created_at)}</td>
-                  <td style="text-align: right;">
-                    <button class="btn-revisar" on:click={() => abrirRevision(r)}>
-                      {r.estado === 'Pendiente' ? 'Revisar' : 'Ver'}
-                    </button>
-                  </td>
-                </tr>
-              {/each}
+              {#if modoNoEntregado}
+                {#each reportesFiltrados as r}
+                  <tr>
+                    <td class="td-matricula">{r.matricula}</td>
+                    <td class="td-nombre">{r.nombre || '—'}</td>
+                    <td style="font-family: monospace;">{r.nomenclatura || '—'}</td>
+                    <td>{r.empresa || '—'}</td>
+                    <td class="td-center" style="font-weight: 700; color: var(--text-primary);">
+                      Semana {r.semana_esperada}
+                    </td>
+                    <td class="td-center">
+                      {#if r.status === 'Overdue'}
+                        <span class="badge-overdue">Overdue</span>
+                      {:else}
+                        <span class="badge-pending-filter">Pending</span>
+                      {/if}
+                    </td>
+                  </tr>
+                {/each}
+              {:else}
+                {#each reportesFiltrados as r}
+                  <tr class:row-pendiente={r.estado === 'Pendiente'}>
+                    <td class="td-matricula">{r.matricula}</td>
+                    <td class="td-nombre">{r.nombre || '—'}</td>
+                    <td class="td-cal">{r.calificacion_alumno}</td>
+                    <td>
+                      <span class={estadoBadgeClass(r.estado)}>
+                        {r.estado}
+                      </span>
+                    </td>
+                    <td class="td-fecha">{formatFecha(r.created_at)}</td>
+                    <td style="text-align: right;">
+                      <button class="btn-revisar" on:click={() => abrirRevision(r)}>
+                        {r.estado === 'Pendiente' ? 'Revisar' : 'Ver'}
+                      </button>
+                    </td>
+                  </tr>
+                {/each}
+              {/if}
             </tbody>
           </table>
         </div>
         <p class="count-label">
-          {reportesFiltrados.length} reporte{reportesFiltrados.length !== 1 ? 's' : ''}
+          {reportesFiltrados.length} {modoNoEntregado ? 'alumno' : 'reporte'}{reportesFiltrados.length !== 1 ? 's' : ''}
+          {modoNoEntregado ? ' pendiente' : ''}{reportesFiltrados.length !== 1 && modoNoEntregado ? 's' : ''}
         </p>
+
+        <div class="bandeja-acciones">
+          {#if cuatrimestreActual?.abierto}
+            <div class="quarter-badge quarter-abierto">
+              <span class="quarter-dot"></span>
+              {cuatrimestreActual.periodo_label || 'Cuatrimestre activo'}
+            </div>
+            <button class="btn-cierre" on:click={abrirCierre}>
+              Cerrar Cuatrimestre
+            </button>
+          {:else if cuatrimestreActual?.cerrado}
+            <div class="quarter-badge quarter-cerrado">
+              <span class="quarter-dot"></span>
+              CERRADO — {cuatrimestreActual.periodo_label || 'Sin etiqueta'}
+            </div>
+            <button class="btn-apertura" on:click={abrirApertura}>
+              Abrir Nuevo Cuatrimestre
+            </button>
+          {:else}
+            <button class="btn-apertura" on:click={abrirApertura}>
+              Abrir Primer Cuatrimestre
+            </button>
+          {/if}
+        </div>
       {/if}
     </div>
 
@@ -667,6 +915,244 @@
         </div>
       {/if}
     </div>
+
+  {:else if vista === 'expediente'}
+    {#if !alumnoExpSeleccionado}
+    <div class="page-wrap">
+      <PageHeader
+        title="Directorio de Alumnos"
+        subtitle="Consulta y revisa expedientes de estudiantes DUAL"
+      />
+
+      <div class="reportes-card" style="padding: 16px;">
+        <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+          <input class="input-plain" placeholder="Cuatrimestre" bind:value={filtroCuatrimestreExp} style="flex: 1" />
+          <input class="input-plain" placeholder="Buscar matrícula o nombre" bind:value={filtroBusquedaExp} style="flex: 1" />
+          <button class="btn-primary" style="width: auto; padding: 0 16px;" on:click={cargarDirectorioExp}>Buscar</button>
+        </div>
+        {#if loadingAlumnos}
+          <LoadingSpinner />
+        {:else if alumnosExpFiltrados.length === 0}
+          <EmptyState message="No se encontraron alumnos." />
+        {:else}
+          <div class="table-wrap" style="max-height: calc(100vh - 400px); overflow-y: auto;">
+            <table class="reporte-table">
+              <thead><tr><th>Matrícula</th><th>Nombre</th><th></th></tr></thead>
+              <tbody>
+                {#each alumnosExpFiltrados as a}
+                  <tr>
+                    <td class="td-matricula">{a.matricula}</td>
+                    <td class="td-nombre">{a.nombre}</td>
+                    <td style="text-align: right;">
+                      <button class="btn-revisar" on:click={() => abrirExpAlumno(a)}>Ver</button>
+                    </td>
+                  </tr>
+                {/each}
+              </tbody>
+            </table>
+          </div>
+          <p class="count-label">{alumnosExpFiltrados.length} alumno{alumnosExpFiltrados.length !== 1 ? 's' : ''}</p>
+        {/if}
+      </div>
+    </div>
+    {:else}
+    <!-- EXPEDIENTE: layout idéntico a CoordinadorCarrera -->
+    <div class="page-wrap expediente-page">
+      <div class="expediente-topbar">
+        <button class="btn-back" on:click={volverDirectorio}>
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" style="display:inline; margin-right:4px; vertical-align:text-bottom;">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 L3 12 m0 0 l7.5-7.5 M3 12 h18" />
+          </svg>
+          Volver al directorio
+        </button>
+      </div>
+
+      <div class="expediente-layout">
+        <div class="ficha-card">
+          <p class="ficha-titulo">Datos del alumno</p>
+          <div class="ficha-divider"></div>
+          <div class="ficha-grid">
+            <span class="ficha-key">Nombre</span>
+            <span class="ficha-val">{alumnoExpSeleccionado.nombre}</span>
+            <span class="ficha-key">Matrícula</span>
+            <span class="ficha-val ficha-mono">{alumnoExpSeleccionado.matricula}</span>
+            <span class="ficha-key">Carrera</span>
+            <span class="ficha-val">{carreraExpSel}</span>
+            <span class="ficha-key">Grupo</span>
+            <span class="ficha-val ficha-mono">{alumnoExpSeleccionado.nomenclatura || '—'}</span>
+            <span class="ficha-key">Empresa</span>
+            <span class="ficha-val bold-primary">{alumnoExpSeleccionado.empresa || 'Sin asignar'}</span>
+            <span class="ficha-key">Turno</span>
+            <span class="ficha-val">{alumnoExpSeleccionado.turno || '—'}</span>
+          </div>
+
+          {#if promedioExp}
+            <div class="promedio-box">
+              <p class="promedio-label">Promedio General</p>
+              <p class="promedio-valor">{promedioExp}</p>
+            </div>
+          {/if}
+
+          <div class="ficha-acciones">
+            <button class="btn-primary" on:click={() => descargarCSVExp(alumnoExpSeleccionado.matricula)}>Exportar CSV</button>
+            <button
+              class="btn-outline"
+              on:click={() => api.dual.exportarZip(alumnoExpSeleccionado.matricula, filtroCuatrimestreExp || undefined)
+                .catch(e => errorExp = e.message)}
+            >
+              Descargar todos los PDFs (ZIP)
+            </button>
+          </div>
+        </div>
+
+        <div class="expediente-der">
+          <div class="reportes-card" style="flex: 1; display: flex; flex-direction: column;">
+            <h2 class="card-title">Reportes Aprobados</h2>
+
+            {#if loadingReportesExp}
+              <LoadingSpinner />
+            {:else if errorExp}
+              <p class="error-msg">{errorExp}</p>
+            {:else if reportesExp.length === 0}
+              <EmptyState message="Este alumno no tiene reportes aprobados aún." />
+            {:else}
+              <div class="expediente-split">
+                <div class="expediente-tabla-col">
+                  <div class="table-wrap">
+                    <table class="reporte-table">
+                      <thead>
+                        <tr>
+                          <th>Semana</th>
+                          <th class="td-center">Calif.</th>
+                          <th></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {#each reportesExp as r}
+                          <tr
+                            class:row-selected={pdfExpSeleccionado?.id === r.id}
+                            on:click={() => pdfExpSeleccionado = r}
+                            style="cursor: pointer;"
+                          >
+                            <td><span class="sem-txt">Semana {r.semana}</span></td>
+                            <td class="td-cal">{r.calificacion_alumno}</td>
+                            <td style="text-align: right;">
+                              <span class="chip-reportes">Ver</span>
+                            </td>
+                          </tr>
+                        {/each}
+                      </tbody>
+                    </table>
+                  </div>
+                  <p class="count-label">
+                    {reportesExp.length} reporte{reportesExp.length !== 1 ? 's' : ''}
+                  </p>
+                </div>
+                <div class="expediente-pdf-col">
+                  <VisorPDF
+                    url={pdfExpSeleccionado?.archivo_pdf_url || ''}
+                    titulo={pdfExpSeleccionado ? `Semana ${pdfExpSeleccionado.semana}` : 'Selecciona un reporte'}
+                  />
+                </div>
+              </div>
+            {/if}
+          </div>
+        </div>
+      </div>
+    </div>
+    {/if}
+  {/if}
+
+  {#if showModalCierre}
+    <div class="modal-overlay" on:click={() => showModalCierre = false}>
+      <div class="modal-box" on:click|stopPropagation>
+        <p class="modal-titulo">Cerrar Cuatrimestre</p>
+        <p class="modal-cuerpo">
+          Esta acción congela el ciclo actual. Los alumnos ya no podrán subir nuevos reportes para este periodo.
+        </p>
+        <div class="cierre-selects">
+          <select class="input-plain" bind:value={mesInicioCierre}>
+            <option value="">Mes inicio</option>
+            {#each MESES as mes}
+              <option value={mes}>{mes}</option>
+            {/each}
+          </select>
+          <select class="input-plain" bind:value={mesFinCierre}>
+            <option value="">Mes fin</option>
+            {#each MESES as mes}
+              <option value={mes}>{mes}</option>
+            {/each}
+          </select>
+          <select class="input-plain" bind:value={anioCierre}>
+            <option value="">Año</option>
+            {#each ANIOS as anio}
+              <option value={anio}>{anio}</option>
+            {/each}
+          </select>
+        </div>
+        {#if errorCierre}<p class="error-msg">{errorCierre}</p>{/if}
+        {#if exitoCierre}<p class="exito-msg" style="margin-top: 8px;">{exitoCierre}</p>{/if}
+        <div class="modal-acciones">
+          <button class="btn-cierre" style="flex:1" on:click={confirmarCierre} disabled={cerrandoCuatrimestre || exitoCierre}>
+            {cerrandoCuatrimestre ? 'Cerrando...' : 'Confirmar cierre'}
+          </button>
+          <button class="btn-outline" style="flex:1" on:click={() => showModalCierre = false}>
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </div>
+  {/if}
+
+  {#if showModalApertura}
+    <div class="modal-overlay" on:click={() => showModalApertura = false}>
+      <div class="modal-box" on:click|stopPropagation>
+        <p class="modal-titulo">Abrir Nuevo Cuatrimestre</p>
+        <p class="modal-cuerpo">
+          Define el periodo y las fechas para el siguiente ciclo dual. Solo puede haber un cuatrimestre activo a la vez.
+        </p>
+        <div class="cierre-selects">
+          <select class="input-plain" bind:value={mesInicioApertura}>
+            <option value="">Mes inicio</option>
+            {#each MESES as mes}
+              <option value={mes}>{mes}</option>
+            {/each}
+          </select>
+          <select class="input-plain" bind:value={mesFinApertura}>
+            <option value="">Mes fin</option>
+            {#each MESES as mes}
+              <option value={mes}>{mes}</option>
+            {/each}
+          </select>
+          <select class="input-plain" bind:value={anioApertura}>
+            <option value="">Año</option>
+            {#each ANIOS as anio}
+              <option value={anio}>{anio}</option>
+            {/each}
+          </select>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+          <div class="field">
+            <label style="font-size:12px; font-weight:600; color:var(--text-secondary);">Fecha inicio</label>
+            <input type="date" class="input-plain" bind:value={fechaInicioApertura} />
+          </div>
+          <div class="field">
+            <label style="font-size:12px; font-weight:600; color:var(--text-secondary);">Fecha fin</label>
+            <input type="date" class="input-plain" bind:value={fechaFinApertura} />
+          </div>
+        </div>
+        {#if errorApertura}<p class="error-msg">{errorApertura}</p>{/if}
+        {#if exitoApertura}<p class="exito-msg" style="margin-top: 8px;">{exitoApertura}</p>{/if}
+        <div class="modal-acciones">
+          <button class="btn-apertura" style="flex:1" on:click={confirmarApertura} disabled={abriendoCuatrimestre || exitoApertura}>
+            {abriendoCuatrimestre ? 'Abriendo...' : 'Abrir cuatrimestre'}
+          </button>
+          <button class="btn-outline" style="flex:1" on:click={() => showModalApertura = false}>
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </div>
   {/if}
 </div>
 
@@ -756,9 +1242,113 @@
   .empresa-nombre { font-size: 14px; font-weight: 600; color: var(--text-primary); }
   .empty-msg { font-size: 13px; color: var(--text-disabled); font-style: italic; margin: 0; }
 
+  .bandeja-acciones { display: flex; gap: 12px; margin-top: 16px; align-items: center; flex-wrap: wrap; }
+
+  /* Quarter status badge */
+  .quarter-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    font-family: var(--font);
+  }
+  .quarter-abierto {
+    background: rgba(34, 197, 94, 0.08);
+    color: var(--success);
+    border: 1px solid rgba(34, 197, 94, 0.2);
+  }
+  .quarter-cerrado {
+    background: rgba(239, 68, 68, 0.08);
+    color: var(--error);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+  }
+  .quarter-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .btn-cierre { background: var(--error); color: white; border: none; border-radius: 8px; padding: 12px 20px; font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.15s; font-family: var(--font); }
+  .btn-cierre:hover { background: #dc2626; }
+  .btn-cierre:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .btn-apertura { background: var(--success); color: white; border: none; border-radius: 8px; padding: 12px 20px; font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.15s; font-family: var(--font); }
+  .btn-apertura:hover { background: #16a34a; }
+  .btn-apertura:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Not-submitted status badges */
+  .badge-overdue {
+    display: inline-block;
+    background: rgba(239, 68, 68, 0.08);
+    color: var(--error);
+    font-weight: 700;
+    font-size: 12px;
+    border-radius: 6px;
+    padding: 3px 10px;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+  }
+  .badge-pending-filter {
+    display: inline-block;
+    background: rgba(249, 115, 22, 0.08);
+    color: var(--orange);
+    font-weight: 700;
+    font-size: 12px;
+    border-radius: 6px;
+    padding: 3px 10px;
+    border: 1px solid rgba(249, 115, 22, 0.2);
+  }
+
+  .expediente-layout { display: grid; grid-template-columns: 320px 1fr; gap: 24px; align-items: start; }
+  .expediente-topbar { margin-bottom: 16px; }
+
+  .expediente-page { max-width: 1200px; }
+  .expediente-split { display: grid; grid-template-columns: 200px 1fr; gap: 0; flex: 1; min-height: 0; border: 1px solid var(--border); border-radius: var(--radius-card); overflow: hidden; }
+  .expediente-tabla-col { border-right: 1px solid var(--border); overflow-y: auto; background: var(--bg-card); }
+  .expediente-pdf-col { min-height: 400px; display: flex; }
+  .expediente-pdf-col :global(.visor-wrap) { border-radius: 0; border: none; width: 100%; }
+  .row-selected { background: var(--orange-light) !important; }
+
+  .expediente-der { flex: 1; min-width: 0; }
+
+  /* Ficha del alumno (compartido con CoordinadorCarrera) */
+  .ficha-card { background: var(--bg-card); border-radius: var(--radius-card); border: 1px solid var(--border); box-shadow: var(--shadow-card); padding: 24px; display: flex; flex-direction: column; gap: 16px; position: sticky; top: calc(56px + 24px); }
+  .ficha-titulo { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-disabled); margin: 0; }
+  .ficha-divider { height: 1px; background: var(--border); width: 100%; margin-top: -4px; }
+  .ficha-grid { display: grid; grid-template-columns: auto 1fr; gap: 10px 16px; align-items: baseline; }
+  .ficha-key { font-size: 11px; font-weight: 600; color: var(--text-disabled); text-transform: uppercase; letter-spacing: 0.02em; }
+  .ficha-val { font-size: 14px; font-weight: 500; color: var(--text-secondary); word-break: break-word; }
+  .ficha-mono { font-family: monospace; font-weight: 600; color: var(--text-primary); }
+  .bold-primary { color: var(--text-primary); font-weight: 600; }
+
+  .promedio-box { background: rgba(249, 115, 22, 0.06); border: 1px solid rgba(249, 115, 22, 0.15); border-radius: 12px; padding: 14px; text-align: center; }
+  .promedio-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--orange); margin: 0 0 4px; }
+  .promedio-valor { font-size: 32px; font-weight: 800; color: var(--orange); margin: 0; line-height: 1; letter-spacing: -0.03em; }
+
+  .ficha-acciones { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
+
+  .sem-txt { font-weight: 600; color: var(--text-primary); }
+  .chip-reportes { display: inline-block; background: rgba(249, 115, 22, 0.08); color: var(--orange); font-weight: 700; font-size: 12px; border-radius: 6px; padding: 2px 10px; border: 1px solid rgba(249, 115, 22, 0.2); }
+
+  .cierre-selects { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center; z-index: 200; }
+  .modal-box { background: var(--bg-card); border-radius: var(--radius-card); border: 1px solid var(--border); padding: 28px; max-width: 420px; width: 90%; display: flex; flex-direction: column; gap: 14px; }
+  .modal-titulo { font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 0; }
+  .modal-cuerpo { font-size: 14px; color: var(--text-secondary); margin: 0; line-height: 1.5; }
+  .modal-acciones { display: flex; gap: 10px; }
+  .exito-msg { color: var(--success); background: rgba(34, 197, 94, 0.08); border: 1px solid rgba(34, 197, 94, 0.2); border-radius: 8px; padding: 10px 14px; font-size: 13px; font-weight: 500; }
+
   @media (max-width: 768px) {
     .split-layout { grid-template-columns: 1fr; }
     .panel-pdf { height: 300px; border-right: none; border-bottom: 1px solid var(--border); }
     .empresas-layout { grid-template-columns: 1fr; }
+    .expediente-layout { grid-template-columns: 1fr; }
+    .ficha-card { position: static; }
+    .expediente-split { grid-template-columns: 1fr; }
+    .expediente-pdf-col { min-height: 300px; }
   }
 </style>

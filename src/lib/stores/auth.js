@@ -13,7 +13,8 @@ user.subscribe((val) => val ? sessionStorage.setItem('ute_user', JSON.stringify(
 
 // Estados derivados de autenticación y permisos
 export const isAuthenticated = derived(token, ($token) => Boolean($token))
-export const isAdmin = derived(user, ($user) => Boolean($user?.roles?.coordinador_becas || $user?.roles?.admin))
+export const isAdmin = derived(user, ($user) => Boolean($user?.roles?.admin))
+export const isCoordinadorBecas = derived(user, ($user) => Boolean($user?.roles?.coordinador_becas || $user?.roles?.admin))
 export const isAlumnoDual = derived(user, ($user) => Boolean($user?.dual_activo || $user?.roles?.admin))
 export const isCoordinadorDual = derived(user, ($user) => Boolean($user?.roles?.coordinador_dual || $user?.roles?.admin))
 export const isCoordinadorCarrera = derived(user, ($user) => Boolean($user?.roles?.coordinador_carrera || $user?.roles?.admin))

@@ -6,7 +6,7 @@
   import { get } from 'svelte/store'
   import {
     isAuthenticated,
-    isAdmin,
+    isCoordinadorBecas,
     isAlumnoDual,
     isCoordinadorDual,
     isCoordinadorCarrera,
@@ -21,6 +21,7 @@
   import AdminSolicitudes   from './routes/admin/AdminSolicitudes.svelte'
   import AdminDetalle       from './routes/admin/AdminDetalle.svelte'
   import GestionUsuarios    from './routes/admin/GestionUsuarios.svelte'
+  import ConvocatoriaBecas  from './routes/admin/ConvocatoriaBecas.svelte'
   import ReportesDual       from './routes/dual/ReportesDual.svelte'
   import CoordinadorDual    from './routes/dual/CoordinadorDual.svelte'
   import CoordinadorCarrera from './routes/dual/CoordinadorCarrera.svelte'
@@ -38,7 +39,7 @@
 
   // Enrutamiento basado en roles de usuario
   function redirectByRole() {
-    if (get(isAdmin)) {
+    if (get(isCoordinadorBecas)) {
       return navigate('/admin/solicitudes', { replace: true })
     }
     if (get(isCoordinadorDual)) {
@@ -67,4 +68,5 @@
   <Route path="/admin/solicitudes" component={AdminSolicitudes} />
   <Route path="/admin/solicitudes/:id" component={AdminDetalle} />
   <Route path="/admin/usuarios" component={GestionUsuarios} />
+  <Route path="/admin/convocatoria" component={ConvocatoriaBecas} />
 </Router>

@@ -1,5 +1,8 @@
 <script>
   import { onMount } from 'svelte'
+  import { navigate } from 'svelte-routing'
+  import { get } from 'svelte/store'
+  import { isAuthenticated, isAdmin } from '../../lib/stores/auth.js'
   import { api } from '../../lib/services/api.js'
   import Navbar from '../../lib/components/layout/Navbar.svelte'
   import PageHeader from '../../lib/components/ui/PageHeader.svelte'
@@ -24,6 +27,10 @@
   ]
 
   onMount(async () => {
+    if (!get(isAuthenticated) || !get(isAdmin)) {
+      navigate('/dashboard', { replace: true })
+      return
+    }
     await cargarPersonal()
   })
 

@@ -3,10 +3,11 @@
   import { onMount } from 'svelte'
   import { navigate } from 'svelte-routing'
   import { get } from 'svelte/store'
-  import { isAuthenticated, isAdmin, token } from '../../lib/stores/auth.js'
+  import { isAuthenticated, isCoordinadorBecas, token } from '../../lib/stores/auth.js'
   import { api } from '../../lib/services/api.js'
   import { tiposBeca, nombresDocumentos } from '../../lib/utils/constants.js'
   import Navbar from '../../lib/components/layout/Navbar.svelte'
+  import VisorPDF from '../../lib/components/shared/VisorPDF.svelte'
   import PreviewField from '../../lib/components/ui/PreviewField.svelte'
   import { estadoBadgeClass, estadoLabel } from '../../lib/utils.js'
 
@@ -18,6 +19,7 @@
   let error = ''
   let exito = ''
   let nuevoEstado = ''
+  let pdfActivo = null
 
   const estadoOpciones = [
     'Pendiente', 
@@ -27,7 +29,7 @@
   ]
 
   onMount(async () => {
-    if (!get(isAuthenticated) || !get(isAdmin)) {
+    if (!get(isAuthenticated) || !get(isCoordinadorBecas)) {
       navigate('/login', { replace: true })
       return
     }
@@ -56,26 +58,12 @@
     }
   }
 
-  async function abrirDoc(tipo) {
-    error = ''
-    try {
-      const jwt = get(token)
-      const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
-      const endpoint = `${BASE_URL}/admin/solicitudes/${id}/documento/${tipo}`
-      
-      const res = await fetch(endpoint, {
-        headers: { Authorization: `Bearer ${jwt}` }
-      })
-      
-      if (!res.ok) {
-        throw new Error('No se pudo cargar el documento')
-      }
-      
-      const blob = await res.blob()
-      const blobUrl = URL.createObjectURL(blob)
-      window.open(blobUrl, '_blank')
-    } catch (e) {
-      error = e.message
+  function verDocumento(key, nombre) {
+    const jwt = get(token)
+    const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+    pdfActivo = {
+      url: `${BASE_URL}/admin/solicitudes/${id}/documento/${key}?token=${jwt}`,
+      titulo: nombre
     }
   }
 
@@ -202,18 +190,28 @@
                 <span class="doc-badge-pendiente">Pendiente alumno</span>
               </div>
             {:else}
-              <button class="doc-btn" on:click={() => abrirDoc(key)}>
+              <button class="doc-btn" class:doc-activo={pdfActivo?.key === key} on:click={() => verDocumento(key, nombre)}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="2">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                   <polyline points="14 2 14 8 20 8"/>
                 </svg>
                 <span>{nombre}</span>
-                <span class="doc-ver">Ver PDF ↗</span>
+                <span class="doc-ver">Ver PDF</span>
               </button>
             {/if}
           {/each}
         </div>
       </div>
+
+      {#if pdfActivo}
+        <div class="card" style="padding: 0; overflow: hidden;">
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; background: var(--bg-page); border-bottom: 1px solid var(--border);">
+            <span style="font-size: 13px; font-weight: 700; color: var(--text-primary);">{pdfActivo.titulo}</span>
+            <button class="btn-back" on:click={() => pdfActivo = null} style="font-size: 12px;">Cerrar visor</button>
+          </div>
+          <VisorPDF url={pdfActivo.url} titulo={pdfActivo.titulo} />
+        </div>
+      {/if}
 
     {/if}
   </div>
@@ -397,10 +395,14 @@
     text-align: left;
   }
 
-  .doc-btn:hover { 
-    border-color: var(--orange); 
+  .doc-btn:hover {
+    border-color: var(--orange);
     color: var(--orange);
     background: var(--bg-card);
+  }
+  .doc-activo {
+    border-color: var(--orange);
+    background: var(--orange-light);
   }
 
   .doc-ver { 

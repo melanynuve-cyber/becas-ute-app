@@ -191,16 +191,32 @@
                 </div>
               </div>
               {#if r.nota_agente}
-                <div class="tarjeta-feedback">
-                  <span class="nota-truncada"><strong>Nota:</strong> {r.nota_agente}</span>
-                  <div class="tooltip-box">{r.nota_agente}</div>
+                <div class="tarjeta-nota" title={r.nota_agente}>
+                  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+                  </svg>
+                  <div class="nota-tooltip">{r.nota_agente}</div>
                 </div>
               {/if}
               <span class={estadoBadgeClass(r.estado)}>{r.estado}</span>
             </div>
           {/each}
 
-          {#if infoSemana && !infoSemana.bloqueado}
+          {#if infoSemana?.cuatrimestre_cerrado}
+            <div class="tarjeta tarjeta-cerrado">
+              <div class="tarjeta-icono icono-cerrado">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                </svg>
+              </div>
+              <div class="tarjeta-info">
+                <div class="tarjeta-titulo">Cuatrimestre cerrado</div>
+                <div class="tarjeta-sub">El ciclo actual ha finalizado. No se aceptan más entregas.</div>
+              </div>
+            </div>
+          {/if}
+
+          {#if infoSemana && !infoSemana.bloqueado && !infoSemana?.cuatrimestre_cerrado}
             <div
               class="tarjeta tarjeta-disponible"
               class:abierta={formAbierto}
@@ -391,17 +407,78 @@
   .icono-rechazado { background: rgba(239, 68, 68, 0.08); color: var(--error); }
   .tarjeta-titulo-rechazado { font-size: 14px; font-weight: 700; color: var(--text-primary); }
   .badge-rechazado { font-size: 12px; font-weight: 600; color: var(--error); white-space: nowrap; }
+
+  .tarjeta-cerrado { background: rgba(239, 68, 68, 0.03); border-left: 3px solid var(--error); }
+  .icono-cerrado { background: rgba(239, 68, 68, 0.08); color: var(--error); }
+  .icono-cerrado svg { opacity: 0.7; }
   .nota-rechazo { padding: 14px 16px; background: rgba(239, 68, 68, 0.04); border: 1px solid rgba(239, 68, 68, 0.15); border-radius: var(--radius-input); }
   .nota-rechazo-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--error); margin-bottom: 6px; }
   .nota-rechazo-texto { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
 
-  .tarjeta-feedback { position: absolute; left: 50%; transform: translateX(-50%); font-size: 12px; color: var(--text-secondary); background: var(--bg-page); padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .tarjeta-feedback strong { color: var(--text-primary); font-weight: 600; }
+  /* Nota: ícono de mensaje + tooltip */
+  .tarjeta-nota {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    color: var(--text-disabled);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: color 0.15s, background 0.15s;
+  }
+  .tarjeta-nota:hover {
+    color: var(--orange);
+    background: var(--orange-light);
+  }
+  .nota-tooltip {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--text-primary);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 8px 14px;
+    border-radius: 8px;
+    max-width: 280px;
+    white-space: normal;
+    word-break: break-word;
+    line-height: 1.5;
+    z-index: 50;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+    pointer-events: none;
+  }
+  .nota-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: var(--text-primary);
+  }
+  .tarjeta-nota:hover .nota-tooltip {
+    display: block;
+  }
 
   @media (max-width: 768px) {
     .card { padding: 24px 20px; }
     .plantillas-grid { grid-template-columns: 1fr; }
     .form-grid { grid-template-columns: 1fr; }
-    .tarjeta-feedback { position: static; transform: none; margin-left: auto; }
+    .nota-tooltip {
+      left: auto;
+      right: 0;
+      transform: none;
+    }
+    .nota-tooltip::after {
+      left: auto;
+      right: 12px;
+      transform: none;
+    }
   }
 </style>

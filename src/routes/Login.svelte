@@ -4,7 +4,7 @@
   import { fade } from 'svelte/transition'
   import { onMount } from 'svelte'
   import { api } from '../lib/services/api.js'
-  import { login, isAuthenticated, isAdmin, isCoordinadorDual, isCoordinadorCarrera } from '../lib/stores/auth.js'
+  import { login, isAuthenticated, isCoordinadorBecas, isCoordinadorDual, isCoordinadorCarrera } from '../lib/stores/auth.js'
   import { get } from 'svelte/store'
 
   let email = ''
@@ -15,7 +15,7 @@
 
   onMount(() => {
     if (get(isAuthenticated)) {
-      if (get(isAdmin)) navigate('/admin/solicitudes', { replace: true })
+      if (get(isCoordinadorBecas)) navigate('/admin/solicitudes', { replace: true })
       else if (get(isCoordinadorDual)) navigate('/dual/coordinador', { replace: true })
       else if (get(isCoordinadorCarrera)) navigate('/dual/carrera', { replace: true })
       else navigate('/dashboard', { replace: true })

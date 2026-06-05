@@ -6,6 +6,7 @@
   import { isAuthenticated, isCoordinadorCarrera } from '../../lib/stores/auth.js'
   import { api } from '../../lib/services/api.js'
   import Navbar from '../../lib/components/layout/Navbar.svelte'
+  import VisorPDF from '../../lib/components/shared/VisorPDF.svelte'
   import FiltrosBarra from '../../lib/components/shared/FiltrosBarra.svelte'
   import LoadingSpinner from '../../lib/components/ui/LoadingSpinner.svelte'
   import EmptyState from '../../lib/components/ui/EmptyState.svelte'
@@ -38,6 +39,7 @@
   let reportes = []
   let loadingExpediente = false
   let errorExpediente = ''
+  let pdfSeleccionado = null
 
   let formGrupo = {
     carrera: 'ING.NME TEC DE LA INFORMACIÓN E INNOVACION DIGITAL',
@@ -124,12 +126,13 @@
   function volverDirectorio() {
     alumnoSeleccionado = null
     reportes = []
+    pdfSeleccionado = null
+    vista = 'directorio'
     navigate('/dual/carrera', { replace: true })
   }
 
-  function descargarCSV(matricula) {
-    const params = filtroCuatrimestre ? `?cuatrimestre=${filtroCuatrimestre}` : ''
-    window.open(api.dual.exportarCSV(matricula) + params, '_blank')
+  async function descargarCSV(matricula) {
+    await api.dual.exportarCSV(matricula, filtroCuatrimestre || undefined)
   }
 
   $: promedioExpediente = reportes.length
@@ -303,7 +306,7 @@
     procesandoIndividual = true
     errorIndividual = ''
     try {
-      await api.dual.desvincularAlumno(modalEliminar.matricula)
+      await api.dual.eliminarAlumno(modalEliminar.matricula)
       modalEliminar = null
       resetIndividual()
       await cargarGrupos()
@@ -619,52 +622,68 @@
 
           <div class="ficha-acciones">
             <button class="btn-primary" on:click={() => descargarCSV(alumnoSeleccionado.matricula)}>Exportar CSV</button>
-            <button class="btn-outline" disabled title="Próximamente">Descargar todos los PDFs</button>
+            <button
+              class="btn-outline"
+              on:click={() => api.dual.exportarZip(alumnoSeleccionado.matricula, filtroCuatrimestre || undefined)
+                .catch(e => errorExpediente = e.message)}
+            >
+              Descargar todos los PDFs (ZIP)
+            </button>
           </div>
         </div>
 
-        <div class="reportes-card">
-          <h2 class="card-title">Reportes Aprobados</h2>
+        <div class="expediente-der">
+          <div class="reportes-card" style="flex: 1; display: flex; flex-direction: column;">
+            <h2 class="card-title">Reportes Aprobados</h2>
 
-          {#if loadingExpediente}
-            <LoadingSpinner />
-          {:else if errorExpediente}
-            <p class="error-msg">{errorExpediente}</p>
-          {:else if reportes.length === 0}
-            <EmptyState message="Este alumno no tiene reportes aprobados aún." />
-          {:else}
-            <div class="table-wrap">
-              <table class="tabla">
-                <thead>
-                  <tr>
-                    <th>Semana</th>
-                    <th class="td-center">Calificación</th>
-                    <th>Entregado</th>
-                    <th style="text-align: right;">Documento</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {#each reportes as r}
-                    <tr>
-                      <td><span class="sem-txt">Semana {r.semana}</span></td>
-                      <td class="td-cal">{r.calificacion_alumno}</td>
-                      <td class="td-fecha">{formatFecha(r.created_at)}</td>
-                      <td style="text-align: right;">
-                        {#if r.archivo_pdf_url}
-                          <a href={r.archivo_pdf_url} target="_blank" rel="noopener noreferrer" class="btn-pdf">Ver PDF ↗</a>
-                        {:else}
-                          <span class="text-secondary">—</span>
-                        {/if}
-                      </td>
-                    </tr>
-                  {/each}
-                </tbody>
-              </table>
-            </div>
-            <p class="count-label">
-              {reportes.length} reporte{reportes.length !== 1 ? 's' : ''} aprobado{reportes.length !== 1 ? 's' : ''}
-            </p>
-          {/if}
+            {#if loadingExpediente}
+              <LoadingSpinner />
+            {:else if errorExpediente}
+              <p class="error-msg">{errorExpediente}</p>
+            {:else if reportes.length === 0}
+              <EmptyState message="Este alumno no tiene reportes aprobados aún." />
+            {:else}
+              <div class="expediente-split">
+                <div class="expediente-tabla-col">
+                  <div class="table-wrap">
+                    <table class="tabla">
+                      <thead>
+                        <tr>
+                          <th>Semana</th>
+                          <th class="td-center">Calif.</th>
+                          <th></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {#each reportes as r}
+                          <tr
+                            class:row-selected={pdfSeleccionado?.id === r.id}
+                            on:click={() => pdfSeleccionado = r}
+                            style="cursor: pointer;"
+                          >
+                            <td><span class="sem-txt">Semana {r.semana}</span></td>
+                            <td class="td-cal">{r.calificacion_alumno}</td>
+                            <td style="text-align: right;">
+                              <span class="chip-reportes">Ver</span>
+                            </td>
+                          </tr>
+                        {/each}
+                      </tbody>
+                    </table>
+                  </div>
+                  <p class="count-label">
+                    {reportes.length} reporte{reportes.length !== 1 ? 's' : ''}
+                  </p>
+                </div>
+                <div class="expediente-pdf-col">
+                  <VisorPDF
+                    url={pdfSeleccionado?.archivo_pdf_url || ''}
+                    titulo={pdfSeleccionado ? `Semana ${pdfSeleccionado.semana}` : 'Selecciona un reporte'}
+                  />
+                </div>
+              </div>
+            {/if}
+          </div>
         </div>
       </div>
     </div>
@@ -675,7 +694,7 @@
       <div class="modal-box" on:click|stopPropagation>
         <p class="modal-titulo">¿Eliminar alumno?</p>
         <p class="modal-cuerpo">
-          Se eliminará a <strong>{modalEliminar.nombre || modalEliminar.matricula}</strong> del grupo activo. Esta acción no se puede deshacer.
+          Se eliminará completamente a <strong>{modalEliminar.nombre || modalEliminar.matricula}</strong> del sistema (datos, usuario, reportes y asignaciones duales). Esta acción no se puede deshacer.
         </p>
         <div class="modal-acciones">
           <button class="btn-eliminar" disabled={procesandoIndividual} on:click={confirmarEliminar}>
@@ -831,9 +850,37 @@
   .resultado-err-titulo { color: var(--error); font-weight: 600; font-size: 12px; margin: 8px 0 4px; }
   .resultado-err-lista { margin: 0; padding-left: 16px; font-size: 12px; color: var(--text-secondary); }
 
+  .expediente-der { flex: 1; min-width: 0; }
+  .expediente-split {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 0;
+    flex: 1;
+    min-height: 0;
+  }
+  .expediente-tabla-col {
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+  }
+  .expediente-pdf-col {
+    min-height: 400px;
+    display: flex;
+  }
+  .expediente-pdf-col :global(.visor-wrap) {
+    border-radius: 0;
+    border: none;
+    width: 100%;
+  }
+  .row-selected {
+    background: var(--orange-light) !important;
+    border-left: 3px solid var(--orange);
+  }
+
   @media (max-width: 900px) {
     .expediente-layout { grid-template-columns: 1fr; }
     .ficha-card { position: static; }
+    .expediente-split { grid-template-columns: 1fr; }
+    .expediente-pdf-col { min-height: 300px; }
     .grupos-layout { grid-template-columns: 1fr; }
     .grupos-barra { grid-template-columns: 1fr; }
     .carga-fila-botones { grid-template-columns: 1fr; }

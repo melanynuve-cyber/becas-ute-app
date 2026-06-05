@@ -47,7 +47,7 @@
     loading = true
     error = ''
     try {
-      await api.auth.verifyEmail({ email, code: code })
+      await api.auth.verificar({ email, code: code })
       navigate('/login', { replace: true })
     } catch (e) {
       error = e.message || 'Error de verificación.'
@@ -60,7 +60,7 @@
     resendMsg = ''
     error = ''
     try {
-      await api.auth.resendCode({ email })
+      await api.auth.reenviar({ email })
       resendMsg = 'Código reenviado a tu correo.'
     } catch (e) {
       error = e.message || 'Error al reenviar.'
