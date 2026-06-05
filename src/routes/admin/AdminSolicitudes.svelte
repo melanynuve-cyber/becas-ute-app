@@ -33,7 +33,7 @@
       : true
 
     const matchCarrera = filtroCarrera
-      ? carrera.toLowerCase().isPrototypeOf(filtroCarrera.toLowerCase()) ||
+      ? carrera.toLowerCase().includes(filtroCarrera.toLowerCase()) ||
         carrera.toLowerCase() === filtroCarrera.toLowerCase() ||
         nomenclatura.toLowerCase().includes(filtroCarrera.toLowerCase())
       : true

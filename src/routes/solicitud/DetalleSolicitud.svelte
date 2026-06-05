@@ -127,7 +127,7 @@
           </div>
           <div>
             <h1 class="form-title">Expediente de Beca Interna</h1>
-            <p class="preview-sub">Folio #{id} • Registro enviado el {fechaEnvio}</p>
+            <p class="preview-sub">Folio {solicitud.folio || '#' + id} • Registro enviado el {fechaEnvio}</p>
           </div>
         </div>
 

@@ -8,7 +8,9 @@ const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 let _redirigiendo = false
 
 // Manejador centralizado de peticiones HTTP
-async function request(method, path, body = null, isMultipart = false) {
+// asBlob: true para respuestas binarias (CSV, ZIP, PDF)
+async function request(method, path, body = null, opts = {}) {
+  const { isMultipart = false, asBlob = false } = opts
   const headers = {}
   const jwt = get(token)
 
@@ -26,7 +28,12 @@ async function request(method, path, body = null, isMultipart = false) {
       logout()
       window.location.href = '/login'
     }
-    return
+    throw new Error('Sesión expirada. Redirigiendo al login.')
+  }
+
+  if (asBlob) {
+    if (!res.ok) throw new Error('Error al descargar el archivo')
+    return await res.blob()
   }
 
   const data = await res.json().catch(() => ({}))
@@ -59,10 +66,10 @@ export const api = {
   },
 
   solicitudes: {
-    crear: (formData) => request('POST', '/solicitudes/', formData, true),
+    crear: (formData) => request('POST', '/solicitudes/', formData, { isMultipart: true }),
     mias: () => request('GET', '/solicitudes/mias'),
     detalle: (id) => request('GET', `/solicitudes/${id}`),
-    subirInscripcion: (id, fd) => request('PATCH', `/solicitudes/${id}/documento/recibo_inscripcion`, fd, true)
+    subirInscripcion: (id, fd) => request('PATCH', `/solicitudes/${id}/documento/recibo_inscripcion`, fd, { isMultipart: true })
   },
 
   admin: {
@@ -80,7 +87,7 @@ export const api = {
 
   dual: {
     // Operaciones del alumno en modalidad dual
-    subirReporte: (fd, isDebug = false) => request('POST', `/dual/alumno/${isDebug ? '?debug=true' : ''}`, fd, true),
+    subirReporte: (fd, isDebug = false) => request('POST', `/dual/alumno/${isDebug ? '?debug=true' : ''}`, fd, { isMultipart: true }),
     misReportes: (cuatrimestre) => request('GET', `/dual/alumno/mis-reportes${cuatrimestre ? `?cuatrimestre=${cuatrimestre}` : ''}`),
     semanaActual: () => request('GET', '/dual/alumno/semana-actual'),
     reportePdfUrl: (reporteId) => `${BASE_URL}/dual/alumno/reporte/${reporteId}/pdf`,
@@ -104,15 +111,10 @@ export const api = {
     listarAlumnos: (params) => request('GET', `/dual/carrera/alumnos${params ? `?${params}` : ''}`),
     expediente: (matricula, cuatrimestre) => request('GET', `/dual/carrera/alumnos/${matricula}/reportes${cuatrimestre ? `?cuatrimestre=${cuatrimestre}` : ''}`),
     exportarCSV: async (matricula, cuatrimestre) => {
-      const jwt = get(token)
-      const res = await fetch(`${BASE_URL}/dual/carrera/alumnos/${matricula}/exportar-csv${cuatrimestre ? `?cuatrimestre=${cuatrimestre}` : ''}`, {
-        method: 'GET',
-        headers: { 'Authorization': `Bearer ${jwt}` }
-      })
-      
-      if (!res.ok) throw new Error('Error al descargar el CSV')
-      
-      const blob = await res.blob()
+      const blob = await request('GET',
+        `/dual/carrera/alumnos/${matricula}/exportar-csv${cuatrimestre ? `?cuatrimestre=${cuatrimestre}` : ''}`,
+        null, { asBlob: true }
+      )
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
@@ -125,23 +127,17 @@ export const api = {
 
     // Operaciones de gestión académica
     crearGrupo: (body) => request('POST', '/dual/carrera/grupos', body),
-    subirAlumnosCSV: (grupoId, fd) => request('POST', `/dual/carrera/grupos/${grupoId}/alumnos`, fd, true),
+    subirAlumnosCSV: (grupoId, fd) => request('POST', `/dual/carrera/grupos/${grupoId}/alumnos`, fd, { isMultipart: true }),
     agregarAlumno: (grupoId, body) => request('POST', `/dual/carrera/grupos/${grupoId}/alumnos/individual`, body),
     actualizarAlumno: (matricula, body) => request('PATCH', `/dual/carrera/alumnos/${matricula}`, body),
     eliminarAlumno: (matricula) => request('DELETE', `/dual/carrera/alumnos/${matricula}`),
 
     // Exportaciones
     exportarZip: async (matricula, cuatrimestre) => {
-      const jwt = get(token)
-      const res = await fetch(`${BASE_URL}/dual/carrera/alumnos/${matricula}/exportar-zip${cuatrimestre ? `?cuatrimestre=${cuatrimestre}` : ''}`, {
-        method: 'GET',
-        headers: { 'Authorization': `Bearer ${jwt}` }
-      })
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        throw new Error(data?.detail || 'Error al descargar el ZIP')
-      }
-      const blob = await res.blob()
+      const blob = await request('GET',
+        `/dual/carrera/alumnos/${matricula}/exportar-zip${cuatrimestre ? `?cuatrimestre=${cuatrimestre}` : ''}`,
+        null, { asBlob: true }
+      )
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url

@@ -199,6 +199,7 @@
 
       resultadoCSV = {
         insertados: respuesta.insertados ?? validas.length,
+        alumnos: respuesta.alumnos || [],
         errores: errs
       }
       limpiarInputCSV()
@@ -518,7 +519,17 @@
 
               {#if resultadoCSV}
                 <div class="resultado-csv">
-                  <p class="resultado-ok">✓ {resultadoCSV.insertados} alumnos procesados correctamente.</p>
+                  <p class="resultado-ok">✓ {resultadoCSV.insertados} alumnos insertados correctamente.</p>
+                  {#if resultadoCSV.alumnos?.length > 0}
+                    <div class="resultado-alumnos">
+                      <p class="resultado-subtitulo">Alumnos insertados:</p>
+                      <ul class="resultado-lista-alumnos">
+                        {#each resultadoCSV.alumnos as alumno}
+                          <li>{alumno.matricula} — {alumno.nombre}</li>
+                        {/each}
+                      </ul>
+                    </div>
+                  {/if}
                   {#if resultadoCSV.errores.length > 0}
                     <p class="resultado-err-titulo">Filas ignoradas:</p>
                     <ul class="resultado-err-lista">
@@ -677,7 +688,7 @@
                 </div>
                 <div class="expediente-pdf-col">
                   <VisorPDF
-                    url={pdfSeleccionado?.archivo_pdf_url || ''}
+                    url={pdfSeleccionado ? api.dual.reportePdfUrl(pdfSeleccionado.id) : ''}
                     titulo={pdfSeleccionado ? `Semana ${pdfSeleccionado.semana}` : 'Selecciona un reporte'}
                   />
                 </div>

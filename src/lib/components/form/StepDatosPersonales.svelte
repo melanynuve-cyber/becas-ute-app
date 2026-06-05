@@ -55,8 +55,8 @@
 
   <div class="row-3">
     <InputField id="estado_civil" label="Estado civil" bind:value={datos.estado_civil} />
-    <InputField id="edad" label="Edad" type="number" bind:value={datos.edad} />
-    <InputField id="celular" label="Celular" type="number" bind:value={datos.celular} />
+    <InputField id="edad" label="Edad" type="number" integerOnly bind:value={datos.edad} />
+    <InputField id="celular" label="Celular" type="number" integerOnly bind:value={datos.celular} />
   </div>
 
   <div class="row-2">

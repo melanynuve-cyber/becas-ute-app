@@ -7,24 +7,49 @@
   export let disabled = false;
   export let min = null;
   export let max = null;
-  export let isSmall = false; 
+  export let isSmall = false;
   export let required = true;
+  // Bloquea decimales, negativos y no-dígitos (celular, edad, gastos)
+  export let integerOnly = false;
+
+  function onKeyDown(e) {
+    if (!integerOnly) return
+    // Bloquear: -, +, e, E, .
+    if (['-', '+', 'e', 'E', '.'].includes(e.key)) {
+      e.preventDefault()
+    }
+  }
+
+  function onInput(e) {
+    if (!integerOnly) return
+    const raw = e.target.value
+    // Eliminar cualquier carácter no-dígito
+    const clean = raw.replace(/\D/g, '')
+    if (clean !== raw) {
+      // Reasignar forzando reactividad Svelte
+      value = clean
+    }
+  }
 </script>
 
 <div class="field" class:field-sm={isSmall}>
   <label for={id}>{label} {#if required}<span class="req">*</span>{/if}</label>
-  
+
   {#if type === 'number'}
-    <input 
-      {id} class="input-plain" type="number" {placeholder} {disabled} {min} {max} bind:value 
+    <input
+      {id} class="input-plain" type="number" {placeholder} {disabled} {min} {max}
+      inputmode={integerOnly ? 'numeric' : 'decimal'}
+      bind:value
+      on:keydown={onKeyDown}
+      on:input={onInput}
     />
   {:else if type === 'email'}
-    <input 
-      {id} class="input-plain" type="email" {placeholder} {disabled} {min} {max} bind:value 
+    <input
+      {id} class="input-plain" type="email" {placeholder} {disabled} {min} {max} bind:value
     />
   {:else}
-    <input 
-      {id} class="input-plain" type="text" {placeholder} {disabled} {min} {max} bind:value 
+    <input
+      {id} class="input-plain" type="text" {placeholder} {disabled} {min} {max} bind:value
     />
   {/if}
 </div>

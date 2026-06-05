@@ -43,7 +43,7 @@
       // Verificar convocatoria antes de redirigir al formulario
       try {
         const conv = await api.admin.convocatoriaActiva()
-        if (conv && conv.activa) {
+        if (conv) {
           navigate('/solicitud/nueva', { replace: true })
           return
         }

@@ -16,8 +16,9 @@
   const location = useLocation()
 
   let vista = 'bandeja'
+  let mounted = false
 
-  $: {
+  $: if (mounted) {
     const params = new URLSearchParams($location.search)
     const queryVista = params.get('vista')
     if (queryVista === 'empresas' && vista !== 'empresas') {
@@ -147,6 +148,7 @@
       cargarReportes()
       cargarEstadoCuatrimestre()
     }
+    mounted = true
   })
 
   async function cargarEstadoCuatrimestre() {
@@ -637,20 +639,11 @@
       <div class="split-layout">
         <div class="panel-pdf">
           <div class="panel-label">Documento del reporte</div>
-          {#if seleccionado.archivo_pdf_url}
-            <iframe 
-              src={seleccionado.archivo_pdf_url} 
-              title="Reporte PDF" 
-              class="pdf-iframe"
-            ></iframe>
-            <a 
-              href={seleccionado.archivo_pdf_url} 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              class="link-externo"
-            >
-              Abrir en pestaña independiente ↗
-            </a>
+          {#if seleccionado.id}
+            <VisorPDF
+              url={api.dual.reportePdfUrl(seleccionado.id)}
+              titulo={`Semana ${seleccionado.semana}`}
+            />
           {:else}
             <div class="no-pdf">No hay un archivo PDF asociado a esta entrega.</div>
           {/if}
@@ -1060,7 +1053,7 @@
                 </div>
                 <div class="expediente-pdf-col">
                   <VisorPDF
-                    url={pdfExpSeleccionado?.archivo_pdf_url || ''}
+                    url={pdfExpSeleccionado ? api.dual.reportePdfUrl(pdfExpSeleccionado.id) : ''}
                     titulo={pdfExpSeleccionado ? `Semana ${pdfExpSeleccionado.semana}` : 'Selecciona un reporte'}
                   />
                 </div>
@@ -1316,7 +1309,7 @@
   .expediente-topbar { margin-bottom: 16px; }
 
   .expediente-page { max-width: 1200px; }
-  .expediente-split { display: grid; grid-template-columns: 200px 1fr; gap: 0; flex: 1; min-height: 0; border: 1px solid var(--border); border-radius: var(--radius-card); overflow: hidden; }
+  .expediente-split { display: grid; grid-template-columns: 260px 1fr; gap: 0; flex: 1; min-height: 0; border: 1px solid var(--border); border-radius: var(--radius-card); overflow: hidden; }
   .expediente-tabla-col { border-right: 1px solid var(--border); overflow-y: auto; background: var(--bg-card); }
   .expediente-pdf-col { min-height: 400px; display: flex; }
   .expediente-pdf-col :global(.visor-wrap) { border-radius: 0; border: none; width: 100%; }

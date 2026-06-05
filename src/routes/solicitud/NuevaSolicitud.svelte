@@ -23,6 +23,7 @@
   let enviando = false
   let errorGeneral = ''
   let solicitudId = null
+  let folio = null
   let paso = 'formulario'
 
   const hoy = new Date()
@@ -255,6 +256,7 @@
       
       const res = await api.solicitudes.crear(fd)
       solicitudId = res.solicitud_id
+      folio = res.folio || null
       paso = 'confirmacion'
       window.scrollTo({ top: 0, behavior: 'smooth' })
     } catch (e) {
@@ -317,6 +319,11 @@
           </svg>
         </div>
         <h1 class="form-title">¡Solicitud Enviada Exitosamente!</h1>
+        {#if folio}
+          <p style="color:var(--orange); text-align:center; font-size:18px; font-weight:700; margin:0;">
+            Folio: {folio}
+          </p>
+        {/if}
         <p style="color:var(--text-secondary); text-align:center; font-size:14px; max-width:380px; line-height:1.5">
           Tu expediente ha sido registrado de forma correcta y se encuentra en la bandeja de revisión de los coordinadores.
         </p>

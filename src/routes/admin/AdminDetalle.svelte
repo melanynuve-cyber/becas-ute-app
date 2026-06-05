@@ -59,10 +59,9 @@
   }
 
   function verDocumento(key, nombre) {
-    const jwt = get(token)
     const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
     pdfActivo = {
-      url: `${BASE_URL}/admin/solicitudes/${id}/documento/${key}?token=${jwt}`,
+      url: `${BASE_URL}/admin/solicitudes/${id}/documento/${key}`,
       titulo: nombre
     }
   }
@@ -80,7 +79,7 @@
       <button class="btn-back" on:click={() => navigate('/admin/solicitudes')}>
         ← Volver a la lista
       </button>
-      <h1 class="page-title">Detalle de Solicitud</h1>
+      <h1 class="page-title">Solicitud {solicitud?.folio || ''}</h1>
     </div>
 
     {#if loading}
@@ -204,11 +203,8 @@
       </div>
 
       {#if pdfActivo}
-        <div class="card" style="padding: 0; overflow: hidden;">
-          <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; background: var(--bg-page); border-bottom: 1px solid var(--border);">
-            <span style="font-size: 13px; font-weight: 700; color: var(--text-primary);">{pdfActivo.titulo}</span>
-            <button class="btn-back" on:click={() => pdfActivo = null} style="font-size: 12px;">Cerrar visor</button>
-          </div>
+        <div class="card" style="padding: 0; overflow: hidden; position: relative;">
+          <button class="btn-close-vis" on:click={() => pdfActivo = null}>✕ Cerrar</button>
           <VisorPDF url={pdfActivo.url} titulo={pdfActivo.titulo} />
         </div>
       {/if}
@@ -252,8 +248,29 @@
     transition: all 0.15s ease;
   }
 
-  .btn-back:hover { 
-    border-color: var(--orange); 
+  .btn-back:hover {
+    border-color: var(--orange);
+    color: var(--orange);
+  }
+
+  .btn-close-vis {
+    position: absolute;
+    top: 10px;
+    right: 14px;
+    z-index: 5;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 12px;
+    font-family: var(--font);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-close-vis:hover {
+    border-color: var(--orange);
     color: var(--orange);
   }
 

@@ -15,7 +15,7 @@
       
     <TableInputRow 
       label="B. Número de personas dependientes" 
-      type="number" min="0" placeholder="0" bind:value={ingreso.numero_dependientes} />
+      type="number" min="0" placeholder="0" integerOnly bind:value={ingreso.numero_dependientes} />
   </div>
 </section>
 

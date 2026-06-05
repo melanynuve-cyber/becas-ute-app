@@ -47,7 +47,7 @@
     loading = true
     error = ''
     try {
-      await api.auth.verificar({ email, code: code })
+      await api.auth.verificar({ email, codigo: code })
       navigate('/login', { replace: true })
     } catch (e) {
       error = e.message || 'Error de verificación.'

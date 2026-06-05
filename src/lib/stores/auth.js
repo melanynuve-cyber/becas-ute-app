@@ -4,8 +4,13 @@ import { writable, derived } from 'svelte/store'
 const storedToken = sessionStorage.getItem('ute_token')
 const storedUser = sessionStorage.getItem('ute_user')
 
+let parsedUser = null
+if (storedUser) {
+  try { parsedUser = JSON.parse(storedUser) } catch { parsedUser = null }
+}
+
 export const token = writable(storedToken || null)
-export const user = writable(storedUser ? JSON.parse(storedUser) : null)
+export const user = writable(parsedUser)
 
 // Sincronización con el almacenamiento de sesión
 token.subscribe((val) => val ? sessionStorage.setItem('ute_token', val) : sessionStorage.removeItem('ute_token'))

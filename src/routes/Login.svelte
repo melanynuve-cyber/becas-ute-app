@@ -32,15 +32,20 @@
     try {
       const res = await api.auth.login({ email, password })
       if (!res || !res.access_token) throw new Error('Contraseña incorrecta o usuario no encontrado.')
-      
-      const payload = JSON.parse(atob(res.access_token.split('.')[1]))
-      const userData = { 
-        roles: payload.roles, 
-        matricula: payload.matricula, 
-        email: payload.sub, 
-        dual_activo: payload.dual_activo 
+
+      let payload
+      try {
+        payload = JSON.parse(atob(res.access_token.split('.')[1]))
+      } catch {
+        throw new Error('Error al procesar la sesión. Intenta de nuevo.')
       }
-      
+      const userData = {
+        roles: payload.roles,
+        matricula: payload.matricula,
+        email: payload.sub,
+        dual_activo: payload.dual_activo
+      }
+
       login(res.access_token, userData)
       
       if (payload.roles?.admin || payload.roles?.root) navigate('/admin/solicitudes', { replace: true })
