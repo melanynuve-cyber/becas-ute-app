@@ -175,6 +175,10 @@
   }
 </script>
 
+<svelte:head>
+  <title>Mis reportes | Becas UTE</title>
+</svelte:head>
+
 <Navbar onAlumnoClick={() => showPerfil = true} />
 <PerfilModal bind:show={showPerfil} {alumno} />
 
@@ -390,7 +394,11 @@
             {/if}
           {/if}
 
-          {#if reportes.length === 0 && !infoSemana}
+          {#if error}
+            <div class="tarjeta">
+              <p class="empty-msg" style="color: var(--danger, #e74c3c)">{error}</p>
+            </div>
+          {:else if reportes.length === 0 && !infoSemana}
             <div class="tarjeta">
               <p class="empty-msg">Aún no hay reportes registrados en este cuatrimestre.</p>
             </div>

@@ -58,7 +58,8 @@ export const api = {
     me: () => request('GET', '/auth/me'),
     crearUsuarioPersonal: (body) => request('POST', '/auth/personal', body),
     listarPersonal: () => request('GET', '/auth/personal'),
-    eliminarPersonal: (id) => request('DELETE', `/auth/personal/${id}`)
+    eliminarPersonal: (id) => request('DELETE', `/auth/personal/${id}`),
+    cambiarPassword: (body) => request('POST', '/auth/cambiar-password', body)
   },
 
   alumno: {

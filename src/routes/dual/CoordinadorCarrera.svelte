@@ -313,6 +313,10 @@
   }
 </script>
 
+<svelte:head>
+  <title>Coordinador de Carrera | Becas UTE</title>
+</svelte:head>
+
 <Navbar />
 
 <div class="main-content">
@@ -408,7 +412,7 @@
                 <div class="spinner" style="width:18px;height:18px;border-width:2px;"></div>
               {:else}
                 <select class="input-plain input-sm" class:select-activo={grupoCreado} on:change={(e) => {
-                    const g = gruposExistentes.find(x => x.id === e.target.value)
+                    const g = gruposExistentes.find(x => String(x.id) === e.target.value)
                     if (g) seleccionarGrupo(g)
                     else { grupoCreado = null; grupoSeleccionado = null }
                   }}>
@@ -642,8 +646,14 @@
             <button class="btn-primary" on:click={() => descargarCSV(alumnoSeleccionado.matricula)}>Exportar CSV</button>
             <button
               class="btn-outline"
-              on:click={() => api.dual.exportarZip(alumnoSeleccionado.matricula, filtroCuatrimestre || undefined)
-                .catch(e => errorExpediente = e.message)}
+              on:click={async () => {
+                errorExpediente = ''
+                try {
+                  await api.dual.exportarZip(alumnoSeleccionado.matricula, filtroCuatrimestre || undefined)
+                } catch (e) {
+                  errorExpediente = e.message || 'Error al descargar ZIP'
+                }
+              }}
             >
               Descargar todos los PDFs (ZIP)
             </button>

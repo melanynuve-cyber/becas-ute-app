@@ -14,20 +14,6 @@
   export let filtroCarrera = ''
   export let filtroEstado = ''
  
-  $: gruposFiltrados = filtroCarrera
-    ? grupos.filter((g) => {
-        const gUpper = g.toUpperCase()
-        const cUpper = filtroCarrera.toUpperCase()
-        
-        if (gUpper.includes('TII') && cUpper.includes('INFORMACIÓN')) return true
-        if (gUpper.includes('LOG') && cUpper.includes('LOGISTICA')) return true
-        if (gUpper.includes('EDU') && cUpper.includes('EDUCACIÓN')) return true
-        return false
-      })
-    : []
-
-  $: gruposVisibles = filtroCarrera ? gruposFiltrados : grupos
-
   function handleCarreraChange() {
     filtroGrupo = ''
     dispatch('buscar')
@@ -71,7 +57,7 @@
         <option value="">Selecciona una carrera primero...</option>
       {:else}
         <option value="">Todos los grupos</option>
-        {#each gruposVisibles as g}
+        {#each grupos as g}
           <option value={g}>{g}</option>
         {/each}
       {/if}

@@ -71,6 +71,10 @@
   ].sort()
 </script>
 
+<svelte:head>
+  <title>Solicitudes | Becas UTE</title>
+</svelte:head>
+
 <Navbar />
 
 <main class="main">

@@ -71,6 +71,10 @@
   $: isComplete = code.length === 6
 </script>
 
+<svelte:head>
+  <title>Verificar cuenta | Becas UTE</title>
+</svelte:head>
+
 <div class="page">
   <div class="card">
     <div class="shield-icon">

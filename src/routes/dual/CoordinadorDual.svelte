@@ -479,6 +479,10 @@
   $: carreraExpSel = alumnoExpSeleccionado ? alumnoExpSeleccionado.carrera : '—'
 </script>
 
+<svelte:head>
+  <title>Coordinador Dual | Becas UTE</title>
+</svelte:head>
+
 <Navbar />
 
 <div class="main-content">
@@ -1001,8 +1005,14 @@
             <button class="btn-primary" on:click={() => descargarCSVExp(alumnoExpSeleccionado.matricula)}>Exportar CSV</button>
             <button
               class="btn-outline"
-              on:click={() => api.dual.exportarZip(alumnoExpSeleccionado.matricula, filtroCuatrimestreExp || undefined)
-                .catch(e => errorExp = e.message)}
+              on:click={async () => {
+                errorExp = ''
+                try {
+                  await api.dual.exportarZip(alumnoExpSeleccionado.matricula, filtroCuatrimestreExp || undefined)
+                } catch (e) {
+                  errorExp = e.message || 'Error al descargar ZIP'
+                }
+              }}
             >
               Descargar todos los PDFs (ZIP)
             </button>

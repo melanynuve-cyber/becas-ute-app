@@ -62,6 +62,10 @@
   $: primerNombre = alumno?.nombre?.split(' ')[0] || ''
 </script>
 
+<svelte:head>
+  <title>Dashboard | Becas UTE</title>
+</svelte:head>
+
 <Navbar onAlumnoClick={() => showPerfil = true} />
 <PerfilModal bind:show={showPerfil} {alumno} />
 

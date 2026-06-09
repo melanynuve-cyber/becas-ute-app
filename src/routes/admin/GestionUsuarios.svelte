@@ -66,7 +66,7 @@
         nombre: nombre.trim(),
         email: email.trim(),
         roles: {
-          admin: rolSeleccionado === 'coordinador_becas',
+          admin: false,
           alumno: false,
           coordinador_becas: rolSeleccionado === 'coordinador_becas',
           coordinador_dual: rolSeleccionado === 'coordinador_dual',
@@ -76,9 +76,10 @@
 
       await api.auth.crearUsuarioPersonal(body)
 
+      // Contraseña se envía por email — ya no viene en la respuesta
       ultimoCreado = {
         correo: email.trim(),
-        clave: 'UTE2026*'
+        clave: 'Enviada al correo del usuario'
       }
 
       exito = 'Usuario registrado correctamente.'
@@ -111,6 +112,10 @@
     }
   }
 </script>
+
+<svelte:head>
+  <title>Gestión de usuarios | Becas UTE</title>
+</svelte:head>
 
 <Navbar />
 

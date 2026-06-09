@@ -194,15 +194,32 @@
     }
     try {
       alumno = await api.alumno.me()
-      const partes = alumno.nombre.trim().split(' ')
-      
+      const partes = alumno.nombre.trim().split(/\s+/).filter(Boolean)
+      const len = partes.length
+
+      // Parse flexible: soporta nombres de 1, 2, o 3+ palabras
+      let nombres, apellidoPaterno, apellidoMaterno
+      if (len === 1) {
+        nombres = partes[0]
+        apellidoPaterno = ''
+        apellidoMaterno = ''
+      } else if (len === 2) {
+        nombres = partes[0]
+        apellidoPaterno = partes[1]
+        apellidoMaterno = ''
+      } else {
+        nombres = partes.slice(0, len - 2).join(' ')
+        apellidoPaterno = partes[len - 2]
+        apellidoMaterno = partes[len - 1]
+      }
+
       form.datos_personales.correo_electronico = alumno.email
       form.datos_personales.matricula = alumno.matricula
       form.datos_personales.programa_educativo = alumno.carrera
       form.datos_personales.turno = alumno.turno === 'Matutino' ? 'M' : 'V'
-      form.datos_personales.apellido_materno = partes[partes.length - 1] || ''
-      form.datos_personales.apellido_paterno = partes[partes.length - 2] || ''
-      form.datos_personales.nombres = partes.slice(0, partes.length - 2).join(' ') || partes[0]
+      form.datos_personales.apellido_materno = apellidoMaterno
+      form.datos_personales.apellido_paterno = apellidoPaterno
+      form.datos_personales.nombres = nombres
     } catch {
       errorGeneral = 'No se pudieron cargar tus datos. Recarga la página.'
     }
@@ -267,6 +284,10 @@
     }
   }
 </script>
+
+<svelte:head>
+  <title>Nueva solicitud | Becas UTE</title>
+</svelte:head>
 
 <Navbar onAlumnoClick={() => showPerfil = true} />
 <PerfilModal bind:show={showPerfil} {alumno} />

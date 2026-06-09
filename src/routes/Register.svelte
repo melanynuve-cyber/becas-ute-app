@@ -44,6 +44,10 @@
   }
 </script>
 
+<svelte:head>
+  <title>Registro | Becas UTE</title>
+</svelte:head>
+
 <div class="page">
   <div class="card">
     <div class="header">

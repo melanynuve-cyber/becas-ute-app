@@ -88,6 +88,10 @@
   }
 </script>
 
+<svelte:head>
+  <title>Convocatoria | Becas UTE</title>
+</svelte:head>
+
 <Navbar />
 <main class="main">
   <div class="content">
@@ -106,7 +110,7 @@
       <!-- Estado actual -->
       <div class="card">
         <h2 class="card-title">Estado Actual</h2>
-        {#if convocatoria?.activa}
+        {#if convocatoria && !convocatoria.cerrada}
           <div class="estado-activo">
             <span class="badge-activa">Abierta</span>
             <div class="estado-detalle">
@@ -127,14 +131,14 @@
           <div class="estado-inactivo">
             <span class="badge-cerrada">Cerrada</span>
             <p class="estado-mensaje">
-              {convocatoria?.mensaje || 'No hay convocatoria activa. Los alumnos no pueden enviar solicitudes.'}
+              No hay convocatoria activa. Los alumnos no pueden enviar solicitudes.
             </p>
           </div>
         {/if}
       </div>
 
       <!-- Abrir nueva convocatoria -->
-      {#if !convocatoria?.activa}
+      {#if !convocatoria || convocatoria.cerrada}
         <div class="card">
           <h2 class="card-title">Abrir Nueva Convocatoria</h2>
           {#if errorForm}

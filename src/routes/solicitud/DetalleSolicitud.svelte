@@ -91,6 +91,10 @@
     : ''
 </script>
 
+<svelte:head>
+  <title>Solicitud | Becas UTE</title>
+</svelte:head>
+
 <Navbar onAlumnoClick={() => showPerfil = true} />
 <PerfilModal bind:show={showPerfil} {alumno} />
 

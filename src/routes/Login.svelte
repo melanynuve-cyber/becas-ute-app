@@ -47,7 +47,13 @@
       }
 
       login(res.access_token, userData)
-      
+
+      // Password temporal → forzar cambio antes de entrar
+      if (res.must_change_password || payload.must_change_password) {
+        navigate('/cambiar-password', { replace: true })
+        return
+      }
+
       if (payload.roles?.admin || payload.roles?.root) navigate('/admin/solicitudes', { replace: true })
       else if (payload.roles?.coordinador_dual) navigate('/dual/coordinador', { replace: true })
       else if (payload.roles?.coordinador_carrera) navigate('/dual/carrera', { replace: true })
@@ -66,6 +72,10 @@
     if (e.key === 'Enter') handleSubmit(e) 
   }
 </script>
+
+<svelte:head>
+  <title>Iniciar sesión | Becas UTE</title>
+</svelte:head>
 
 <div class="page">
   <div class="card" in:fade>

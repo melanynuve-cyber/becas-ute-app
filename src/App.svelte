@@ -15,6 +15,7 @@
   import Login              from './routes/Login.svelte'
   import Register           from './routes/Register.svelte'
   import Verificar          from './routes/Verificar.svelte'
+  import CambiarPassword    from './routes/CambiarPassword.svelte'
   import Dashboard          from './routes/dashboard/Dashboard.svelte'
   import NuevaSolicitud     from './routes/solicitud/NuevaSolicitud.svelte'
   import DetalleSolicitud   from './routes/solicitud/DetalleSolicitud.svelte'
@@ -25,6 +26,7 @@
   import ReportesDual       from './routes/dual/ReportesDual.svelte'
   import CoordinadorDual    from './routes/dual/CoordinadorDual.svelte'
   import CoordinadorCarrera from './routes/dual/CoordinadorCarrera.svelte'
+  import NotFound           from './routes/NotFound.svelte'
 
   // Redirección principal del sistema
   onMount(() => {
@@ -56,6 +58,7 @@
   <Route path="/login" component={Login} />
   <Route path="/register" component={Register} />
   <Route path="/verificar" component={Verificar} />
+  <Route path="/cambiar-password" component={CambiarPassword} />
 
   <Route path="/dashboard" component={Dashboard} />
   <Route path="/solicitud/nueva" component={NuevaSolicitud} />
@@ -69,4 +72,7 @@
   <Route path="/admin/solicitudes/:id" component={AdminDetalle} />
   <Route path="/admin/usuarios" component={GestionUsuarios} />
   <Route path="/admin/convocatoria" component={ConvocatoriaBecas} />
+
+  <!-- Catch-all: 404 para cualquier ruta no definida -->
+  <Route component={NotFound} />
 </Router>

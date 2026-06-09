@@ -15,6 +15,9 @@
   let _abort = null
 
   async function cargarPDF() {
+    // Abort fetch previo para evitar race condition
+    // (cambio rápido de documento → PDF correcto, no stale)
+    if (_abort) _abort.abort()
     if (blobUrl) {
       URL.revokeObjectURL(blobUrl)
       blobUrl = ''

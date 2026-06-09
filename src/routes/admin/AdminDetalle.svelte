@@ -70,6 +70,10 @@
   $: d = p.datos_personales || {}
 </script>
 
+<svelte:head>
+  <title>Detalle solicitud | Becas UTE</title>
+</svelte:head>
+
 <Navbar />
 
 <main class="main">
