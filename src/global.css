@@ -64,6 +64,14 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Suprimir ícono nativo de revelar contraseña del navegador (Edge/Chrome).
+   Usamos nuestro propio botón custom que siempre está visible. */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear,
+input[type="password"]::-webkit-credentials-auto-fill-button {
+  display: none !important;
+}
+
 /* Botones primarios estilizados */
 .btn-primary {
   display: flex;

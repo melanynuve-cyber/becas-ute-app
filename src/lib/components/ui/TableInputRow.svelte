@@ -6,6 +6,8 @@
   export let placeholder = '';
   export let step = null;
   export let min = null;
+  // Mensaje de error para borde rojo
+  export let error = '';
   // Bloquea decimales, negativos y no-dígitos
   export let integerOnly = false;
 
@@ -26,7 +28,7 @@
   }
 </script>
 
-<div class="tabla-row">
+<div class="tabla-row" class:tabla-row-error={error}>
   <span class="tabla-label">{label}</span>
 
   {#if type === 'number'}
@@ -53,6 +55,10 @@
       bind:value
     />
   {/if}
+
+  {#if error}
+    <span class="tabla-error-msg">{error}</span>
+  {/if}
 </div>
 
 <style>
@@ -67,6 +73,14 @@
     border-bottom: none;
   }
 
+  .tabla-row-error {
+    background: rgba(239, 68, 68, 0.04);
+  }
+
+  .tabla-row-error .tabla-input {
+    border-color: var(--error) !important;
+  }
+
   .tabla-label {
     padding: 10px 14px;
     font-size: 13px;
@@ -78,6 +92,15 @@
     border-left: 1.5px solid var(--border) !important;
     border-radius: 0 !important;
     text-align: right;
+  }
+
+  .tabla-error-msg {
+    grid-column: 1 / -1;
+    padding: 4px 14px;
+    font-size: 11px;
+    color: var(--error);
+    font-weight: 500;
+    background: rgba(239, 68, 68, 0.06);
   }
 
   @media (max-width: 768px) {

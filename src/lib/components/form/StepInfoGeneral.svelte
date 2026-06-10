@@ -3,7 +3,8 @@
   import TableInputRow from '../ui/TableInputRow.svelte'
 
   export let info
-  export let tipoSolicitud 
+  export let tipoSolicitud
+  export let errores = {}
 
   $: esNuevo = tipoSolicitud === 'Nueva'
   $: esRenovacion = tipoSolicitud === 'Renovacion'
@@ -13,21 +14,25 @@
   <StepHeader num="3" title="Información General" />
 
   <div class="tabla-info">
-    <TableInputRow 
-      label="A. Promedio general de preparatoria (estudiante de nuevo ingreso)" 
-      type="number" step="0.1" disabled={esRenovacion} bind:value={info.promedio_preparatoria} />
-      
-    <TableInputRow 
-      label="B. Porcentaje de beca otorgada en el cuatrimestre anterior" 
-      type="number" disabled={esNuevo} bind:value={info.porcentaje_beca_anterior} />
-      
-    <TableInputRow 
-      label="C. Promedio cuatrimestre anterior (estudiante de reingreso)" 
-      type="number" step="0.1" disabled={esNuevo} bind:value={info.promedio_cuatrimestre_anterior} />
-      
-    <TableInputRow 
-      label="D. ¿Recibes otro tipo de beca interna o externa? Menciona la institución o empresa" 
-      placeholder="Ej. No, o Fundación X" bind:value={info.otra_beca} />
+    <TableInputRow
+      label="A. Promedio general de preparatoria (estudiante de nuevo ingreso)"
+      type="number" step="0.1" disabled={esRenovacion} bind:value={info.promedio_preparatoria}
+      error={errores.promedio_preparatoria || ''} />
+
+    <TableInputRow
+      label="B. Porcentaje de beca otorgada en el cuatrimestre anterior"
+      type="number" disabled={esNuevo} bind:value={info.porcentaje_beca_anterior}
+      error={errores.porcentaje_beca_anterior || ''} />
+
+    <TableInputRow
+      label="C. Promedio cuatrimestre anterior (estudiante de reingreso)"
+      type="number" step="0.1" disabled={esNuevo} bind:value={info.promedio_cuatrimestre_anterior}
+      error={errores.promedio_cuatrimestre_anterior || ''} />
+
+    <TableInputRow
+      label="D. ¿Recibes otro tipo de beca interna o externa? Menciona la institución o empresa"
+      placeholder="Ej. No, o Fundación X" bind:value={info.otra_beca}
+      error={errores.otra_beca || ''} />
   </div>
 </section>
 

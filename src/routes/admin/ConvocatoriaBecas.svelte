@@ -24,6 +24,7 @@
   let mesFin = ''
   let anioPeriodo = ANIO_ACTUAL
   let fechaCierre = ''
+  let fechaLimiteDocumentos = ''
   let guardando = false
   let errorForm = ''
 
@@ -47,22 +48,42 @@
     }
   }
 
+  const MESES_NUM = { Enero:1, Febrero:2, Marzo:3, Abril:4, Mayo:5, Junio:6, Julio:7, Agosto:8, Septiembre:9, Octubre:10, Noviembre:11, Diciembre:12 }
+
+  function validarCuatrimestre(mesIni, mesFin) {
+    let ni = MESES_NUM[mesIni]
+    let nf = MESES_NUM[mesFin]
+    if (nf <= ni) nf += 12 // cruce de año
+    if (nf - ni < 4) {
+      return `Un cuatrimestre debe tener al menos 4 meses. ${mesIni} a ${mesFin} solo tiene ${nf - ni} mes(es).`
+    }
+    return ''
+  }
+
   async function abrirConvocatoria() {
     errorForm = ''
     if (!mesInicio) { errorForm = 'Selecciona el mes de inicio.'; return }
     if (!mesFin) { errorForm = 'Selecciona el mes de fin.'; return }
     if (!fechaCierre) { errorForm = 'Selecciona la fecha de cierre.'; return }
 
+    const errCuat = validarCuatrimestre(mesInicio, mesFin)
+    if (errCuat) { errorForm = errCuat; return }
+
     const periodo = `${mesInicio}-${mesFin} ${anioPeriodo}`
 
     guardando = true
     try {
-      await api.admin.crearConvocatoria({ periodo, fecha_cierre: fechaCierre })
+      const body = { periodo, fecha_cierre: fechaCierre }
+      if (fechaLimiteDocumentos) {
+        body.fecha_limite_documentos = fechaLimiteDocumentos
+      }
+      await api.admin.crearConvocatoria(body)
       exito = `Convocatoria "${periodo}" abierta correctamente.`
       mesInicio = ''
       mesFin = ''
       anioPeriodo = ANIO_ACTUAL
       fechaCierre = ''
+      fechaLimiteDocumentos = ''
       await cargar()
     } catch (e) {
       errorForm = e.message || 'Error al abrir convocatoria.'
@@ -119,9 +140,15 @@
                 <span class="detalle-valor">{convocatoria.periodo}</span>
               </div>
               <div class="detalle-item">
-                <span class="detalle-label">Cierre programado</span>
+                <span class="detalle-label">Cierre de formularios</span>
                 <span class="detalle-valor">{formatFecha(convocatoria.fecha_cierre)}</span>
               </div>
+              {#if convocatoria.fecha_limite_documentos}
+                <div class="detalle-item">
+                  <span class="detalle-label">Fecha límite para documentos</span>
+                  <span class="detalle-valor">{formatFecha(convocatoria.fecha_limite_documentos)}</span>
+                </div>
+              {/if}
             </div>
             <button class="btn-cierre-rojo" on:click={cerrarConvocatoria} disabled={guardando}>
               {guardando ? 'Cerrando...' : 'Cerrar Convocatoria'}
@@ -172,8 +199,13 @@
               </select>
             </div>
             <div class="field">
-              <label>Fecha de cierre</label>
+              <label>Fecha de cierre de formularios</label>
               <input class="input-plain" type="datetime-local" bind:value={fechaCierre} />
+            </div>
+            <div class="field">
+              <label>Fecha límite para documentos <span style="font-weight:400;color:var(--text-disabled)">(opcional)</span></label>
+              <input class="input-plain" type="datetime-local" bind:value={fechaLimiteDocumentos} />
+              <span style="font-size:11px;color:var(--text-secondary)">Los alumnos podrán subir documentos pendientes hasta esta fecha.</span>
             </div>
             <button class="btn-primary" style="align-self: flex-end;" on:click={abrirConvocatoria} disabled={guardando}>
               {guardando ? 'Abriendo...' : 'Abrir Convocatoria'}

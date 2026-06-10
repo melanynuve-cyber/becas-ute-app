@@ -22,6 +22,7 @@
   let alumno = null
   let enviando = false
   let errorGeneral = ''
+  let erroresCampos = {}
   let solicitudId = null
   let folio = null
   let paso = 'formulario'
@@ -233,10 +234,12 @@
       form.informacion_general.promedio_preparatoria = ''
     }
 
-    errorGeneral = validarSolicitud(form, archivos, total_egresos)
-    if (errorGeneral) { 
+    const resultado = validarSolicitud(form, archivos, total_egresos)
+    erroresCampos = resultado.campos
+    errorGeneral = resultado.general
+    if (errorGeneral) {
       window.scrollTo({ top: 0, behavior: 'smooth' })
-      return 
+      return
     }
 
     form.cuatrimestre = form.datos_personales.cuatrimestre_a_cursar
@@ -303,12 +306,12 @@
           <div class="error-msg">{errorGeneral}</div>
         {/if}
 
-        <StepDatosPersonales bind:datos={form.datos_personales} {fechaFormato} />
-        <StepBecaSolicitada bind:form />
-        <StepInfoGeneral bind:info={form.informacion_general} tipoSolicitud={form.beca_solicitada.tipo_solicitud} />
-        <StepIngreso bind:ingreso={form.ingreso_mensual} />
-        <StepEgreso bind:egreso={form.egreso_mensual} />
-        <StepDocumentos bind:archivos bind:erroresArchivos />
+        <StepDatosPersonales bind:datos={form.datos_personales} {fechaFormato} errores={erroresCampos} />
+        <StepBecaSolicitada bind:form errores={erroresCampos} />
+        <StepInfoGeneral bind:info={form.informacion_general} tipoSolicitud={form.beca_solicitada.tipo_solicitud} errores={erroresCampos} />
+        <StepIngreso bind:ingreso={form.ingreso_mensual} errores={erroresCampos} />
+        <StepEgreso bind:egreso={form.egreso_mensual} errores={erroresCampos} />
+        <StepDocumentos bind:archivos bind:erroresArchivos errores={erroresCampos} />
 
         <div class="form-actions">
           <button class="btn-primary" on:click={irAPreview}>
@@ -348,6 +351,16 @@
         <p style="color:var(--text-secondary); text-align:center; font-size:14px; max-width:380px; line-height:1.5">
           Tu expediente ha sido registrado de forma correcta y se encuentra en la bandeja de revisión de los coordinadores.
         </p>
+        {#if !archivos.recibo_inscripcion}
+          <div class="warning-box">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+            </svg>
+            <span>
+              <strong>Recuerda:</strong> Debes subir tu comprobante de inscripción antes de la fecha límite de documentos. Si no lo entregas a tiempo, podrías perder la beca. Puedes subirlo desde el detalle de tu solicitud.
+            </span>
+          </div>
+        {/if}
         <div class="confirm-actions">
           <button class="btn-primary" on:click={() => navigate(`/solicitud/${solicitudId}`)}>
             Ver mi Solicitud
@@ -419,5 +432,25 @@
     width: 100%;
     max-width: 280px;
     margin-top: 8px;
+  }
+
+  .warning-box {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: rgba(249, 115, 22, 0.08);
+    border: 1px solid rgba(249, 115, 22, 0.25);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 13px;
+    color: var(--text-primary);
+    line-height: 1.5;
+    max-width: 420px;
+    text-align: left;
+  }
+  .warning-box svg {
+    flex-shrink: 0;
+    color: var(--orange);
+    margin-top: 1px;
   }
 </style>

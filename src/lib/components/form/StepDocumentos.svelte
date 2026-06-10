@@ -6,6 +6,7 @@
   // Propiedades expuestas estructuradas
   export let archivos
   export let erroresArchivos = {}
+  export let errores = {}
 
   // Catálogo estructural de la documentación obligatoria y opcional
   const docs = [
@@ -37,16 +38,16 @@
   <StepHeader num="6" title="Documentos Adjuntos" />
   
   <p class="section-hint">
-    Los documentos A, B y C son obligatorios. D puede adjuntarse después. Solo se aceptan archivos PDF.
+    Los documentos A, B y C son obligatorios. D (comprobante de inscripción) puede adjuntarse después, pero debe subirse antes de la fecha límite de documentos que establezca el coordinador. Si no lo subes a tiempo, podrías perder la beca.
   </p>
 
   <div class="docs-grid">
     {#each docs as doc}
-      <DocUpload 
-        label={doc.label} 
+      <DocUpload
+        label={doc.label}
         requerido={doc.requerido}
         file={archivos[doc.key]}
-        error={erroresArchivos[doc.key]}
+        error={erroresArchivos[doc.key] || errores[doc.key] || ''}
         onUpload={(e) => handleFileChange(e, doc.key)}
         onRemove={() => quitarArchivo(doc.key)}
       />

@@ -11,15 +11,13 @@
 <div class="doc-item">
   <span class="doc-label">
     {label}
-    {#if requerido}
-      <span class="req">*</span>
-    {:else}
+    {#if !requerido}
       <span class="opcional">(opcional)</span>
     {/if}
   </span>
 
   {#if file}
-    <div class="doc-selected">
+    <div class="doc-selected" class:doc-error={error}>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M14 2 H6 a2 2 0 0 0-2 2 v16 a2 2 0 0 0 2 2 h12 a2 2 0 0 0 2-2 V8z" />
         <polyline points="14 2 14 8 20 8"/>
@@ -28,7 +26,7 @@
       <button type="button" class="doc-remove" on:click={onRemove}>✕</button>
     </div>
   {:else}
-    <label class="doc-upload">
+    <label class="doc-upload" class:doc-upload-error={error}>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <polyline points="16 16 12 12 8 16"/>
         <line x1="12" y1="12" x2="12" y2="21"/>
@@ -111,6 +109,14 @@
   }
   .doc-remove:hover { 
     color: var(--error); 
+  }
+  .doc-upload-error {
+    border-color: var(--error) !important;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important;
+  }
+  .doc-error {
+    border-color: var(--error) !important;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important;
   }
   .error-inline-txt {
     font-size: 12px;
