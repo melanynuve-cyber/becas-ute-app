@@ -175,4 +175,10 @@
 
   .eye-btn { position: absolute; right: 14px; background: none; border: none; cursor: pointer; padding: 4px; display: flex; align-items: center; color: var(--text-disabled); transition: color 0.15s ease; }
   .eye-btn:hover { color: var(--text-secondary); }
+
+  @media (max-width: 480px) {
+    .card { padding: 24px 20px; }
+    .logo-ute { height: 56px; }
+    .title { font-size: 20px; }
+  }
 </style>

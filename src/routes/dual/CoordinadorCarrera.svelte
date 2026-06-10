@@ -40,6 +40,8 @@
   let loadingExpediente = false
   let errorExpediente = ''
   let pdfSeleccionado = null
+  let periodos = []
+  let periodoSeleccionado = ''
 
   let formGrupo = {
     carrera: 'ING.NME TEC DE LA INFORMACIÓN E INNOVACION DIGITAL',
@@ -66,8 +68,20 @@
       navigate('/login', { replace: true })
       return
     }
-    await cargarAlumnos()
+    await Promise.all([cargarAlumnos(), cargarPeriodos()])
   })
+
+  async function cargarPeriodos() {
+    try {
+      periodos = await api.dual.periodos()
+      if (periodos.length && !periodoSeleccionado) {
+        periodoSeleccionado = periodos[0].cuatrimestre
+      }
+    } catch (e) {
+      // Silencioso — el dropdown simplemente no aparecerá
+      periodos = []
+    }
+  }
 
   async function cargarAlumnos() {
     loading = true
@@ -114,8 +128,23 @@
     loadingExpediente = true
     vista = 'expediente'
     try {
-      const paramCuatri = filtroCuatrimestre || null
+      const paramCuatri = periodoSeleccionado || null
       reportes = await api.dual.expediente(alumno.matricula, paramCuatri)
+    } catch (e) {
+      errorExpediente = e.message || 'Error al cargar el expediente.'
+    } finally {
+      loadingExpediente = false
+    }
+  }
+
+  async function cambiarPeriodo() {
+    if (!alumnoSeleccionado) return
+    reportes = []
+    errorExpediente = ''
+    loadingExpediente = true
+    try {
+      const paramCuatri = periodoSeleccionado || null
+      reportes = await api.dual.expediente(alumnoSeleccionado.matricula, paramCuatri)
     } catch (e) {
       errorExpediente = e.message || 'Error al cargar el expediente.'
     } finally {
@@ -132,7 +161,7 @@
   }
 
   async function descargarCSV(matricula) {
-    await api.dual.exportarCSV(matricula, filtroCuatrimestre || undefined)
+    await api.dual.exportarCSV(matricula, periodoSeleccionado || undefined)
   }
 
   $: promedioExpediente = reportes.length
@@ -614,6 +643,24 @@
           </svg>
           Volver al directorio
         </button>
+
+        {#if periodos.length > 0}
+          <div class="periodo-selector">
+            <label class="periodo-label" for="select-periodo">Periodo</label>
+            <select
+              id="select-periodo"
+              class="input-plain input-sm"
+              bind:value={periodoSeleccionado}
+              on:change={cambiarPeriodo}
+            >
+              {#each periodos as p}
+                <option value={p.cuatrimestre}>
+                  {p.periodo_label || p.cuatrimestre}
+                </option>
+              {/each}
+            </select>
+          </div>
+        {/if}
       </div>
 
       <div class="expediente-layout">
@@ -649,7 +696,7 @@
               on:click={async () => {
                 errorExpediente = ''
                 try {
-                  await api.dual.exportarZip(alumnoSeleccionado.matricula, filtroCuatrimestre || undefined)
+                  await api.dual.exportarZip(alumnoSeleccionado.matricula, periodoSeleccionado || undefined)
                 } catch (e) {
                   errorExpediente = e.message || 'Error al descargar ZIP'
                 }
@@ -780,8 +827,12 @@
   .spinner { width: 28px; height: 28px; margin: 0 auto; border: 3px solid var(--border); border-top-color: var(--orange); border-radius: 50%; animation: spin 0.8s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
+  .expediente-topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
   .btn-back { background: none; border: none; cursor: pointer; padding: 0; font-family: var(--font); font-size: 14px; font-weight: 600; color: var(--text-secondary); transition: color 0.15s; }
   .btn-back:hover { color: var(--orange); }
+  .periodo-selector { display: flex; align-items: center; gap: 8px; }
+  .periodo-label { font-size: 12px; font-weight: 600; color: var(--text-disabled); text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; }
+  .periodo-selector select { min-width: 180px; }
 
   .expediente-layout { display: grid; grid-template-columns: 320px 1fr; gap: 24px; align-items: start; }
   .ficha-card { background: var(--bg-card); border-radius: var(--radius-card); border: 1px solid var(--border); box-shadow: var(--shadow-card); padding: 24px; display: flex; flex-direction: column; gap: 16px; position: sticky; top: calc(56px + 24px); }
@@ -895,8 +946,9 @@
     overflow-y: auto;
   }
   .expediente-pdf-col {
-    min-height: 400px;
+    min-height: 0;
     display: flex;
+    flex: 1;
   }
   .expediente-pdf-col :global(.visor-wrap) {
     border-radius: 0;
@@ -909,12 +961,15 @@
   }
 
   @media (max-width: 900px) {
+    .page-wrap { padding: 24px 16px; }
+    .page-wrap-grupos { padding: 24px 16px; }
     .expediente-layout { grid-template-columns: 1fr; }
     .ficha-card { position: static; }
     .expediente-split { grid-template-columns: 1fr; }
-    .expediente-pdf-col { min-height: 300px; }
+    .expediente-pdf-col { min-height: 0; flex: 1; }
     .grupos-layout { grid-template-columns: 1fr; }
     .grupos-barra { grid-template-columns: 1fr; }
     .carga-fila-botones { grid-template-columns: 1fr; }
+    .fila-alumno { grid-template-columns: 1fr; }
   }
 </style>

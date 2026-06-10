@@ -99,8 +99,14 @@
     border-radius: var(--radius-card);
     overflow: hidden;
     background: #1e293b;
+    width: 100%;
     height: 100%;
-    min-height: 400px;
+    min-height: 80vh;
+  }
+  @media (min-width: 768px) {
+    .visor-wrap {
+      min-height: 90vh;
+    }
   }
   .visor-empty {
     background: var(--bg-page);

@@ -126,6 +126,8 @@
   let reportesExp = []
   let loadingReportesExp = false
   let pdfExpSeleccionado = null
+  let periodos = []
+  let periodoSeleccionadoExp = ''
 
   onMount(() => {
     if (!get(isAuthenticated) || !get(isCoordinadorDual)) {
@@ -143,6 +145,7 @@
     if (vista === 'empresas') {
       cargarEmpresas()
     } else if (vista === 'expediente') {
+      cargarPeriodos()
       cargarDirectorioExp()
     } else {
       cargarReportes()
@@ -150,6 +153,18 @@
     cargarEstadoCuatrimestre()
     mounted = true
   })
+
+  async function cargarPeriodos() {
+    try {
+      periodos = await api.dual.periodos()
+      if (periodos.length && !periodoSeleccionadoExp) {
+        periodoSeleccionadoExp = periodos[0].cuatrimestre
+        filtroCuatrimestreExp = periodos[0].cuatrimestre
+      }
+    } catch {
+      periodos = []
+    }
+  }
 
   async function cargarEstadoCuatrimestre() {
     loadingCuatrimestre = true
@@ -429,7 +444,7 @@
     loadingAlumnos = true
     try {
       const params = new URLSearchParams()
-      if (filtroCuatrimestreExp) params.append('cuatrimestre', filtroCuatrimestreExp)
+      if (periodoSeleccionadoExp) params.append('cuatrimestre', periodoSeleccionadoExp)
       alumnosExpediente = await api.dual.listarAlumnos(params.toString())
     } catch (e) {
       alumnosExpediente = []
@@ -456,11 +471,21 @@
     reportesExp = []
     loadingReportesExp = true
     try {
-      reportesExp = await api.dual.expediente(alumno.matricula, filtroCuatrimestreExp || null)
+      reportesExp = await api.dual.expediente(alumno.matricula, periodoSeleccionadoExp || null)
     } catch {
       reportesExp = []
     } finally {
       loadingReportesExp = false
+    }
+  }
+
+  async function cambiarPeriodoExp() {
+    if (alumnoExpSeleccionado) {
+      filtroCuatrimestreExp = periodoSeleccionadoExp
+      await abrirExpAlumno(alumnoExpSeleccionado)
+    } else {
+      filtroCuatrimestreExp = periodoSeleccionadoExp
+      await cargarDirectorioExp()
     }
   }
 
@@ -471,7 +496,7 @@
     : null
 
   async function descargarCSVExp(matricula) {
-    await api.dual.exportarCSV(matricula, filtroCuatrimestreExp || undefined)
+    await api.dual.exportarCSV(matricula, periodoSeleccionadoExp || undefined)
   }
 
   $: carreraCompletaRevision = seleccionado ? seleccionado.carrera : '—'
@@ -902,8 +927,18 @@
       />
 
       <div class="reportes-card" style="padding: 16px;">
-        <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-          <input class="input-plain" placeholder="Cuatrimestre" bind:value={filtroCuatrimestreExp} style="flex: 1" />
+        <div style="display: flex; gap: 8px; margin-bottom: 12px; align-items: center;">
+          {#if periodos.length > 0}
+            <select class="input-plain input-sm" bind:value={periodoSeleccionadoExp} on:change={cambiarPeriodoExp} style="flex: 1">
+              {#each periodos as p}
+                <option value={p.cuatrimestre}>
+                  {p.periodo_label || p.cuatrimestre}
+                </option>
+              {/each}
+            </select>
+          {:else}
+            <input class="input-plain" placeholder="Cuatrimestre" bind:value={filtroCuatrimestreExp} style="flex: 1" />
+          {/if}
           <input class="input-plain" placeholder="Buscar matrícula o nombre" bind:value={filtroBusquedaExp} style="flex: 1" />
           <button class="btn-primary" style="width: auto; padding: 0 16px;" on:click={cargarDirectorioExp}>Buscar</button>
         </div>
@@ -1008,7 +1043,7 @@
               on:click={async () => {
                 errorExp = ''
                 try {
-                  await api.dual.exportarZip(alumnoExpSeleccionado.matricula, filtroCuatrimestreExp || undefined)
+                  await api.dual.exportarZip(alumnoExpSeleccionado.matricula, periodoSeleccionadoExp || undefined)
                 } catch (e) {
                   errorExp = e.message || 'Error al descargar ZIP'
                 }
@@ -1196,7 +1231,7 @@
   .btn-back:hover { color: var(--orange); }
   
   .split-layout { display: grid; grid-template-columns: 1fr 360px; flex: 1; overflow: hidden; }
-  .panel-pdf { display: flex; flex-direction: column; border-right: 1px solid var(--border); overflow: hidden; background: #1e293b; }
+  .panel-pdf { display: flex; flex-direction: column; border-right: 1px solid var(--border); overflow: hidden; background: #1e293b; min-height: 0; }
   .panel-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-disabled); padding: 10px 20px; border-bottom: 1px solid var(--border); background: var(--bg-page); }
   .pdf-iframe { flex: 1; width: 100%; border: none; background: #fff; }
   .link-externo { display: block; padding: 10px 20px; font-size: 13px; font-weight: 500; color: var(--orange); text-decoration: none; border-top: 1px solid var(--border); background: var(--bg-card); transition: background 0.15s; }
@@ -1318,7 +1353,7 @@
   .expediente-page { max-width: 1200px; }
   .expediente-split { display: grid; grid-template-columns: 260px 1fr; gap: 0; flex: 1; min-height: 0; border: 1px solid var(--border); border-radius: var(--radius-card); overflow: hidden; }
   .expediente-tabla-col { border-right: 1px solid var(--border); overflow-y: auto; background: var(--bg-card); }
-  .expediente-pdf-col { min-height: 400px; display: flex; }
+  .expediente-pdf-col { min-height: 0; display: flex; flex: 1; }
   .expediente-pdf-col :global(.visor-wrap) { border-radius: 0; border: none; width: 100%; }
   .row-selected { background: var(--orange-light) !important; }
 
@@ -1355,12 +1390,15 @@
   .exito-msg { color: var(--success); background: rgba(34, 197, 94, 0.08); border: 1px solid rgba(34, 197, 94, 0.2); border-radius: 8px; padding: 10px 14px; font-size: 13px; font-weight: 500; }
 
   @media (max-width: 768px) {
+    .page-wrap { padding: 24px 16px; }
     .split-layout { grid-template-columns: 1fr; }
     .panel-pdf { height: 300px; border-right: none; border-bottom: 1px solid var(--border); }
     .empresas-layout { grid-template-columns: 1fr; }
     .expediente-layout { grid-template-columns: 1fr; }
     .ficha-card { position: static; }
     .expediente-split { grid-template-columns: 1fr; }
-    .expediente-pdf-col { min-height: 300px; }
+    .expediente-pdf-col { min-height: 0; flex: 1; }
+    .cierre-selects { grid-template-columns: 1fr; }
+    .reporte-table th, .reporte-table td { padding: 10px 12px; font-size: 13px; }
   }
 </style>

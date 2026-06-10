@@ -455,4 +455,10 @@
     color: var(--orange);
     margin-top: 1px;
   }
+
+  @media (max-width: 768px) {
+    .page { padding: 24px 16px 48px; }
+    .form-card { padding: 24px 20px; }
+    .confirm-card { padding: 28px 20px; margin: 24px auto 0; }
+  }
 </style>

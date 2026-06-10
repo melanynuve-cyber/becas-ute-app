@@ -122,4 +122,11 @@
   .convocatoria-aviso { display: flex; flex-direction: column; align-items: center; gap: 16px; text-align: center; }
   .convocatoria-aviso p { font-size: 15px; color: var(--text-secondary); max-width: 400px; line-height: 1.6; margin: 0; }
   .error-msg { font-size: 14px; color: var(--error); }
+
+  @media (max-width: 768px) {
+    .content { padding: 24px 16px; }
+    .welcome-banner { padding: 20px 24px; }
+    .welcome { font-size: 20px; }
+    .card-base { padding: 20px; }
+  }
 </style>

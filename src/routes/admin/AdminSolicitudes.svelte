@@ -169,7 +169,7 @@
     border-radius: var(--radius-card);
     border: 1px solid var(--border);
     box-shadow: var(--shadow-card);
-    overflow: hidden;
+    overflow-x: auto;
   }
 
   .table { width: 100%; border-collapse: collapse; }

@@ -243,4 +243,13 @@
 
   .error-msg { font-size: 13px; color: var(--error); background: rgba(239,68,68,0.06); padding: 10px 14px; border-radius: 8px; border: 1px solid rgba(239,68,68,0.15); }
   .exito-msg { font-size: 13px; color: var(--success); background: rgba(34,197,94,0.06); padding: 10px 14px; border-radius: 8px; border: 1px solid rgba(34,197,94,0.15); }
+
+  @media (max-width: 768px) {
+    .content { padding: 24px 16px; }
+    .card { padding: 20px; }
+    .estado-detalle { grid-template-columns: 1fr; }
+    .btn-cierre-rojo { width: 100%; justify-content: center; }
+    .form-row { flex-direction: column; }
+    .field { min-width: 0; }
+  }
 </style>

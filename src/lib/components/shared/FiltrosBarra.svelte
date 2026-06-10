@@ -85,7 +85,7 @@
 </div>
 
 <style>
-  .filters-row { display: flex; gap: 8px; flex-wrap: nowrap; align-items: center; background: var(--bg-card); padding: 12px 16px; border-radius: var(--radius-card); border: 1px solid var(--border); box-shadow: var(--shadow-card); margin-bottom: 1.5rem; }
+  .filters-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; background: var(--bg-card); padding: 12px 16px; border-radius: var(--radius-card); border: 1px solid var(--border); box-shadow: var(--shadow-card); margin-bottom: 1.5rem; }
   .input-plain { font-family: var(--font); font-size: 14px; }
   .input-busqueda { flex: 1.2; min-width: 150px; max-width: 220px; }
   .select-field { flex: 1; min-width: 130px; }
@@ -93,4 +93,10 @@
   .select-grupo { max-width: 160px; }
   .select-estado { max-width: 150px; }
   .btn-actualizar { white-space: nowrap; padding: 10px 16px; font-size: 14px; height: 40px; display: flex; align-items: center; }
+
+  @media (max-width: 768px) {
+    .filters-row { flex-direction: column; align-items: stretch; }
+    .input-busqueda { max-width: none; flex: auto; }
+    .select-field { max-width: none; flex: auto; }
+  }
 </style>

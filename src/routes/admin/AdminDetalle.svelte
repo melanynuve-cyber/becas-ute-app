@@ -457,18 +457,19 @@
   }
 
   @media (max-width: 768px) {
-    .card { 
+    .content { padding: 24px 16px; }
+    .card {
       padding: 20px;
     }
-    .grid-2 { 
+    .grid-2 {
       grid-template-columns: 1fr;
       gap: 12px;
     }
-    .docs-grid { 
+    .docs-grid {
       grid-template-columns: 1fr;
     }
-    .estado-row { 
-      flex-direction: column; 
+    .estado-row {
+      flex-direction: column;
       gap: 16px;
     }
   }

@@ -26,6 +26,7 @@
   import ReportesDual       from './routes/dual/ReportesDual.svelte'
   import CoordinadorDual    from './routes/dual/CoordinadorDual.svelte'
   import CoordinadorCarrera from './routes/dual/CoordinadorCarrera.svelte'
+  import Foro              from './routes/Foro.svelte'
   import NotFound           from './routes/NotFound.svelte'
 
   // Redirección principal del sistema
@@ -50,7 +51,7 @@
     if (get(isCoordinadorCarrera)) {
       return navigate('/dual/carrera',      { replace: true })
     }
-    navigate('/dashboard', { replace: true })
+    navigate('/foro', { replace: true })
   }
 </script>
 
@@ -60,6 +61,7 @@
   <Route path="/verificar" component={Verificar} />
   <Route path="/cambiar-password" component={CambiarPassword} />
 
+  <Route path="/foro" component={Foro} />
   <Route path="/dashboard" component={Dashboard} />
   <Route path="/solicitud/nueva" component={NuevaSolicitud} />
   <Route path="/solicitud/:id" component={DetalleSolicitud} />

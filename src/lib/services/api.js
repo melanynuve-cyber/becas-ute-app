@@ -110,6 +110,7 @@ export const api = {
 
     // Operaciones del coordinador de carrera académica
     listarAlumnos: (params) => request('GET', `/dual/carrera/alumnos${params ? `?${params}` : ''}`),
+    periodos: () => request('GET', '/dual/carrera/periodos'),
     expediente: (matricula, cuatrimestre) => request('GET', `/dual/carrera/alumnos/${matricula}/reportes${cuatrimestre ? `?cuatrimestre=${cuatrimestre}` : ''}`),
     reportePdfUrlCarrera: (reporteId) => `${BASE_URL}/dual/carrera/reporte/${reporteId}/pdf`,
     exportarCSV: async (matricula, cuatrimestre) => {

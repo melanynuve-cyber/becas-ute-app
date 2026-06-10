@@ -19,7 +19,7 @@
       if (get(isCoordinadorBecas)) navigate('/admin/solicitudes', { replace: true })
       else if (get(isCoordinadorDual)) navigate('/dual/coordinador', { replace: true })
       else if (get(isCoordinadorCarrera)) navigate('/dual/carrera', { replace: true })
-      else navigate('/dashboard', { replace: true })
+      else navigate('/foro', { replace: true })
     }
   })
 
@@ -58,7 +58,7 @@
       if (payload.roles?.admin || payload.roles?.root) navigate('/admin/solicitudes', { replace: true })
       else if (payload.roles?.coordinador_dual) navigate('/dual/coordinador', { replace: true })
       else if (payload.roles?.coordinador_carrera) navigate('/dual/carrera', { replace: true })
-      else navigate('/dashboard', { replace: true })
+      else navigate('/foro', { replace: true })
       
     } catch (e) {
       const msg = e.message || 'Error al conectar con el servidor.'
@@ -190,4 +190,10 @@
   
   .eye-btn { position: absolute; right: 14px; background: none; border: none; cursor: pointer; padding: 4px; display: flex; align-items: center; color: var(--text-disabled); transition: color 0.15s ease; }
   .eye-btn:hover { color: var(--text-secondary); }
+
+  @media (max-width: 480px) {
+    .card { padding: 24px 20px; }
+    .logo-ute { height: 56px; }
+    .title { font-size: 20px; }
+  }
 </style>
