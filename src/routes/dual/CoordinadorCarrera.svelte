@@ -484,7 +484,6 @@
                 <select class="input-plain input-sm" bind:value={formGrupo.turno} disabled={grupoCreado}>
                   <option value="Matutino">Matutino</option>
                   <option value="Vespertino">Vespertino</option>
-                  <option value="Despresurizado">Despresurizado</option>
                 </select>
               </div>
               <div class="field">
