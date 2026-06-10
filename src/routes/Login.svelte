@@ -178,7 +178,7 @@
   .page { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px 16px; background: var(--bg-page); }
   .card { background: var(--bg-card); border-radius: var(--radius-card); border: 1px solid var(--border); box-shadow: var(--shadow-card); padding: 36px 32px; width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 20px; }
   .header { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; }
-  .logo-row { display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 8px; }
+  .logo-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; width: 100%; padding: 0 8px; }
   .logo-ute { height: 76px; width: auto; object-fit: contain; }
   .logo-ours { height: 76px; width: auto; object-fit: contain; }
   .title { font-size: 22px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.02em; }

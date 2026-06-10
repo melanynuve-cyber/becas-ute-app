@@ -52,7 +52,6 @@
   </button>
 
   <div class="brand">
-    <img src="/UTEG-01.png" alt="UTE" class="logo-ute" />
     <img src="/ours.jpg" alt="OURS" class="logo-ours" />
   </div>
 
@@ -76,7 +75,6 @@
 
 <aside class="sidebar" class:open={sidebarOpen}>
   <div class="sidebar-header">
-    <img src="/UTEG-01.png" alt="UTE" class="logo-ute" />
     <img src="/ours.jpg" alt="OURS" class="logo-ours" />
   </div>
 
@@ -216,6 +214,5 @@
   .logout-btn { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: 10px; font-family: var(--font); font-size: 14px; font-weight: 500; color: var(--text-secondary); background: none; border: none; cursor: pointer; width: 100%; transition: background 0.15s, color 0.15s; }
   .logout-btn:hover { background: #FEF2F2; color: var(--error); }
   
-  .logo-ute { height: 44px; width: auto; object-fit: contain; }
   .logo-ours { height: 44px; width: auto; object-fit: contain; }
 </style>
