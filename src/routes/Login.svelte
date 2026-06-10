@@ -11,6 +11,7 @@
   let password = ''
   let loading = false
   let error = ''
+  let errorIsVerificar = false
   let showPassword = false
 
   onMount(() => {
@@ -24,8 +25,8 @@
 
   async function handleSubmit(e) {
     if (e) e.preventDefault()
-    if (!email.endsWith('@ute.edu.mx')) {
-      error = 'Debes usar tu correo institucional (@ute.edu.mx)'
+    if (!email) {
+      error = 'Ingresa tu correo institucional'
       return
     }
     loading = true
@@ -60,9 +61,17 @@
       else navigate('/dashboard', { replace: true })
       
     } catch (e) {
-      error = e.message === "Cannot read properties of undefined (reading 'access_token')"
-        ? 'Contraseña incorrecta o usuario no encontrado.'
-        : (e.message || 'Error al conectar con el servidor.')
+      const msg = e.message || 'Error al conectar con el servidor.'
+      if (msg.includes('verificar tu correo')) {
+        error = msg
+        errorIsVerificar = true
+      } else if (msg === "Cannot read properties of undefined (reading 'access_token')") {
+        error = 'Contraseña incorrecta o usuario no encontrado.'
+        errorIsVerificar = false
+      } else {
+        error = msg
+        errorIsVerificar = false
+      }
     } finally {
       loading = false
     }
@@ -86,7 +95,12 @@
     </div>
 
     {#if error}
-      <div class="error-msg">{error}</div>
+      <div class="error-msg">
+        <span>{error}</span>
+        {#if errorIsVerificar}
+          <a href="/verificar?email={encodeURIComponent(email)}" class="link-orange" style="display:block;margin-top:8px;font-weight:600;">Ir a verificar mi cuenta</a>
+        {/if}
+      </div>
     {/if}
 
     <div class="form">

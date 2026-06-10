@@ -11,6 +11,7 @@
   let confirmPassword = ''
   let loading = false
   let error = ''
+  let errorIsConflict = false
   let showPassword = false
   let showConfirmPassword = false
 
@@ -24,8 +25,20 @@
       error = 'Debes usar tu correo institucional (@ute.edu.mx)'
       return
     }
-    if (password.length < 6) {
-      error = 'La contraseña debe tener al menos 6 caracteres'
+    if (password.length < 8) {
+      error = 'La contraseña debe tener al menos 8 caracteres'
+      return
+    }
+    if (!/[a-z]/.test(password)) {
+      error = 'La contraseña debe incluir al menos una minúscula'
+      return
+    }
+    if (!/[A-Z]/.test(password)) {
+      error = 'La contraseña debe incluir al menos una mayúscula'
+      return
+    }
+    if (!/[0-9]/.test(password)) {
+      error = 'La contraseña debe incluir al menos un dígito'
       return
     }
     if (password !== confirmPassword) {
@@ -37,7 +50,9 @@
       await api.auth.register({ email, password })
       navigate(`/verificar?email=${encodeURIComponent(email)}`, { replace: true })
     } catch (e) {
-      error = e.message
+      const msg = e.message || 'Error al conectar con el servidor.'
+      error = msg
+      errorIsConflict = msg.includes('ya tiene una cuenta')
     } finally {
       loading = false
     }
@@ -57,7 +72,16 @@
     </div>
 
     {#if error}
-      <div class="error-msg">{error}</div>
+      <div class="error-msg">
+        <span>{error}</span>
+        {#if errorIsConflict}
+          <div style="display:flex;gap:8px;margin-top:8px;">
+            <a href="/verificar?email={encodeURIComponent(email)}" class="link-orange" style="font-weight:600;">Verificar mi cuenta</a>
+            <span style="color:var(--text-disabled);">|</span>
+            <a href="/login" class="link-orange" style="font-weight:600;">Iniciar sesión</a>
+          </div>
+        {/if}
+      </div>
     {/if}
 
     <div class="form">

@@ -92,7 +92,7 @@
 
   // Cerrar cuatrimestre
   const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
-  const ANIOS = Array.from({length: 5}, (_, i) => new Date().getFullYear() - 1 + i)
+  const ANIOS = Array.from({length: 5}, (_, i) => new Date().getFullYear() + i)
   let showModalCierre = false
   let mesInicioCierre = ''
   let mesFinCierre = ''
@@ -1106,12 +1106,10 @@
         </div>
         {#if errorCierre}<p class="error-msg">{errorCierre}</p>{/if}
         {#if exitoCierre}<p class="exito-msg" style="margin-top: 8px;">{exitoCierre}</p>{/if}
+        <button class="modal-x" on:click={() => showModalCierre = false}>&times;</button>
         <div class="modal-acciones">
           <button class="btn-cierre" style="flex:1" on:click={confirmarCierre} disabled={cerrandoCuatrimestre || exitoCierre}>
             {cerrandoCuatrimestre ? 'Cerrando...' : 'Confirmar cierre'}
-          </button>
-          <button class="btn-outline" style="flex:1" on:click={() => showModalCierre = false}>
-            Cancelar
           </button>
         </div>
       </div>
@@ -1157,12 +1155,10 @@
         </div>
         {#if errorApertura}<p class="error-msg">{errorApertura}</p>{/if}
         {#if exitoApertura}<p class="exito-msg" style="margin-top: 8px;">{exitoApertura}</p>{/if}
+        <button class="modal-x" on:click={() => showModalApertura = false}>&times;</button>
         <div class="modal-acciones">
           <button class="btn-apertura" style="flex:1" on:click={confirmarApertura} disabled={abriendoCuatrimestre || exitoApertura}>
             {abriendoCuatrimestre ? 'Abriendo...' : 'Abrir cuatrimestre'}
-          </button>
-          <button class="btn-outline" style="flex:1" on:click={() => showModalApertura = false}>
-            Cancelar
           </button>
         </div>
       </div>
@@ -1350,7 +1346,9 @@
   .cierre-selects { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
 
   .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center; z-index: 200; }
-  .modal-box { background: var(--bg-card); border-radius: var(--radius-card); border: 1px solid var(--border); padding: 28px; max-width: 420px; width: 90%; display: flex; flex-direction: column; gap: 14px; }
+  .modal-box { position: relative; background: var(--bg-card); border-radius: var(--radius-card); border: 1px solid var(--border); padding: 28px; max-width: 420px; width: 90%; display: flex; flex-direction: column; gap: 14px; }
+  .modal-x { position: absolute; top: 10px; right: 14px; background: none; border: none; font-size: 22px; color: var(--text-disabled); cursor: pointer; line-height: 1; padding: 4px 8px; border-radius: 6px; transition: color 0.15s, background 0.15s; font-family: var(--font); }
+  .modal-x:hover { color: var(--text-primary); background: var(--bg-page); }
   .modal-titulo { font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 0; }
   .modal-cuerpo { font-size: 14px; color: var(--text-secondary); margin: 0; line-height: 1.5; }
   .modal-acciones { display: flex; gap: 10px; }
