@@ -71,7 +71,10 @@
 <div class="page">
   <div class="card" in:fade>
     <div class="header">
-      <img src="/UTEG-01.png" alt="Universidad Tecnológica" class="logo-ute" />
+      <div class="logo-row">
+        <img src="/UTEG-01.png" alt="UTE" class="logo-ute" />
+        <img src="/ours.jpg" alt="OURS" class="logo-ours" />
+      </div>
       <h1 class="title">Cambiar Contraseña</h1>
       <p class="subtitle">
         Debes cambiar tu contraseña temporal antes de continuar
@@ -164,7 +167,9 @@
   .page { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px 16px; background: var(--bg-page); }
   .card { background: var(--bg-card); border-radius: var(--radius-card); border: 1px solid var(--border); box-shadow: var(--shadow-card); padding: 36px 32px; width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 20px; }
   .header { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; }
-  .logo-ute { height: 76px; width: auto; object-fit: contain; margin-bottom: 8px; }
+  .logo-row { display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 8px; }
+  .logo-ute { height: 76px; width: auto; object-fit: contain; }
+  .logo-ours { height: 76px; width: auto; object-fit: contain; }
   .title { font-size: 22px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.02em; }
   .subtitle { font-size: 13px; color: var(--text-secondary); }
   .form { display: flex; flex-direction: column; gap: 16px; }

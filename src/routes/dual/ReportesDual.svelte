@@ -19,7 +19,6 @@
   let error = ''
 
   let infoSemana = null
-  let debugMode = false
   let formAbierto = false
 
   let semana = ''
@@ -111,7 +110,7 @@
       fd.append('fecha_fin', fechaFin)
       fd.append('archivo', archivo)
       
-      await api.dual.subirReporte(fd, debugMode)
+      await api.dual.subirReporte(fd)
 
       formAbierto = false
       calificacion = ''
@@ -380,9 +379,6 @@
                 </div>
 
                 <div class="form-actions">
-                  <button class="btn-debug" on:click={() => debugMode = !debugMode} title="Omite la restricción de día viernes">
-                    {debugMode ? 'Debug ON' : 'Debug OFF'}
-                  </button>
                   <button class="btn-outline" on:click={toggleForm}>
                     Cancelar
                   </button>
@@ -451,9 +447,6 @@
   .req { color: var(--orange); }
 
   .form-actions { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
-  .btn-debug { background: none; border: 1.5px dashed var(--border); border-radius: 8px; padding: 7px 14px; font-size: 12px; font-weight: 600; color: var(--text-disabled); cursor: pointer; font-family: var(--font); transition: all 0.15s ease; margin-right: auto; }
-  .btn-debug:hover { border-color: var(--text-disabled); color: var(--text-secondary); }
-
   .doc-upload { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 16px; border: 2px dashed var(--border-input); border-radius: var(--radius-input); cursor: pointer; font-size: 13px; font-weight: 500; color: var(--text-secondary); background: var(--bg-card); transition: all 0.15s ease; }
   .doc-upload:hover { border-color: var(--orange); color: var(--orange); background: var(--orange-light); }
   

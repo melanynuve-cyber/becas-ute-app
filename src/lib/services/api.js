@@ -88,7 +88,7 @@ export const api = {
 
   dual: {
     // Operaciones del alumno en modalidad dual
-    subirReporte: (fd, isDebug = false) => request('POST', `/dual/alumno/${isDebug ? '?debug=true' : ''}`, fd, { isMultipart: true }),
+    subirReporte: (fd) => request('POST', '/dual/alumno/', fd, { isMultipart: true }),
     misReportes: (cuatrimestre) => request('GET', `/dual/alumno/mis-reportes${cuatrimestre ? `?cuatrimestre=${cuatrimestre}` : ''}`),
     semanaActual: () => request('GET', '/dual/alumno/semana-actual'),
     reportePdfUrl: (reporteId) => `${BASE_URL}/dual/alumno/reporte/${reporteId}/pdf`,

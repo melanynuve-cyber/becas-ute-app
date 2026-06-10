@@ -52,7 +52,8 @@
   </button>
 
   <div class="brand">
-    <img src="/UTEG-01.png" alt="Universidad Tecnológica" class="logo-ute" />
+    <img src="/UTEG-01.png" alt="UTE" class="logo-ute" />
+    <img src="/ours.jpg" alt="OURS" class="logo-ours" />
   </div>
 
   <button class="theme-btn" on:click={toggleDark} aria-label="Cambiar tema">
@@ -75,7 +76,8 @@
 
 <aside class="sidebar" class:open={sidebarOpen}>
   <div class="sidebar-header">
-    <img src="/UTEG-01.png" alt="Logo" class="logo-ute" />
+    <img src="/UTEG-01.png" alt="UTE" class="logo-ute" />
+    <img src="/ours.jpg" alt="OURS" class="logo-ours" />
   </div>
 
   <nav class="sidebar-nav">
@@ -191,7 +193,7 @@
   .navbar { position: fixed; top: 0; left: 0; right: 0; height: 56px; background: var(--bg-card); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 16px; z-index: 100; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
   .hamburger { background: none; border: none; cursor: pointer; padding: 6px; border-radius: 8px; color: var(--text-primary); transition: background 0.15s; }
   .hamburger:hover { background: var(--bg-page); }
-  .brand { display: flex; align-items: center; justify-content: center; }
+  .brand { display: flex; align-items: center; justify-content: center; gap: 10px; }
   .theme-btn { background: none; border: none; cursor: pointer; padding: 6px; border-radius: 8px; color: var(--text-primary); display: flex; align-items: center; justify-content: center; transition: background 0.15s; }
   .theme-btn:hover { background: var(--bg-page); }
   
@@ -199,7 +201,7 @@
   
   .sidebar { position: fixed; top: 0; left: 0; bottom: 0; width: 260px; background: var(--bg-card); z-index: 300; display: flex; flex-direction: column; transform: translateX(-100%); transition: transform 0.25s cubic-bezier(0.4,0,0.2,1); box-shadow: 4px 0 20px rgba(0,0,0,0.1); }
   .sidebar.open { transform: translateX(0); }
-  .sidebar-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; }
+  .sidebar-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
   .sidebar-nav { flex: 1; padding: 12px 8px; display: flex; flex-direction: column; gap: 4px; overflow-y: auto; }
   
   .nav-section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-disabled); margin: 16px 14px 4px; display: block; }
@@ -215,4 +217,5 @@
   .logout-btn:hover { background: #FEF2F2; color: var(--error); }
   
   .logo-ute { height: 44px; width: auto; object-fit: contain; }
+  .logo-ours { height: 44px; width: auto; object-fit: contain; }
 </style>

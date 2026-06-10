@@ -66,7 +66,10 @@
 <div class="page">
   <div class="card">
     <div class="header">
-      <img src="/UTEG-01.png" alt="Universidad Tecnológica Gral. Mariano Escobedo" class="logo-ute" />
+      <div class="logo-row">
+        <img src="/UTEG-01.png" alt="UTE" class="logo-ute" />
+        <img src="/ours.jpg" alt="OURS" class="logo-ours" />
+      </div>
       <h1 class="title">Crear Cuenta</h1>
       <p class="subtitle">Regístrate para iniciar tus trámites de becas o dual</p>
     </div>
@@ -161,7 +164,9 @@
   .card { background: var(--bg-card); border-radius: var(--radius-card); border: 1px solid var(--border); box-shadow: var(--shadow-card); padding: 36px 32px; width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 20px; }
   
   .header { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; }
-  .logo-ute { height: 76px; width: auto; object-fit: contain; margin-bottom: 8px; }
+  .logo-row { display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 8px; }
+  .logo-ute { height: 76px; width: auto; object-fit: contain; }
+  .logo-ours { height: 76px; width: auto; object-fit: contain; }
   .title { font-size: 22px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.02em; }
   .subtitle { font-size: 13px; color: var(--text-secondary); }
   
@@ -178,7 +183,7 @@
 
   @media (max-width: 480px) {
     .card { padding: 24px 20px; }
-    .logo-ute { height: 56px; }
+    .logo-ute, .logo-ours { height: 56px; }
     .title { font-size: 20px; }
   }
 </style>
