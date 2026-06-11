@@ -60,7 +60,7 @@
     <div class="content">
       <h1 class="page-title">Foro</h1>
       <div class="placeholder-card">
-        <img src="/ours.jpg" alt="OURS" class="logo-ours" />
+        <img src="/ours.png" alt="OURS" class="logo-ours" />
         <p class="placeholder-text">Próximamente</p>
       </div>
     </div>

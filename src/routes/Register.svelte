@@ -68,7 +68,7 @@
     <div class="header">
       <div class="logo-row">
         <img src="/UTEG-01.png" alt="UTE" class="logo-ute" />
-        <img src="/ours.jpg" alt="OURS" class="logo-ours" />
+        <img src="/ours.png" alt="OURS" class="logo-ours" />
       </div>
       <h1 class="title">Crear Cuenta</h1>
       <p class="subtitle">Regístrate para iniciar tus trámites de becas o dual</p>

@@ -91,7 +91,7 @@
     <div class="header">
       <div class="logo-row">
         <img src="/UTEG-01.png" alt="UTE" class="logo-ute" />
-        <img src="/ours.jpg" alt="OURS" class="logo-ours" />
+        <img src="/ours.png" alt="OURS" class="logo-ours" />
       </div>
       <h1 class="title">Iniciar Sesión</h1>
       <p class="subtitle">Ingresa a tu cuenta institucional del sistema</p>

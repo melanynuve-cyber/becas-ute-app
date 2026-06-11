@@ -52,7 +52,7 @@
   </button>
 
   <div class="brand">
-    <img src="/ours.jpg" alt="OURS" class="logo-ours" />
+    <img src="/ours.png" alt="OURS" class="logo-ours" />
   </div>
 
   <button class="theme-btn" on:click={toggleDark} aria-label="Cambiar tema">
@@ -75,7 +75,7 @@
 
 <aside class="sidebar" class:open={sidebarOpen}>
   <div class="sidebar-header">
-    <img src="/ours.jpg" alt="OURS" class="logo-ours" />
+    <img src="/ours.png" alt="OURS" class="logo-ours" />
   </div>
 
   <nav class="sidebar-nav">
