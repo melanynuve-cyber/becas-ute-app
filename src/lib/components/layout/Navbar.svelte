@@ -205,7 +205,7 @@
   .nav-section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-disabled); margin: 16px 14px 4px; display: block; }
   .sidebar-nav > .nav-section-title:first-child { margin-top: 4px; }
   
-  .nav-item { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: 10px; font-family: var(--font); font-size: 14px; font-weight: 500; color: var(--text-primary); background: none; border: none; cursor: pointer; text-decoration: none; transition: background 0.15s, color 0.15s; text-align: left; width: 100%; }
+  .nav-item { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: 10px; font-family: var(--font); font-size: 14px; font-weight: 500; color: var(--text-primary); background: none; border: none; cursor: pointer; text-decoration: none; transition: background 0.15s, color 0.15s; text-align: left; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .nav-item:hover { background: var(--orange-light); color: var(--orange); }
   .nav-item.active { background: var(--orange-light); color: var(--orange); font-weight: 600; }
   .nav-icon { display: flex; flex-shrink: 0; }
